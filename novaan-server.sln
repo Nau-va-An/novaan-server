@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 25.0.1705.2
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "novaan-server", "novaan-server\novaan-server.csproj", "{7D95BACD-7344-4988-ADF5-849B861BF3D7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7D95BACD-7344-4988-ADF5-849B861BF3D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D95BACD-7344-4988-ADF5-849B861BF3D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D95BACD-7344-4988-ADF5-849B861BF3D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D95BACD-7344-4988-ADF5-849B861BF3D7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5F68068D-B0D6-4DCE-9A7E-7EACC1A9FF8A}
+	EndGlobalSection
+EndGlobal
