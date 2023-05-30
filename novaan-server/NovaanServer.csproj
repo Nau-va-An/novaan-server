@@ -4,18 +4,22 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>novaan_server</RootNamespace>
+    <RootNamespace>NovaanServer</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-    <PackageReference Include="MongoDB.Driver" Version="2.19.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Controllers\" />
+    <None Remove="Developer\" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Controllers\" />
+    <Folder Include="Developer\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
   </ItemGroup>
 </Project>
