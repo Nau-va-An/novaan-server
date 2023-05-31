@@ -1,4 +1,5 @@
 ﻿using MongoConnector;
+using NovaanServer.Developer;
 using S3Connector;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,8 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<MongoDBService>();
 builder.Services.AddSingleton<S3Service>();
+
+builder.Services.AddTransient<IDevService, DevService>();
 
 var app = builder.Build();
 
