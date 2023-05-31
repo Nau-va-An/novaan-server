@@ -8,32 +8,47 @@ namespace NovaanServer.Developer
 {
     [Route("api/dev")]
     [ApiController]
-    public class DeveloperController : Controller
+    public class DevController : Controller
     {
-        private readonly MongoDBService _mongoService;
-        private readonly S3Service _s3Service;
+        private readonly IDevService _devService;
 
-        public DeveloperController(MongoDBService mongoDBService, S3Service s3Service)
+        public DevController(IDevService devService)
         {
-            _mongoService = mongoDBService;
-            _s3Service = s3Service;
+            _devService = devService;
         }
 
         [HttpGet("health")]
         public IActionResult GetHealthCheck()
         {
-            return Ok("Server is up and running");
+            if(_devService.IsServerHealthy())
+            {
+                return Ok("Server is up and running");
+            }
+
+            // Should never run to here
+            return StatusCode(500, "Cannot connect to server");
         }
 
-        [HttpGet("database-health")]
-        public IActionResult GetDatabaseHealthCheck()
+        [HttpGet("health/db")]
+        public IActionResult GetDbHealth()
         {
-            if (_mongoService.PingDatabase())
+            if(_devService.IsDatabaseHealthy())
             {
                 return Ok("Database is up and running");
             }
 
-            return BadRequest();
+            return StatusCode(500, "Cannot connect to database");
+        }
+
+        [HttpGet("health/s3")]
+        public IActionResult GetS3Health()
+        {
+            if(_devService.IsS3Healthy())
+            {
+                return Ok("S3 Bucket is up and running");
+            }
+
+            return StatusCode(500, "Cannot connect to S3 Bucket");
         }
 
         // TODO: Test endpoint. Clear content before commit
