@@ -23,19 +23,11 @@
 
   <ItemGroup>
     <None Remove="Developer\" />
-    <None Remove="appsettings.json" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Developer\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\novaan-server\NovaanServer.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="appsettings.json" Condition="'$(ExcludeConfigFilesFromBuildOutput)'!='true'">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
   </ItemGroup>
 </Project>
