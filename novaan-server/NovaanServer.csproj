@@ -13,12 +13,17 @@
 
   <ItemGroup>
     <None Remove="Developer\" />
+    <None Remove="Assets\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Developer\" />
+    <Folder Include="Assets\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+    <ProjectReference Include="..\S3Connector\S3Connector.csproj">
       <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
     </ProjectReference>
   </ItemGroup>
