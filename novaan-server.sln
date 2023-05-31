@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoConnector", "mongo-con
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "Utils\Utils.csproj", "{57AD58CE-DD25-4444-B1D7-0A6576574C74}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S3Connector", "S3Connector\S3Connector.csproj", "{BEE4F842-C73C-4FF0-BB2C-9A6FC1B56E61}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{57AD58CE-DD25-4444-B1D7-0A6576574C74}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57AD58CE-DD25-4444-B1D7-0A6576574C74}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{57AD58CE-DD25-4444-B1D7-0A6576574C74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BEE4F842-C73C-4FF0-BB2C-9A6FC1B56E61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BEE4F842-C73C-4FF0-BB2C-9A6FC1B56E61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BEE4F842-C73C-4FF0-BB2C-9A6FC1B56E61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BEE4F842-C73C-4FF0-BB2C-9A6FC1B56E61}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,4 +1,5 @@
 ﻿using MongoConnector;
+using S3Connector;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<MongoDBService>();
+builder.Services.AddSingleton<S3Service>();
 
 var app = builder.Build();
 
