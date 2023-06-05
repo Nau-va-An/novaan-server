@@ -1,4 +1,5 @@
 ﻿using MongoConnector;
+using NovaanServer.Auth;
 using NovaanServer.Developer;
 using S3Connector;
 
@@ -14,7 +15,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<MongoDBService>();
 builder.Services.AddSingleton<S3Service>();
 
-builder.Services.AddTransient<IDevService, DevService>();
+builder.Services.AddScoped<IDevService, DevService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 
