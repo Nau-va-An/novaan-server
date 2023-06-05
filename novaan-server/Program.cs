@@ -1,6 +1,7 @@
 ﻿using MongoConnector;
 using NovaanServer.Auth;
 using NovaanServer.Developer;
+using NovaanServer.ExceptionLayer;
 using S3Connector;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +20,8 @@ builder.Services.AddScoped<IDevService, DevService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionFilter>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -3,12 +3,13 @@ using Utils.Json;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using MongoDB.Bson;
+using MongoConnector.Models;
 
 namespace MongoConnector
 {
     public class MongoDBService
     {
-        public MongoClient MongoClient { get; }
+        private MongoClient MongoClient { get; }
 
         public IMongoDatabase MongoDatabase { get; }
 
@@ -29,6 +30,7 @@ namespace MongoConnector
 
             var mongoDbSettings = MongoClientSettings.FromConnectionString(databaseURI);
             mongoDbSettings.ServerApi = new ServerApi(ServerApiVersion.V1);
+            mongoDbSettings.LinqProvider = MongoDB.Driver.Linq.LinqProvider.V3;
 
             MongoClient = new MongoClient(mongoDbSettings);
             MongoDatabase = MongoClient.GetDatabase(databaseName);
@@ -38,6 +40,14 @@ namespace MongoConnector
         {
             var result = MongoDatabase.RunCommand<BsonDocument>(new BsonDocument("ping", 1));
             return true;
+        }
+
+        public IMongoCollection<Account> Accounts
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Account>(MongoCollections.Accounts);
+            }
         }
     }
 }

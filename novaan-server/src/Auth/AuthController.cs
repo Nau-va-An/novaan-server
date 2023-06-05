@@ -1,6 +1,8 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
 using NovaanServer.Auth.DTOs;
+using NovaanServer.src.ExceptionLayer;
+using NovaanServer.src.ExceptionLayer.CustomExceptions;
 
 namespace NovaanServer.Auth
 {

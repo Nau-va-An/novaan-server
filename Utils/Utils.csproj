@@ -8,8 +8,10 @@
 
   <ItemGroup>
     <None Remove="Json\" />
+    <None Remove="Hash\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Json\" />
+    <Folder Include="Hash\" />
   </ItemGroup>
 </Project>
