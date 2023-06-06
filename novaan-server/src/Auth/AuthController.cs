@@ -28,6 +28,13 @@ namespace NovaanServer.Auth
 		{
 			return Ok();
 		}
+
+		[HttpPost("oauth/google")]
+		public async Task<IActionResult> GoogleAuthentication([FromBody] SignUpDTO signUpDTO)
+		{
+			await _authService.GoogleAuthentication(signUpDTO);
+			return Ok();
+		}
 	}
 }
 
