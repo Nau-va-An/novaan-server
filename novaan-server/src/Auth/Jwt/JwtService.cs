@@ -49,7 +49,7 @@ namespace NovaanServer.src.Auth.Jwt
             var refreshToken = new RefreshToken()
             {
                 JwtId = token.Id,
-                Token = RandomStringGeneration(23), //Generate a refresh token
+                Token = randomStringGeneration(23), // Generate a refresh token
                 AddedDate = DateTime.UtcNow,
                 ExpiryDate = DateTime.UtcNow.AddMonths(6),
                 IsRevoked = false,
@@ -73,7 +73,7 @@ namespace NovaanServer.src.Auth.Jwt
 
             try
             {
-                _tokenValidationParameters.ValidateLifetime = false; //for testing
+                _tokenValidationParameters.ValidateLifetime = false; // For testing
 
                 var tokenInVerification =
                     jwtTokenHandle.ValidateToken(tokenRequest.Token, _tokenValidationParameters, out var validedToken);
@@ -90,7 +90,7 @@ namespace NovaanServer.src.Auth.Jwt
                 var utcExpiryDate = long.Parse(tokenInVerification.Claims
                     .FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Exp).Value);
 
-                var expiryDate = UnixTimeStampToDateTime(utcExpiryDate);
+                var expiryDate = unixTimeStampToDateTime(utcExpiryDate);
                 if (expiryDate > DateTime.Now)
                 {
                     return new SignInResponseDTO()
@@ -180,7 +180,7 @@ namespace NovaanServer.src.Auth.Jwt
             }
         }
 
-        private DateTime UnixTimeStampToDateTime(long unixTimeStamp)
+        private DateTime unixTimeStampToDateTime(long unixTimeStamp)
         {
             var dateTimeVal = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             dateTimeVal = dateTimeVal.AddSeconds(unixTimeStamp).ToUniversalTime();
@@ -188,7 +188,7 @@ namespace NovaanServer.src.Auth.Jwt
             return dateTimeVal;
         }
 
-        private string RandomStringGeneration(int length)
+        private string randomStringGeneration(int length)
         {
             var random = new Random();
             var chars = "ABCDEFGHIJKMNOPqRSTUVWXYZ1234567890abcdefghijkmnopqrstuvwxyz_";

@@ -8,6 +8,5 @@ namespace NovaanServer.src.Auth.DTOs
 
         public Role Role { get; set; }
 
-      
     }
 }

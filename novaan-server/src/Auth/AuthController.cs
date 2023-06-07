@@ -28,7 +28,8 @@ namespace NovaanServer.Auth
         public AuthController(IAuthService authService, JwtService jwtService)
         {
             _authService = authService;
-            _jwtService = jwtService;        }
+            _jwtService = jwtService;       
+        }
 
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] SignUpDTO signUpDTO)
