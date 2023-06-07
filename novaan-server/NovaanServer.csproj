@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.16" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
@@ -21,10 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\" />
-    <Folder Include="src\" />
     <Folder Include="src\Developer\" />
-    <Folder Include="src\Auth\" />
-    <Folder Include="src\Auth\DTOs\" />
     <Folder Include="src\ExceptionLayer\CustomExceptions\" />
   </ItemGroup>
   <ItemGroup>
