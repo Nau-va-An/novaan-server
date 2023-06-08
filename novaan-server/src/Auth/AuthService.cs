@@ -30,24 +30,14 @@ namespace NovaanServer.Auth
 
         public async Task<bool> SignUpWithCredentials(SignUpDTO signUpDTO)
         {
-            // Check if email exist
-            var foundAccount = _mongoService.Accounts
-                .Find(
-                    acc => acc.Email == signUpDTO.Email && acc.Verified
-                )
-                .FirstOrDefault();
-            if (foundAccount != null)
+            var emailExisted = await checkEmailExist(signUpDTO.Email);
+            if (emailExisted)
             {
                 throw new BadHttpRequestException(ExceptionMessage.EMAIL_TAKEN);
             }
 
-            // Check if username exist
-            foundAccount = _mongoService.Accounts
-                .Find(
-                    acc => acc.Username == signUpDTO.Username
-                )
-                .FirstOrDefault();
-            if (foundAccount != null)
+            var usernameExisted = await checkUsernameExist(signUpDTO.Username);
+            if (usernameExisted)
             {
                 throw new BadHttpRequestException(ExceptionMessage.USERNAME_TAKEN);
             }
@@ -74,9 +64,52 @@ namespace NovaanServer.Auth
             return true;
         }
 
-        public Task<bool> SignUpGoogle()
+        public async Task<bool> GoogleAuthentication(SignUpDTO signUpDTO)
         {
-            throw new NotImplementedException();
+            // Check if user email exists
+            // Check if user email exists
+            var emailExists = await checkEmailExist(signUpDTO.Email);
+            if (!emailExists)
+            {
+                // Add account to database
+                var newAccount = new Account
+                {
+                    Username = signUpDTO.Username,
+                    Email = signUpDTO.Email,
+                    Verified = true,
+                };
+                try
+                {
+                    await _mongoService.Accounts.InsertOneAsync(newAccount);
+                }
+                catch
+                {
+                    throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
+                }
+            }
+            return true;
+        }
+
+        // Check if email exists
+        private async Task<bool> checkEmailExist(string email)
+        {
+            var foundAccount = await _mongoService.Accounts
+                .Find(
+                    acc => acc.Email == email
+                )
+                .FirstOrDefaultAsync();
+            return foundAccount != null;
+        }
+
+        //Check if username exists
+        private async Task<bool> checkUsernameExist(string username)
+        {
+            var foundAccount = await _mongoService.Accounts
+                .Find(
+                    acc => acc.Username == username
+                )
+                .FirstOrDefaultAsync();
+            return foundAccount != null;
         }
     }
 }
