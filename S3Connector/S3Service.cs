@@ -43,7 +43,7 @@ namespace S3Connector
 
         // TODO: Demo S3 upload file, fix if needed
         // TODO: Add error handling
-        public async Task<bool> UploadFileAsync(IFormFile file)
+        public async Task<string> UploadFileAsync(IFormFile file)
         {
             var request = new PutObjectRequest()
             {
@@ -54,7 +54,7 @@ namespace S3Connector
             request.Metadata.Add("Content-Type", file.ContentType);
 
             var response = await _s3Client.PutObjectAsync(request);
-            return true;
+            return request.Key;
         }
     }
 }

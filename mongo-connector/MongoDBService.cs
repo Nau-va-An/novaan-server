@@ -49,6 +49,13 @@ namespace MongoConnector
                 return MongoDatabase.GetCollection<Account>(MongoCollections.Accounts);
             }
         }
+        public IMongoCollection<Recipe> Recipes
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Recipe>(MongoCollections.Recipes);
+            }
+        }
     }
 }
 

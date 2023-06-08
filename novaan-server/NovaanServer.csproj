@@ -25,7 +25,6 @@
     <Folder Include="src\Auth\" />
     <Folder Include="src\Auth\DTOs\" />
     <Folder Include="src\ExceptionLayer\CustomExceptions\" />
-    <Folder Include="src\Content\DTOs\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">
