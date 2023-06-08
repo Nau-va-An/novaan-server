@@ -30,12 +30,14 @@ namespace NovaanServer.Auth
 
         public async Task<bool> SignUpWithCredentials(SignUpDTO signUpDTO)
         {
-            if (CheckEmailExist(signUpDTO.Email).Result)
+            var emailExisted = await checkEmailExist(signUpDTO.Email);
+            var usernameExisted = await checkUsernameExist(signUpDTO.Username);
+            if (emailExisted)
             {
                 throw new BadHttpRequestException(ExceptionMessage.EMAIL_TAKEN);
             }
 
-            if (CheckUsernameExist(signUpDTO.Username).Result)
+            if (usernameExisted)
             {
                 throw new BadHttpRequestException(ExceptionMessage.USERNAME_TAKEN);
             }
@@ -64,10 +66,12 @@ namespace NovaanServer.Auth
 
         public async Task<bool> GoogleAuthentication(SignUpDTO signUpDTO)
         {
-            //check if user email exists
-            if (!CheckEmailExist(signUpDTO.Email).Result)
+            // Check if user email exists
+            // Check if user email exists
+            var emailExists = await checkEmailExist(signUpDTO.Email);
+            if (!emailExists)
             {
-                //add account to database
+                // Add account to database
                 var newAccount = new Account
                 {
                     Username = signUpDTO.Username,
@@ -86,34 +90,26 @@ namespace NovaanServer.Auth
             return true;
         }
 
-        //check if email exists
-        public async Task<bool> CheckEmailExist(string email)
+        // Check if email exists
+        private async Task<bool> checkEmailExist(string email)
         {
             var foundAccount = await _mongoService.Accounts
                 .Find(
                     acc => acc.Email == email
                 )
                 .FirstOrDefaultAsync();
-            if (foundAccount != null)
-            {
-                return true;
-            }
-            return false;
+            return foundAccount != null;
         }
 
         //check if username exists
-        public async Task<bool> CheckUsernameExist(string username)
+        private async Task<bool> checkUsernameExist(string username)
         {
             var foundAccount = await _mongoService.Accounts
                 .Find(
                     acc => acc.Username == username
                 )
                 .FirstOrDefaultAsync();
-            if (foundAccount != null)
-            {
-                return true;
-            }
-            return false;
+            return foundAccount != null;
         }
     }
 }
