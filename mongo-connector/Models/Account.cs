@@ -21,6 +21,7 @@ namespace MongoConnector.Models
 		public bool Verified { get; set; } = false;
 
 		public bool EmailSent { get; set; } = false;
+		public
 	}
 
 	public enum Role
