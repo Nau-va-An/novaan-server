@@ -31,12 +31,12 @@ namespace NovaanServer.Auth
         public async Task<bool> SignUpWithCredentials(SignUpDTO signUpDTO)
         {
             var emailExisted = await checkEmailExist(signUpDTO.Email);
-            var usernameExisted = await checkUsernameExist(signUpDTO.Username);
             if (emailExisted)
             {
                 throw new BadHttpRequestException(ExceptionMessage.EMAIL_TAKEN);
             }
 
+            var usernameExisted = await checkUsernameExist(signUpDTO.Username);
             if (usernameExisted)
             {
                 throw new BadHttpRequestException(ExceptionMessage.USERNAME_TAKEN);
@@ -101,7 +101,7 @@ namespace NovaanServer.Auth
             return foundAccount != null;
         }
 
-        //check if username exists
+        //Check if username exists
         private async Task<bool> checkUsernameExist(string username)
         {
             var foundAccount = await _mongoService.Accounts
