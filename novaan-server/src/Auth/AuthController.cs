@@ -43,7 +43,7 @@ namespace NovaanServer.Auth
         {
             await _authService.SignInWithCredentials(signInDTO);
 
-            var token = await _jwtService.GennerateJwtToken(new UserJwt
+            var token = await _jwtService.GenerateJwtToken(new UserJwt
             {
                 Email = signInDTO.UsernameOrEmail
             });
@@ -54,7 +54,7 @@ namespace NovaanServer.Auth
         [HttpPost("refreshtoken")]
         public async Task<IActionResult> RefreshToken([FromBody] TokenRequest tokenRequest)
         {
-            var result = await _jwtService.VerifyAndGennerateToken(tokenRequest);
+            var result = await _jwtService.VerifyAndGenerationToken(tokenRequest);
 
             if(result == null)
             {

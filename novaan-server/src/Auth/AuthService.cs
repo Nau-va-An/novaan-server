@@ -31,13 +31,13 @@ namespace NovaanServer.Auth
 
             if(foundUser == null)
             {
-               throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOTFOUND);
+               throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
             }
 
             var hashPassword = CustomHash.GetHashString(signInDTO.Password);
             if (foundUser.Password != hashPassword)
             {
-                throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOTFOUND);
+                throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
             }
 
             return true;

@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using MongoDB.Driver;
+using NovaanServer.src.ExceptionLayer.CustomExceptions;
 
 namespace NovaanServer.src.Auth.Jwt
 {
@@ -22,24 +23,33 @@ namespace NovaanServer.src.Auth.Jwt
             _tokenValidationParameters = tokenValidationParameters;
             _mongoDBService = mongoDBService;
         }
-        public async Task<SignInResponseDTO> GennerateJwtToken(UserJwt user)
+        public async Task<SignInResponseDTO> GenerateJwtToken(UserJwt userToken)
         {
             var jwtTokenHanler = new JwtSecurityTokenHandler();
 
             var key = Encoding.UTF8.GetBytes(_configuration.GetSection("JwTConfig:Secret").Value);
+            if (key == null)
+            {
+                throw new Exception("Cannot read JwTConfig settings in appsettings");
+            }
 
             // Token desciptor
+            var expires = DateTime.UtcNow.Add(TimeSpan.Parse(_configuration.GetSection("JwTConfig:ExpiryTimeFrame").Value));
+            if (expires == null)
+            {
+                throw new Exception("Cannot read JwTConfig settings in appsettings");
+            }
+
             var tokenDescriptor = new SecurityTokenDescriptor()
             {
                 Subject = new ClaimsIdentity(new[]
                 {
-                    new Claim("email", user.Email),
-                    new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                    new Claim(JwtRegisteredClaimNames.Email, userToken.Email),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim(JwtRegisteredClaimNames.Iat, DateTime.Now.ToUniversalTime().ToString()),
                 }),
 
-                Expires = DateTime.UtcNow.Add(TimeSpan.Parse(_configuration.GetSection("JwTConfig:ExpiryTimeFrame").Value)),
+                Expires = expires,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
             };
 
@@ -54,7 +64,7 @@ namespace NovaanServer.src.Auth.Jwt
                 ExpiryDate = DateTime.UtcNow.AddMonths(6),
                 IsRevoked = false,
                 IsUsed = false,
-                UserMail = user.Email
+                UserMail = userToken.Email
             };
 
             await _mongoDBService.RefreshTokens.InsertOneAsync(refreshToken);
@@ -67,24 +77,23 @@ namespace NovaanServer.src.Auth.Jwt
             };
         }
 
-        public async Task<SignInResponseDTO> VerifyAndGennerateToken(TokenRequest tokenRequest)
+        public async Task<SignInResponseDTO> VerifyAndGenerationToken(TokenRequest tokenRequest)
         {
             var jwtTokenHandle = new JwtSecurityTokenHandler();
 
             try
             {
-                _tokenValidationParameters.ValidateLifetime = false; // For testing
-
                 var tokenInVerification =
                     jwtTokenHandle.ValidateToken(tokenRequest.Token, _tokenValidationParameters, out var validedToken);
 
                 if (validedToken is JwtSecurityToken jwtSecurityToken)
                 {
-                    var result = jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,
-                        StringComparison.InvariantCultureIgnoreCase);
+                    var result = jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase);
 
                     if (result == null)
+                    {
                         return null;
+                    }
                 }
 
                 var utcExpiryDate = long.Parse(tokenInVerification.Claims
@@ -93,75 +102,42 @@ namespace NovaanServer.src.Auth.Jwt
                 var expiryDate = unixTimeStampToDateTime(utcExpiryDate);
                 if (expiryDate > DateTime.Now)
                 {
-                    return new SignInResponseDTO()
-                    {
-                        Result = false,
-                        Errors = new List<string>()
-                        {
-                            "Expired token"
-                        }
-                    };
+                    throw new BadHttpRequestException(ExceptionMessage.TOKEN_EXPIRED);
                 }
 
                 RefreshToken storedToken = await _mongoDBService.RefreshTokens.Find(x => x.Token == tokenRequest.RefreshToken).FirstOrDefaultAsync();
 
                 if (storedToken == null)
-                    return new SignInResponseDTO()
-                    {
-                        Result = false,
-                        Errors = new List<string>()
-                        {
-                            "Invalid tokens"
-                        }
-                    };
+                {
+                    throw new BadHttpRequestException(ExceptionMessage.TOKEN_INVALID);
+                }
 
                 if (storedToken.IsUsed)
-                    return new SignInResponseDTO()
-                    {
-                        Result = false,
-                        Errors = new List<string>()
-                        {
-                            "Invalid tokens"
-                        }
-                    };
+                {
+                    throw new BadHttpRequestException(ExceptionMessage.TOKEN_INVALID);
+                }
 
                 if (storedToken.IsRevoked)
-                    return new SignInResponseDTO()
-                    {
-                        Result = false,
-                        Errors = new List<string>()
-                        {
-                            "Invalid tokens"
-                        }
-                    };
+                {
+                    throw new BadHttpRequestException(ExceptionMessage.TOKEN_INVALID);
+                }
 
                 var jti = tokenInVerification.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
                 if (storedToken.JwtId != jti)
-                    return new SignInResponseDTO()
-                    {
-                        Result = false,
-                        Errors = new List<string>()
-                        {
-                            "Invalid tokens"
-                        }
-                    };
+                {
+                    throw new BadHttpRequestException(ExceptionMessage.TOKEN_INVALID);
+                }
 
                 if (storedToken.ExpiryDate < DateTime.UtcNow)
-                    return new SignInResponseDTO()
-                    {
-                        Result = false,
-                        Errors = new List<string>()
-                        {
-                            "Expired tokens"
-                        }
-                    };
+                {
+                    throw new BadHttpRequestException(ExceptionMessage.TOKEN_EXPIRED);
+                }
 
                 var filterStoredToken = Builders<RefreshToken>.Filter.Eq("Token", tokenRequest.RefreshToken);
                 var updateStoredToken = Builders<RefreshToken>.Update.Set("IsUsed", true);
                 await _mongoDBService.RefreshTokens.UpdateOneAsync(filterStoredToken, updateStoredToken);
 
-
-                return await GennerateJwtToken(new UserJwt()
+                return await GenerateJwtToken(new UserJwt()
                 {
                     Email = storedToken.UserMail,
                 });
@@ -169,14 +145,7 @@ namespace NovaanServer.src.Auth.Jwt
             }
             catch (Exception e)
             {
-                return new SignInResponseDTO()
-                {
-                    Result = false,
-                    Errors = new List<string>()
-                        {
-                            "Server error"
-                        }
-                };
+                throw new BadHttpRequestException(ExceptionMessage.SERVER_ERROR);
             }
         }
 

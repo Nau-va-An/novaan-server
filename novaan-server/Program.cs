@@ -51,7 +51,7 @@ builder.Services.AddAuthentication(options =>
         jwt.TokenValidationParameters = tokenValidationParameter;
     });
 
-builder.Services.AddSingleton(tokenValidationParameter);
+builder.Services.AddSingleton<TokenValidationParameters>(tokenValidationParameter);
 builder.Services.AddSingleton<JwtService>();
 
 var app = builder.Build();
