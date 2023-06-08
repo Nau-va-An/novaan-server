@@ -2,6 +2,7 @@
 using NovaanServer.Auth;
 using NovaanServer.Developer;
 using NovaanServer.ExceptionLayer;
+using NovaanServer.src.Content;
 using S3Connector;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,7 @@ builder.Services.AddSingleton<S3Service>();
 
 builder.Services.AddScoped<IDevService, DevService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IRecipeService, RecipeService>();
 
 var app = builder.Build();
 

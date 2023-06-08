@@ -4,6 +4,7 @@ namespace NovaanServer.src.Content.DTOs
 {
     public class RecipeDTO
     {
+        
         public string Title { get; set; }
         public IFormFile Video { get; set; }
         public List<IFormFile> Image { get; set; }
