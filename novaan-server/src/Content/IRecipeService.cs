@@ -1,6 +1,6 @@
 ﻿using NovaanServer.src.Content.DTOs;
 
-namespace NovaanServer.src.Recipe
+namespace NovaanServer.src.Content
 {
     public interface IRecipeService
     {

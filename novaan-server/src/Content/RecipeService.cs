@@ -9,7 +9,7 @@ using Utils.Hash;
 
 namespace NovaanServer.src.Content
 {
-    public class RecipeService
+    public class RecipeService : IRecipeService
     {
         private readonly S3Service _s3Service;
         private readonly MongoDBService _mongoService;
@@ -19,7 +19,7 @@ namespace NovaanServer.src.Content
             _mongoService = mongoDBService;
         }
 
-        public async Task<IEnumerable<string>> UploadImage(List<IFormFile> images)
+        public async Task<List<string>> UploadImage(List<IFormFile> images)
         {
             List<string> imageIDs = new();
             string id;
@@ -37,13 +37,14 @@ namespace NovaanServer.src.Content
             }
             return imageIDs;
         }
+
         public async Task<bool> UploadRecipe(RecipeDTO recipeDTO)
         {
             // Add recipe to database
             var newRecipe = new Recipe
             {
                 Title = recipeDTO.Title,
-                Instruction = recipeDTO.Instructions,
+                Instructions = recipeDTO.Instructions,
                 Difficulty = recipeDTO.Difficulty,
                 PortionType = recipeDTO.PortionType,
                 PrepTime = recipeDTO.PrepTime,
