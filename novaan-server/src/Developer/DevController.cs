@@ -55,14 +55,7 @@ namespace NovaanServer.Developer
         [HttpGet("exec")]
         public async Task<IActionResult> Execute()
         {
-            var keyId = "00156bd6-9d1e-4d4d-8d57-97f49a31839b.jpg";
-            var downloadUrl = _devService.Execute(keyId);
-            if(string.IsNullOrEmpty(downloadUrl))
-            {
-                return NotFound();
-            }
-
-            return Ok(downloadUrl);
+            return Ok();
         }
     }
 }

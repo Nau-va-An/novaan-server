@@ -47,11 +47,6 @@ namespace NovaanServer.Developer
         {
             return true;
         }
-
-        public string Execute(string keyId)
-        {
-            return _s3Service.DownloadFileAsync(keyId);
-        }
     }
 }
 
