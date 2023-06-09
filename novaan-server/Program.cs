@@ -1,7 +1,10 @@
-﻿using MongoConnector;
+﻿using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using MongoConnector;
 using NovaanServer.Auth;
 using NovaanServer.Developer;
 using NovaanServer.ExceptionLayer;
+using NovaanServer.src.Content;
 using S3Connector;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +21,7 @@ builder.Services.AddSingleton<S3Service>();
 
 builder.Services.AddScoped<IDevService, DevService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IContentService, ContentService>();
 
 var app = builder.Build();
 

@@ -38,7 +38,7 @@ namespace S3Connector
             _bucketName = bucketName;
             _region = region;
             _s3Client = new(accessKey, secretKey, Amazon.RegionEndpoint.GetBySystemName(_region));
-            
+
         }
 
         // TODO: Demo S3 upload file, fix if needed
@@ -55,6 +55,18 @@ namespace S3Connector
 
             var response = await _s3Client.PutObjectAsync(request);
             return true;
+        }
+
+        public Task UploadFileAsync(byte[] fileStream, string fileName, string? contentType)
+        {
+            var request = new PutObjectRequest()
+            {
+                BucketName = _bucketName,
+                Key = fileName,
+                InputStream = new MemoryStream(fileStream)
+            };
+            request.Metadata.Add("Content-Type", contentType);
+            return _s3Client.PutObjectAsync(request);
         }
     }
 }
