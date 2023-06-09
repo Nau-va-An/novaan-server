@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
+using MongoConnector.Models;
 using NovaanServer.src.Filter;
 using S3Connector;
 
@@ -69,10 +70,10 @@ namespace NovaanServer.src.Content
             {
                 return BadRequest($"Expected a multipart request, but got {Request.ContentType}");
             }
-
+            CulinaryTips culinaryTips = new CulinaryTips();
             var filename = string.Empty;
             var streamedFileContent = Array.Empty<byte>();
-
+            var formAccumulator = new KeyValueAccumulator();
             var boundary = GetBoundary(MediaTypeHeaderValue.Parse(Request.ContentType), _defaultFormOptions.MultipartBoundaryLengthLimit);
             var reader = new MultipartReader(boundary, HttpContext.Request.Body);
             var section = await reader.ReadNextSectionAsync();
@@ -84,6 +85,7 @@ namespace NovaanServer.src.Content
 
                 if (hasContentDispositionHeader)
                 {
+					//Hadle file
                     if (HasFileContentDisposition(contentDisposition))
                     {
                         if (contentDisposition != null)
@@ -91,6 +93,8 @@ namespace NovaanServer.src.Content
                             if (!string.IsNullOrEmpty(contentDisposition.FileName.Value))
                             {
                                 streamedFileContent = await ProcessStreamedFile(section, contentDisposition, _permittedVideoExtensions, _videoSizeLimit);
+                                var uploadService = new S3Service();
+                                culinaryTips.VideoID = await uploadService.UploadFileAsync(streamedFileContent, section);
                             }
                         }
                         else
@@ -98,9 +102,9 @@ namespace NovaanServer.src.Content
                             throw new Exception("Content Disposition is null");
                         }
                     }
+					// Handle form field
                     else if (HasFormDataContentDisposition(contentDisposition))
                     {
-                        var formAccumulator = new KeyValueAccumulator();
                         // Don't limit the key name length here because the 
                         // multipart headers length limit is already in effect.
                         var key = HeaderUtilities.RemoveQuotes(contentDisposition!.Name).Value;
@@ -136,15 +140,13 @@ namespace NovaanServer.src.Content
                         throw new Exception("Content Disposition is null");
                     }
                 }
-
                 section = await reader.ReadNextSectionAsync();
             }
-            if (section != null)
-            {
-                var uploadService = new S3Service();
-                // Upload file stream to S3
-                await uploadService.UploadFileAsync(streamedFileContent, section);
-            }
+
+            culinaryTips.AccountID = formAccumulator.GetResults()["accountID"];
+            culinaryTips.Title = formAccumulator.GetResults()["title"];
+            // Add to database
+            await _contentService.AddCulinaryTips(culinaryTips);
 
             return Ok();
         }

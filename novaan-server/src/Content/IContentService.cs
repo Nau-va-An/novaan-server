@@ -1,8 +1,11 @@
 ﻿using System;
+using MongoConnector.Models;
+
 namespace NovaanServer.src.Content
 {
-	public interface IContentService
-	{
-	}
+    public interface IContentService
+    {
+        Task AddCulinaryTips(CulinaryTips culinaryTips);
+    }
 }
 
