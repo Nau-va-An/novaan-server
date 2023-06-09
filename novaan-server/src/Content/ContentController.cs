@@ -98,29 +98,70 @@ namespace NovaanServer.src.Content
                             throw new Exception("Content Disposition is null");
                         }
                     }
-                }
-                // Get content type
-                var contentType = section.ContentType;
-                var fileSection = section.AsFileSection();
-                if (fileSection != null)
-                {
-                    // Don't trust the file name sent by the client. To display
-                    // the file name, HTML-encode the value.
-                    var fileName = WebUtility.HtmlEncode(fileSection.FileName);
-                    var uploadService = new S3Service();
-                    // Upload file stream to S3
-                    await uploadService.UploadFileAsync(streamedFileContent, fileName, contentType);
-                }
-                else
-                {
-                    throw new Exception("File section is null");
+                    else if (HasFormDataContentDisposition(contentDisposition))
+                    {
+                        var formAccumulator = new KeyValueAccumulator();
+                        // Don't limit the key name length here because the 
+                        // multipart headers length limit is already in effect.
+                        var key = HeaderUtilities.RemoveQuotes(contentDisposition!.Name).Value;
+                        var encoding = GetEncoding(section);
+                        if (encoding == null)
+                        {
+                            throw new Exception("Encoding is null");
+                        }
+                        using (var streamReader = new StreamReader(
+                            section.Body,
+                            encoding,
+                            detectEncodingFromByteOrderMarks: true,
+                            bufferSize: 1024,
+                            leaveOpen: true))
+                        {
+                            // The value length limit is enforced by MultipartBodyLengthLimit
+                            var value = await streamReader.ReadToEndAsync();
+                            if (string.Equals(value, "undefined", StringComparison.OrdinalIgnoreCase))
+                            {
+                                value = string.Empty;
+                            }
+                            formAccumulator.Append(key!, value);
+
+                            if (formAccumulator.ValueCount >
+                                _defaultFormOptions.ValueCountLimit)
+                            {
+                                throw new InvalidDataException($"Form key count limit {_defaultFormOptions.ValueCountLimit} exceeded.");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("Content Disposition is null");
+                    }
                 }
 
                 section = await reader.ReadNextSectionAsync();
             }
+            if (section != null)
+            {
+                var uploadService = new S3Service();
+                // Upload file stream to S3
+                await uploadService.UploadFileAsync(streamedFileContent, section);
+            }
+
             return Ok();
         }
 
+        private Encoding? GetEncoding(MultipartSection section)
+        {
+            var hasMediaTypeHeader =
+                MediaTypeHeaderValue.TryParse(section.ContentType, out var mediaType);
+
+
+            if (!hasMediaTypeHeader || Encoding.UTF8.Equals(mediaType!.Encoding))
+            {
+                return Encoding.UTF8;
+            }
+
+            return mediaType.Encoding;
+        }
 
         private async Task<byte[]> ProcessStreamedFile(MultipartSection section, ContentDispositionHeaderValue contentDisposition,
             string[] permittedExtensions, long sizeLimit)

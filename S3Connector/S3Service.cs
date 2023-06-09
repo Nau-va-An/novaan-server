@@ -4,6 +4,7 @@ using Amazon.S3;
 using Microsoft.AspNetCore.Http;
 using Amazon.S3.Model;
 using System.Net;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace S3Connector
 {
@@ -57,15 +58,15 @@ namespace S3Connector
             return true;
         }
 
-        public Task UploadFileAsync(byte[] fileStream, string fileName, string? contentType)
+        public Task UploadFileAsync(byte[] fileStream, MultipartSection section)
         {
             var request = new PutObjectRequest()
             {
                 BucketName = _bucketName,
-                Key = fileName,
+                Key = System.Guid.NewGuid().ToString() + Path.GetExtension(section.AsFileSection().FileName),
                 InputStream = new MemoryStream(fileStream)
             };
-            request.Metadata.Add("Content-Type", contentType);
+            request.Metadata.Add("Content-Type", section.ContentType);
             return _s3Client.PutObjectAsync(request);
         }
     }
