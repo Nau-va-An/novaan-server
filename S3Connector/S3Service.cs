@@ -56,6 +56,27 @@ namespace S3Connector
             var response = await _s3Client.PutObjectAsync(request);
             return true;
         }
+
+        // Return a limited time download link
+        public string DownloadFileAsync(string keyId)
+        {
+            var downloadReq = new GetPreSignedUrlRequest
+            {
+                BucketName = _bucketName,
+                Key = keyId,
+                // Add this time to appsettings to avoid hard-coded value
+                Expires = DateTime.UtcNow.AddMinutes(5)
+            };
+
+            try
+            {
+                return _s3Client.GetPreSignedURL(downloadReq);
+            } catch
+            {
+                // Throw custom error here
+                return "";
+            }
+        }
     }
 }
 
