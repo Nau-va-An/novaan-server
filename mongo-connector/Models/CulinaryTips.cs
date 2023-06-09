@@ -7,7 +7,7 @@ namespace MongoConnector.Models
         // Title
         public string? Title { get; set; }
         // VideoURL
-        public string? VideoURL { get; set; }
+        public string? VideoID { get; set; }
         // AccountID
         public string? AccountID { get; set; }
     }
