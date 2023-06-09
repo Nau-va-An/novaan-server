@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.Features;
@@ -16,7 +17,7 @@ namespace NovaanServer.src.Content
     public class ContentController : ControllerBase
     {
         private readonly IContentService _contentService;
-        // limits for request body data.
+        // Limits for request body data.
         private static readonly FormOptions _defaultFormOptions = new FormOptions();
         private readonly string[] _permittedVideoExtensions = { ".mp4", ".gif" };
         // For more file signatures, see the File Signatures Database (https://www.filesignatures.net/)
@@ -53,8 +54,7 @@ namespace NovaanServer.src.Content
             },
         };
 
-        //20mb for _videoSizeLimit
-        private readonly long _videoSizeLimit = 20L * 1024L * 1024L;
+        private readonly long _videoSizeLimit = 20L * 1024L * 1024L; //20mb
         public ContentController(IContentService contentService)
         {
             _contentService = contentService;
@@ -79,29 +79,48 @@ namespace NovaanServer.src.Content
             while (section != null)
             {
                 var hasContentDispositionHeader =
-                   ContentDispositionHeaderValue.TryParse(
-                       section.ContentDisposition, out var contentDisposition);
+                    ContentDispositionHeaderValue.TryParse(
+                        section.ContentDisposition, out var contentDisposition);
 
                 if (hasContentDispositionHeader)
                 {
                     if (HasFileContentDisposition(contentDisposition))
                     {
-                        var untrustedFileNameForStorage = contentDisposition.FileName.Value;
-                        streamedFileContent = await ProcessStreamedFile(section, contentDisposition, _permittedVideoExtensions, _videoSizeLimit);
+                        if (contentDisposition != null)
+                        {
+                            if (!string.IsNullOrEmpty(contentDisposition.FileName.Value))
+                            {
+                                streamedFileContent = await ProcessStreamedFile(section, contentDisposition, _permittedVideoExtensions, _videoSizeLimit);
+                            }
+                        }
+                        else
+                        {
+                            throw new Exception("Content Disposition is null");
+                        }
                     }
                 }
-                //get content type
+                // Get content type
                 var contentType = section.ContentType;
                 var fileSection = section.AsFileSection();
-                var uploadService = new S3Service();
-                //upload file stream to S3
-                await uploadService.UploadFileAsync(streamedFileContent, fileSection.FileName, contentType);
+                if (fileSection != null)
+                {
+                    // Don't trust the file name sent by the client. To display
+                    // the file name, HTML-encode the value.
+                    var fileName = WebUtility.HtmlEncode(fileSection.FileName);
+                    var uploadService = new S3Service();
+                    // Upload file stream to S3
+                    await uploadService.UploadFileAsync(streamedFileContent, fileName, contentType);
+                }
+                else
+                {
+                    throw new Exception("File section is null");
+                }
 
                 section = await reader.ReadNextSectionAsync();
             }
             return Ok();
-
         }
+
 
         private async Task<byte[]> ProcessStreamedFile(MultipartSection section, ContentDispositionHeaderValue contentDisposition,
             string[] permittedExtensions, long sizeLimit)
@@ -115,7 +134,7 @@ namespace NovaanServer.src.Content
                     // Check if the file is empty or exceeds the size limit.
                     if (memoryStream.Length == 0)
                     {
-                        //return error 
+                        //Return error 
                         throw new Exception("File is empty");
 
                     }
@@ -125,7 +144,7 @@ namespace NovaanServer.src.Content
                         throw new Exception($"The file exceeds {megabyteSizeLimit:N1} MB.");
                     }
                     else if (!IsValidFileExtensionAndSignature(
-                        contentDisposition.FileName.Value, memoryStream,
+                        contentDisposition.FileName.ToString(), memoryStream,
                         permittedExtensions))
                     {
                         throw new Exception("The file type isn't permitted or the file's signature doesn't match the file's extension.");
@@ -138,7 +157,6 @@ namespace NovaanServer.src.Content
             }
             catch (Exception ex)
             {
-                // Log the exception
                 throw new Exception(ex.Message);
             }
         }
@@ -179,7 +197,7 @@ namespace NovaanServer.src.Content
 
         private bool HasFormDataContentDisposition(ContentDispositionHeaderValue? contentDisposition)
         {
-            //  for exmaple, Content-Disposition: form-data; name="subdirectory";
+            //  For exmaple, Content-Disposition: form-data; name="subdirectory";
             return contentDisposition != null
                 && contentDisposition.DispositionType.Equals("form-data")
                 && string.IsNullOrEmpty(contentDisposition.FileName.Value)
@@ -188,7 +206,7 @@ namespace NovaanServer.src.Content
 
         private bool HasFileContentDisposition(ContentDispositionHeaderValue? contentDisposition)
         {
-            // for example, Content-Disposition: form-data; name="files"; filename="OnScreenControl_7.58.zip"
+            // For example, Content-Disposition: form-data; name="files"; filename="OnScreenControl_7.58.zip"
             return contentDisposition != null
                 && contentDisposition.DispositionType.Equals("form-data")
                 && (!string.IsNullOrEmpty(contentDisposition.FileName.Value)
