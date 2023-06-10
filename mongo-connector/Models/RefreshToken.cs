@@ -12,16 +12,24 @@ namespace MongoConnector.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string? Id { get; set; }
-        public string UserMail { get; set; }
+        public string Id { get; set; }
 
-        public string Token { get; set; }
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string UserId { get; set; }
 
-        public string JwtId { get; set; }
+        [BsonRepresentation(BsonType.String)]
+        public string CurrentJwtId { get; set; }
 
-        public bool IsUsed { get; set; }
+        [BsonRepresentation(BsonType.Boolean)]
         public bool IsRevoked { get; set; }
+
+        [BsonRepresentation(BsonType.Array)]
+        public List<string> TokenFamily { get; set; }
+
+        [BsonRepresentation(BsonType.DateTime)]
         public DateTime AddedDate { get; set; }
+
+        [BsonRepresentation(BsonType.DateTime)]
         public DateTime ExpiryDate { get; set; }
     }
 }

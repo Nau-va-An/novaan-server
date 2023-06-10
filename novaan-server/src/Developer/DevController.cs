@@ -3,9 +3,11 @@ using System.IO;
 using MongoConnector;
 using S3Connector;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace NovaanServer.Developer
 {
+    [Authorize]
     [Route("api/dev")]
     [ApiController]
     public class DevController : Controller

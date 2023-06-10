@@ -19,11 +19,15 @@
     <None Remove="src\Auth\" />
     <None Remove="src\Auth\DTOs\" />
     <None Remove="src\ExceptionLayer\CustomExceptions\" />
+    <None Remove="src\Common\" />
+    <None Remove="src\Common\DTOs\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\" />
     <Folder Include="src\Developer\" />
     <Folder Include="src\ExceptionLayer\CustomExceptions\" />
+    <Folder Include="src\Common\" />
+    <Folder Include="src\Common\DTOs\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">

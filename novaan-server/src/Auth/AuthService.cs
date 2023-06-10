@@ -21,17 +21,15 @@ namespace NovaanServer.Auth
             _mongoService = mongoDBService;
         }
 
-        public async Task<bool> SignInWithCredentials(SignInDTOs signInDTO)
+        // Sign in and return userId
+        public async Task<string> SignInWithCredentials(SignInDTOs signInDTO)
         {
-            var foundUser = _mongoService.Accounts
-                 .Find(
-                acc => acc.Email == signInDTO.UsernameOrEmail
-                )
+            var foundUser = (await _mongoService.Accounts
+                 .FindAsync(acc => acc.Email == signInDTO.UsernameOrEmail))
                  .FirstOrDefault();
-
-            if(foundUser == null)
+            if (foundUser == null)
             {
-               throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
+                throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
             }
 
             var hashPassword = CustomHash.GetHashString(signInDTO.Password);
@@ -40,7 +38,7 @@ namespace NovaanServer.Auth
                 throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
             }
 
-            return true;
+            return foundUser.Id;
         }
 
         public Task<bool> SignInGoogle()
@@ -69,14 +67,7 @@ namespace NovaanServer.Auth
                 Email = signUpDTO.Email,
                 Password = CustomHash.GetHashString(signUpDTO.Password),
             };
-            try
-            {
-                await _mongoService.Accounts.InsertOneAsync(newAccount);
-            }
-            catch
-            {
-                throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
-            }
+            await _mongoService.Accounts.InsertOneAsync(newAccount);
 
             // TODO: Send confirmation email
             // This should be push into a message queue to be processed by background job

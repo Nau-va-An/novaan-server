@@ -3,8 +3,11 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Amazon.Runtime;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
+using Microsoft.Net.Http;
 using MongoConnector;
 using MongoConnector.Models;
 using MongoDB.Bson;
@@ -15,20 +18,22 @@ using NovaanServer.src.Auth.DTOs;
 using NovaanServer.src.Auth.Jwt;
 using NovaanServer.src.ExceptionLayer;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
+using System.Net;
 
 namespace NovaanServer.Auth
 {
+    [AllowAnonymous]
     [Route("api/auth")]
     [ApiController]
     public class AuthController : Controller
-    {      
+    {
         private readonly IAuthService _authService;
         private readonly JwtService _jwtService;
 
         public AuthController(IAuthService authService, JwtService jwtService)
         {
             _authService = authService;
-            _jwtService = jwtService;       
+            _jwtService = jwtService;
         }
 
         [HttpPost("signup")]
@@ -39,35 +44,30 @@ namespace NovaanServer.Auth
         }
 
         [HttpPost("signin")]
-        public async Task<IActionResult> SignIn([FromBody] SignInDTOs signInDTO)
+        public async Task<SignInResDTO> SignIn([FromBody] SignInDTOs signInDTO)
         {
-            await _authService.SignInWithCredentials(signInDTO);
+            var userId = await _authService.SignInWithCredentials(signInDTO);
+            var token = await _jwtService.GenerateJwtToken(new UserJwt { UserId = userId });
 
-            var token = await _jwtService.GenerateJwtToken(new UserJwt
+            return new SignInResDTO
             {
-                Email = signInDTO.UsernameOrEmail
-            });
-
-            return Ok(token);
+                Success = true,
+                Token = token
+            };
         }
 
         [HttpPost("refreshtoken")]
-        public async Task<IActionResult> RefreshToken([FromBody] TokenRequest tokenRequest)
+        public async Task<RefreshTokenResDTO> RefreshToken()
         {
-            var result = await _jwtService.VerifyAndGenerationToken(tokenRequest);
+            Request.Headers.TryGetValue(HeaderNames.Authorization, out var authorizationHeader);
+            var accessToken = authorizationHeader.ToString().Substring("Bearer ".Length);
+            var newToken = await _jwtService.RefreshToken(accessToken);
 
-            if(result == null)
+            return new RefreshTokenResDTO
             {
-                return BadRequest(new SignInResponseDTO()
-                {
-                    Errors = new List<string>
-                {
-                    "Invalid tokens"
-                },
-                    Result = false
-                });
-            }
-            return Ok(result);
+                Success = true,
+                Token = newToken
+            };
         }
     }
 }

@@ -8,162 +8,140 @@ using System.Security.Claims;
 using System.Text;
 using MongoDB.Driver;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
+using NovaanServer.Configuration;
+using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Amazon.Runtime;
 
 namespace NovaanServer.src.Auth.Jwt
 {
-    public class JwtService
+    public class JwtService: IJwtService
     {
         private readonly MongoDBService _mongoDBService;
-        private readonly IConfiguration _configuration;
-        private readonly TokenValidationParameters _tokenValidationParameters;
+        private readonly JwtConfig _jwtConfig;
 
-        public JwtService(IConfiguration configuration, TokenValidationParameters tokenValidationParameters, MongoDBService mongoDBService)
+        public JwtService(IOptions<JwtConfig> options, MongoDBService mongoDBService)
         {
-            _configuration = configuration;
-            _tokenValidationParameters = tokenValidationParameters;
+            _jwtConfig = options.Value;
             _mongoDBService = mongoDBService;
         }
-        public async Task<SignInResponseDTO> GenerateJwtToken(UserJwt userToken)
+
+        public async Task<string> GenerateJwtToken(UserJwt userToken)
         {
             var jwtTokenHanler = new JwtSecurityTokenHandler();
 
-            var key = Encoding.UTF8.GetBytes(_configuration.GetSection("JwTConfig:Secret").Value);
-            if (key == null)
+            var jwtId = Guid.NewGuid().ToString();
+            var tokenDescriptor = getTokenDescriptor(jwtId, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
+            var jwtToken = jwtTokenHanler.CreateEncodedJwt(tokenDescriptor);
+            if(jwtToken == null)
             {
-                throw new Exception("Cannot read JwTConfig settings in appsettings");
+                throw new Exception("Unable to generate new access token");
             }
 
-            // Token desciptor
-            var expires = DateTime.UtcNow.Add(TimeSpan.Parse(_configuration.GetSection("JwTConfig:ExpiryTimeFrame").Value));
-            if (expires == null)
+            var refreshToken = new RefreshToken()
             {
-                throw new Exception("Cannot read JwTConfig settings in appsettings");
-            }
+                CurrentJwtId = jwtId,
+                UserId = userToken.UserId,
+                TokenFamily = new List<string>() { jwtToken },
+                AddedDate = DateTime.UtcNow,
+                ExpiryDate = DateTime.UtcNow.AddMonths(6),
+                IsRevoked = false,
+            };
 
-            var tokenDescriptor = new SecurityTokenDescriptor()
+            await _mongoDBService.RefreshTokens.InsertOneAsync(refreshToken);
+
+            return jwtToken;
+        }
+
+        public async Task<string> RefreshToken(string accessToken)
+        {
+            try
+            {
+                var jwtTokenHanler = new JwtSecurityTokenHandler();
+                var token = jwtTokenHanler.ReadJwtToken(accessToken);
+                if (token == null)
+                {
+                    throw new UnauthorizedAccessException();
+                }
+
+                var userId = token.Claims.FirstOrDefault(c => c.ValueType == JwtRegisteredClaimNames.NameId);
+                if (userId == null)
+                {
+                    throw new UnauthorizedAccessException();
+                }
+
+                // Find refresh token linked with payload userId
+                var refreshToken = (await _mongoDBService.RefreshTokens
+                    .FindAsync(rt => rt.UserId == userId.Value && !rt.IsRevoked))
+                    .FirstOrDefault();
+                if (refreshToken == null)
+                {
+                    throw new UnauthorizedAccessException();
+                }
+
+                // Revoke refresh token if previously used or does not match with current jwtId or expired
+                if (refreshToken.TokenFamily.Contains(accessToken) ||
+                    refreshToken.CurrentJwtId != token.Id ||
+                    refreshToken.ExpiryDate.CompareTo(DateTime.UtcNow) > 0)
+                {
+                    revokeRefreshToken(refreshToken);
+                    throw new UnauthorizedAccessException();
+                }
+
+                var jwtId = Guid.NewGuid().ToString();
+                var tokenDescriptor = getTokenDescriptor(jwtId, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
+                var newAccessToken = jwtTokenHanler.CreateEncodedJwt(tokenDescriptor);
+                if (newAccessToken == null)
+                {
+                    throw new Exception("Unable to generate new access token");
+                }
+
+                await refreshAccessToken(refreshToken, jwtId, accessToken);
+                return newAccessToken;
+            }
+            catch (UnauthorizedAccessException unAuthEx)
+            {
+                if (string.IsNullOrEmpty(unAuthEx.Message))
+                {
+                    throw new UnauthorizedAccessException(unAuthEx.Message);
+                }
+                throw new UnauthorizedAccessException("Access token is not valid. Unauthorized");
+            }
+        }
+
+        private SecurityTokenDescriptor getTokenDescriptor(string jwtId, byte[] key)
+        {
+            var expires = DateTime.UtcNow.Add(_jwtConfig.JwtExp);
+            return new SecurityTokenDescriptor()
             {
                 Subject = new ClaimsIdentity(new[]
                 {
-                    new Claim(JwtRegisteredClaimNames.Email, userToken.Email),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim(JwtRegisteredClaimNames.Iat, DateTime.Now.ToUniversalTime().ToString()),
+                    new Claim(JwtRegisteredClaimNames.Jti, jwtId),
+                    new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
                 }),
 
                 Expires = expires,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
             };
-
-            var token = jwtTokenHanler.CreateToken(tokenDescriptor);
-            var jwtToken = jwtTokenHanler.WriteToken(token);
-
-            var refreshToken = new RefreshToken()
-            {
-                JwtId = token.Id,
-                Token = randomStringGeneration(23), // Generate a refresh token
-                AddedDate = DateTime.UtcNow,
-                ExpiryDate = DateTime.UtcNow.AddMonths(6),
-                IsRevoked = false,
-                IsUsed = false,
-                UserMail = userToken.Email
-            };
-
-            await _mongoDBService.RefreshTokens.InsertOneAsync(refreshToken);
-
-            return new SignInResponseDTO()
-            {
-                Token = jwtToken,
-                RefreshToken = refreshToken.Token,
-                Result = true
-            };
         }
 
-        public async Task<SignInResponseDTO> VerifyAndGenerationToken(TokenRequest tokenRequest)
+        private void revokeRefreshToken(RefreshToken refreshToken)
         {
-            var jwtTokenHandle = new JwtSecurityTokenHandler();
-
-            try
-            {
-                var tokenInVerification =
-                    jwtTokenHandle.ValidateToken(tokenRequest.Token, _tokenValidationParameters, out var validedToken);
-
-                if (validedToken is JwtSecurityToken jwtSecurityToken)
-                {
-                    var result = jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase);
-
-                    if (result == null)
-                    {
-                        return null;
-                    }
-                }
-
-                var utcExpiryDate = long.Parse(tokenInVerification.Claims
-                    .FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Exp).Value);
-
-                var expiryDate = unixTimeStampToDateTime(utcExpiryDate);
-                if (expiryDate > DateTime.Now)
-                {
-                    throw new BadHttpRequestException(ExceptionMessage.TOKEN_EXPIRED);
-                }
-
-                RefreshToken storedToken = await _mongoDBService.RefreshTokens.Find(x => x.Token == tokenRequest.RefreshToken).FirstOrDefaultAsync();
-
-                if (storedToken == null)
-                {
-                    throw new BadHttpRequestException(ExceptionMessage.TOKEN_INVALID);
-                }
-
-                if (storedToken.IsUsed)
-                {
-                    throw new BadHttpRequestException(ExceptionMessage.TOKEN_INVALID);
-                }
-
-                if (storedToken.IsRevoked)
-                {
-                    throw new BadHttpRequestException(ExceptionMessage.TOKEN_INVALID);
-                }
-
-                var jti = tokenInVerification.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
-                if (storedToken.JwtId != jti)
-                {
-                    throw new BadHttpRequestException(ExceptionMessage.TOKEN_INVALID);
-                }
-
-                if (storedToken.ExpiryDate < DateTime.UtcNow)
-                {
-                    throw new BadHttpRequestException(ExceptionMessage.TOKEN_EXPIRED);
-                }
-
-                var filterStoredToken = Builders<RefreshToken>.Filter.Eq("Token", tokenRequest.RefreshToken);
-                var updateStoredToken = Builders<RefreshToken>.Update.Set("IsUsed", true);
-                await _mongoDBService.RefreshTokens.UpdateOneAsync(filterStoredToken, updateStoredToken);
-
-                return await GenerateJwtToken(new UserJwt()
-                {
-                    Email = storedToken.UserMail,
-                });
-
-            }
-            catch (Exception e)
-            {
-                throw new BadHttpRequestException(ExceptionMessage.SERVER_ERROR);
-            }
+            var filter = Builders<RefreshToken>.Filter
+                        .Eq(rt => rt.Id, refreshToken.Id);
+            var update = Builders<RefreshToken>.Update
+                .Set(rt => rt.IsRevoked, true);
+            _mongoDBService.RefreshTokens.UpdateOne(filter, update);
         }
 
-        private DateTime unixTimeStampToDateTime(long unixTimeStamp)
+        private async Task refreshAccessToken(RefreshToken refreshToken, string jwtId, string oldToken)
         {
-            var dateTimeVal = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            dateTimeVal = dateTimeVal.AddSeconds(unixTimeStamp).ToUniversalTime();
-
-            return dateTimeVal;
+            var filter = Builders<RefreshToken>.Filter
+                .Eq(rt => rt.Id, refreshToken.Id);
+            var update = Builders<RefreshToken>.Update
+                .Set(rt => rt.CurrentJwtId, jwtId)
+                .Push(rt => rt.TokenFamily, oldToken);
+            await _mongoDBService.RefreshTokens.UpdateOneAsync(filter, update);
         }
-
-        private string randomStringGeneration(int length)
-        {
-            var random = new Random();
-            var chars = "ABCDEFGHIJKMNOPqRSTUVWXYZ1234567890abcdefghijkmnopqrstuvwxyz_";
-            return new string(Enumerable.Repeat(chars, length).Select(s => s[random.Next(s.Length)]).ToArray());
-        }
-
-
     }
 }

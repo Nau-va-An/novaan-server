@@ -4,6 +4,8 @@
     {
         public string Secret { get; set; }
 
-        public TimeSpan ExpiryTimeFrame { get; set; }
+        public TimeSpan JwtExp { get; set; }
+
+        public TimeSpan RefreshTokenExp { get; set; }
     }
 }

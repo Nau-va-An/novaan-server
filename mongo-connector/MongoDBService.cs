@@ -53,7 +53,7 @@ namespace MongoConnector
         {
             get
             {
-                return MongoDatabase.GetCollection<RefreshToken>(MongoCollections.RefreshToken);
+                return MongoDatabase.GetCollection<RefreshToken>(MongoCollections.RefreshTokens);
             }
         }
     }

@@ -39,6 +39,9 @@ namespace NovaanServer.ExceptionLayer
                 case BadHttpRequestException ex:
                     response.StatusCode = (int)HttpStatusCode.BadRequest;
                     break;
+                case UnauthorizedAccessException ex:
+                    response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                    break;
                 default:
                     response.StatusCode = (int)HttpStatusCode.InternalServerError;
                     break;
