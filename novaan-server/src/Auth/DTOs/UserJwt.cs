@@ -6,7 +6,6 @@ namespace NovaanServer.src.Auth.DTOs
     {
         public string UserId { get; set; }
 
-        public Role Role { get; set; }
-
+        public Role Role { get; set; } = Role.User;
     }
 }
