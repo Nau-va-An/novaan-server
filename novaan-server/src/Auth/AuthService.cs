@@ -122,7 +122,6 @@ namespace NovaanServer.Auth
                 .FirstOrDefaultAsync();
             return foundAccount != null;
         }
-
     }
 }
 
