@@ -31,7 +31,7 @@ namespace NovaanServer.src.Auth.Jwt
             var jwtTokenHanler = new JwtSecurityTokenHandler();
 
             var jwtId = Guid.NewGuid().ToString();
-            var tokenDescriptor = getTokenDescriptor(jwtId, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
+            var tokenDescriptor = getTokenDescriptor(jwtId, userToken.UserId, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
             var jwtToken = jwtTokenHanler.CreateEncodedJwt(tokenDescriptor);
             if(jwtToken == null)
             {
@@ -42,7 +42,7 @@ namespace NovaanServer.src.Auth.Jwt
             {
                 CurrentJwtId = jwtId,
                 UserId = userToken.UserId,
-                TokenFamily = new List<string>() { jwtToken },
+                TokenFamily = new List<string>(),
                 AddedDate = DateTime.UtcNow,
                 ExpiryDate = DateTime.UtcNow.AddMonths(6),
                 IsRevoked = false,
@@ -64,7 +64,7 @@ namespace NovaanServer.src.Auth.Jwt
                     throw new UnauthorizedAccessException();
                 }
 
-                var userId = token.Claims.FirstOrDefault(c => c.ValueType == JwtRegisteredClaimNames.NameId);
+                var userId = token.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.NameId);
                 if (userId == null)
                 {
                     throw new UnauthorizedAccessException();
@@ -72,7 +72,7 @@ namespace NovaanServer.src.Auth.Jwt
 
                 // Find refresh token linked with payload userId
                 var refreshToken = (await _mongoDBService.RefreshTokens
-                    .FindAsync(rt => rt.UserId == userId.Value && !rt.IsRevoked))
+                    .FindAsync(rt => rt.UserId.Equals(userId.Value) && !rt.IsRevoked))
                     .FirstOrDefault();
                 if (refreshToken == null)
                 {
@@ -82,14 +82,14 @@ namespace NovaanServer.src.Auth.Jwt
                 // Revoke refresh token if previously used or does not match with current jwtId or expired
                 if (refreshToken.TokenFamily.Contains(accessToken) ||
                     refreshToken.CurrentJwtId != token.Id ||
-                    refreshToken.ExpiryDate.CompareTo(DateTime.UtcNow) > 0)
+                    refreshToken.ExpiryDate.CompareTo(DateTime.UtcNow) < 0)
                 {
                     revokeRefreshToken(refreshToken);
                     throw new UnauthorizedAccessException();
                 }
 
                 var jwtId = Guid.NewGuid().ToString();
-                var tokenDescriptor = getTokenDescriptor(jwtId, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
+                var tokenDescriptor = getTokenDescriptor(jwtId, userId.Value, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
                 var newAccessToken = jwtTokenHanler.CreateEncodedJwt(tokenDescriptor);
                 if (newAccessToken == null)
                 {
@@ -109,13 +109,14 @@ namespace NovaanServer.src.Auth.Jwt
             }
         }
 
-        private SecurityTokenDescriptor getTokenDescriptor(string jwtId, byte[] key)
+        private SecurityTokenDescriptor getTokenDescriptor(string jwtId, string userId, byte[] key)
         {
             var expires = DateTime.UtcNow.Add(_jwtConfig.JwtExp);
             return new SecurityTokenDescriptor()
             {
                 Subject = new ClaimsIdentity(new[]
                 {
+                    new Claim(JwtRegisteredClaimNames.NameId, userId),
                     new Claim(JwtRegisteredClaimNames.Jti, jwtId),
                     new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
                 }),

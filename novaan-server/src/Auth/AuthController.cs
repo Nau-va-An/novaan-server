@@ -28,9 +28,9 @@ namespace NovaanServer.Auth
     public class AuthController : Controller
     {
         private readonly IAuthService _authService;
-        private readonly JwtService _jwtService;
+        private readonly IJwtService _jwtService;
 
-        public AuthController(IAuthService authService, JwtService jwtService)
+        public AuthController(IAuthService authService, IJwtService jwtService)
         {
             _authService = authService;
             _jwtService = jwtService;

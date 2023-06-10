@@ -25,6 +25,7 @@ builder.Services.AddSingleton<S3Service>();
 // Server services register
 builder.Services.AddScoped<IDevService, DevService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
 
 builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection("JwTConfig"));
 
@@ -43,7 +44,6 @@ builder.Services
     });
 
 builder.Services.AddSingleton<TokenValidationParameters>(tokenSettings);
-builder.Services.AddSingleton<JwtService>();
 
 var app = builder.Build();
 

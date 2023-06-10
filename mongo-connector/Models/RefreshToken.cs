@@ -14,22 +14,16 @@ namespace MongoConnector.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
-        [BsonRepresentation(BsonType.ObjectId)]
         public string UserId { get; set; }
 
-        [BsonRepresentation(BsonType.String)]
         public string CurrentJwtId { get; set; }
 
-        [BsonRepresentation(BsonType.Boolean)]
-        public bool IsRevoked { get; set; }
+        public bool IsRevoked { get; set; } = false;
 
-        [BsonRepresentation(BsonType.Array)]
         public List<string> TokenFamily { get; set; }
 
-        [BsonRepresentation(BsonType.DateTime)]
         public DateTime AddedDate { get; set; }
 
-        [BsonRepresentation(BsonType.DateTime)]
         public DateTime ExpiryDate { get; set; }
     }
 }
