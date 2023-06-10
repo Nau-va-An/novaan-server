@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using MongoConnector;
 using MongoConnector.Models;
+using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using S3Connector;
 
@@ -13,9 +14,10 @@ namespace NovaanServer.src.Content
 {
     public class ContentService : IContentService
     {
-        private readonly long _videoSizeLimit = 20L * 1024L * 1024L; //20mb
+        private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20mb
+        private readonly long _imageSizeLimit = 5L * 1024L * 1024L;  // 5mb
         private readonly string[] _permittedVideoExtensions = { "mp4" };
-        // Limits for request body data.
+        private readonly string[] _permittedImageExtensions = { "jpg", "jpeg", "png" };
         private static readonly FormOptions _defaultFormOptions = new FormOptions();
         private readonly MongoDBService _mongoService;
         private readonly FileService _fileService;
@@ -195,6 +197,88 @@ namespace NovaanServer.src.Content
         {
             return !string.IsNullOrEmpty(contentType)
                   && contentType.IndexOf("multipart/", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        public Task ValidateFileMetadata(FileInformationDTO fileMetadataDTO)
+        {
+            // Check if file extension is in permitted extensions
+            if (!_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension) || !_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
+            {
+                throw new Exception("Invalid file extension");
+            }
+
+            // Check if file size is null
+            if (fileMetadataDTO.FileSize == null)
+            {
+                throw new Exception("File size is null");
+            }
+
+            // If file is image
+            if (_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
+            {
+                // Check if size is at least 640 x 480
+                if (fileMetadataDTO.Width < 640 || fileMetadataDTO.Height < 480)
+                {
+					throw new Exception("Image size is too small");
+                }
+
+                if (ConvertSizeToBytes(fileMetadataDTO.FileSize) > _imageSizeLimit)
+                {
+                    throw new Exception("File is too large");
+                }
+
+            }
+
+            // If file is video
+            if (_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension))
+            {
+                // Check if it has ratio is 16:9
+                if (fileMetadataDTO.Width / fileMetadataDTO.Height != 16 / 9)
+                {
+                    throw new Exception("Video ratio is not 16:9");
+                }
+
+                // Check if video duration is less than 2 minutes
+                if (fileMetadataDTO.VideoDuration > TimeSpan.FromMinutes(2))
+                {
+                    throw new Exception("Video duration is too long");
+                }
+
+                if (ConvertSizeToBytes(fileMetadataDTO.FileSize) > _videoSizeLimit)
+                {
+                    throw new Exception("Video size is too large");
+                }
+
+            }
+            return Task.CompletedTask;
+        }
+
+        private long ConvertSizeToBytes(string size)
+        {
+            // Extract the numeric part of the size
+            string numericPart = size.Substring(0, size.Length - 2);
+
+            // Parse the numeric part as a double
+            if (!double.TryParse(numericPart, out double sizeValue))
+            {
+                throw new ArgumentException("Invalid size format");
+            }
+
+            // Get the unit part of the size
+            string unit = size.Substring(size.Length - 2).ToLower();
+
+            // Calculate the size in bytes based on the unit
+            switch (unit)
+            {
+                case "kb":
+                    return (long)(sizeValue * 1024);
+                case "mb":
+                    return (long)(sizeValue * 1024 * 1024);
+                case "gb":
+                    return (long)(sizeValue * 1024 * 1024 * 1024);
+                default:
+                    throw new ArgumentException("Invalid size unit");
+            }
         }
     }
 }
