@@ -22,7 +22,6 @@ using System.Net;
 
 namespace NovaanServer.Auth
 {
-    [AllowAnonymous]
     [Route("api/auth")]
     [ApiController]
     public class AuthController : Controller
@@ -36,6 +35,7 @@ namespace NovaanServer.Auth
             _jwtService = jwtService;
         }
 
+        [AllowAnonymous]
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] SignUpDTO signUpDTO)
         {
@@ -43,6 +43,7 @@ namespace NovaanServer.Auth
             return Ok();
         }
 
+        [AllowAnonymous]
         [HttpPost("signin")]
         public async Task<SignInResDTO> SignIn([FromBody] SignInDTOs signInDTO)
         {
@@ -56,6 +57,7 @@ namespace NovaanServer.Auth
             };
         }
 
+        [Authorize]
         [HttpPost("refreshtoken")]
         public async Task<RefreshTokenResDTO> RefreshToken()
         {
