@@ -69,7 +69,7 @@ namespace S3Connector
             request.Metadata.Add("Content-Type", section.ContentType);
             var response = await _s3Client.PutObjectAsync(request);
             return request.Key;
-
+        }
         // Return a limited time download link
         public string DownloadFileAsync(string keyId)
         {
