@@ -20,7 +20,10 @@ namespace MongoConnector.Models
 
         public bool IsRevoked { get; set; } = false;
 
-        public List<string> TokenFamily { get; set; }
+        // Support multi session (signin on multiple device)
+        public List<string> ValidTokenFamily { get; set; }
+
+        public List<string> RevokeTokenFamily { get; set; }
 
         public DateTime AddedDate { get; set; }
 

@@ -38,17 +38,29 @@ namespace NovaanServer.src.Auth.Jwt
                 throw new Exception("Unable to generate new access token");
             }
 
-            var refreshToken = new RefreshToken()
-            {
-                CurrentJwtId = jwtId,
-                UserId = userToken.UserId,
-                TokenFamily = new List<string>(),
-                AddedDate = DateTime.UtcNow,
-                ExpiryDate = DateTime.UtcNow.AddMonths(6),
-                IsRevoked = false,
-            };
+            var foundRefreshToken = (await _mongoDBService.RefreshTokens
+                .FindAsync(rt => rt.UserId == userToken.UserId))
+                .FirstOrDefault();
 
-            await _mongoDBService.RefreshTokens.InsertOneAsync(refreshToken);
+            if(foundRefreshToken == null)
+            {
+                // First time login
+                var refreshToken = new RefreshToken()
+                {
+                    CurrentJwtId = jwtId,
+                    UserId = userToken.UserId,
+                    ValidTokenFamily = new List<string>() { jwtToken },
+                    RevokeTokenFamily = new List<string>(),
+                    AddedDate = DateTime.UtcNow,
+                    ExpiryDate = DateTime.UtcNow.AddMonths(6),
+                    IsRevoked = false,
+                };
+                await _mongoDBService.RefreshTokens.InsertOneAsync(refreshToken);
+            } else
+            {
+                // Next device onward
+                await appendValidAccessToken(foundRefreshToken, jwtToken);
+            }
 
             return jwtToken;
         }
@@ -79,9 +91,8 @@ namespace NovaanServer.src.Auth.Jwt
                     throw new UnauthorizedAccessException();
                 }
 
-                // Revoke refresh token if previously used or does not match with current jwtId or expired
-                if (refreshToken.TokenFamily.Contains(accessToken) ||
-                    refreshToken.CurrentJwtId != token.Id ||
+                // Revoke refresh token if previously used or expired
+                if (refreshToken.RevokeTokenFamily.Contains(accessToken) ||
                     refreshToken.ExpiryDate.CompareTo(DateTime.UtcNow) < 0)
                 {
                     revokeRefreshToken(refreshToken);
@@ -96,7 +107,7 @@ namespace NovaanServer.src.Auth.Jwt
                     throw new Exception("Unable to generate new access token");
                 }
 
-                await refreshAccessToken(refreshToken, jwtId, accessToken);
+                await refreshAccessToken(refreshToken, accessToken);
                 return newAccessToken;
             }
             catch (UnauthorizedAccessException unAuthEx)
@@ -117,7 +128,6 @@ namespace NovaanServer.src.Auth.Jwt
                 Subject = new ClaimsIdentity(new[]
                 {
                     new Claim(JwtRegisteredClaimNames.NameId, userId),
-                    new Claim(JwtRegisteredClaimNames.Jti, jwtId),
                     new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
                 }),
 
@@ -135,13 +145,21 @@ namespace NovaanServer.src.Auth.Jwt
             _mongoDBService.RefreshTokens.UpdateOne(filter, update);
         }
 
-        private async Task refreshAccessToken(RefreshToken refreshToken, string jwtId, string oldToken)
+        private async Task refreshAccessToken(RefreshToken refreshToken, string oldToken)
         {
             var filter = Builders<RefreshToken>.Filter
                 .Eq(rt => rt.Id, refreshToken.Id);
             var update = Builders<RefreshToken>.Update
-                .Set(rt => rt.CurrentJwtId, jwtId)
-                .Push(rt => rt.TokenFamily, oldToken);
+                .Push(rt => rt.RevokeTokenFamily, oldToken);
+            await _mongoDBService.RefreshTokens.UpdateOneAsync(filter, update);
+        }
+
+        private async Task appendValidAccessToken(RefreshToken refreshToken, string newToken)
+        {
+            var filter = Builders<RefreshToken>.Filter
+                .Eq(rt => rt.Id, refreshToken.Id);
+            var update = Builders<RefreshToken>.Update
+                .Push(rt => rt.ValidTokenFamily, newToken);
             await _mongoDBService.RefreshTokens.UpdateOneAsync(filter, update);
         }
     }
