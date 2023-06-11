@@ -23,7 +23,19 @@ namespace NovaanServer.src.Content
         [DisableFormValueModelBinding]
         public async Task<IActionResult> UploadCulinaryTips()
         {
-            var culinaryTips = await _contentService.ProcessMultipartRequest(Request);
+            var culinaryData = await _contentService.ProcessMultipartRequest(Request);
+            CulinaryTips culinaryTips = new CulinaryTips();
+            //mapping each key-value pair to a CulinaryTips using reflection
+            foreach (var (key, value) in culinaryData)
+            {
+                var property = typeof(CulinaryTips).GetProperties().FirstOrDefault(p => p.Name.ToLower() == key.ToLower());
+                if (property != null)
+                {
+                    var values = Convert.ChangeType(value, property.PropertyType);
+                    property.SetValue(culinaryTips, value);
+                }
+            }
+
             // Add to database
             await _contentService.AddCulinaryTips(culinaryTips);
             return Ok();

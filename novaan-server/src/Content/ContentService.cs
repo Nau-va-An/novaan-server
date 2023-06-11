@@ -2,6 +2,7 @@
 using System.Text;
 using FileServer;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using MongoConnector;
@@ -41,17 +42,19 @@ namespace NovaanServer.src.Content
         }
 
         // Process multipart request
-        public async Task<CulinaryTips> ProcessMultipartRequest(HttpRequest request)
+        public async Task<Dictionary<string, object>> ProcessMultipartRequest(HttpRequest request)
         {
             // Checks if the request's content type is a multipart form data
             if (!IsMultipartContentType(request.ContentType))
             {
                 throw new Exception($"Expected a multipart request, but got {request.ContentType}");
             }
-            CulinaryTips culinaryTips = new CulinaryTips();
-            var filename = string.Empty;
-            var streamedFileContent = Array.Empty<byte>();
-            var formAccumulator = new KeyValueAccumulator();
+            // Create an array to store file ID
+            var imageIDs = new List<string>();
+            // variable to store videoID
+            string videoID = "";
+            // Create a dictionary to store form data key-value pairs
+            var formData = new Dictionary<string, object>();
             var boundary = GetBoundary(MediaTypeHeaderValue.Parse(request.ContentType), _defaultFormOptions.MultipartBoundaryLengthLimit);
             var reader = new MultipartReader(boundary, request.Body);
             var section = await reader.ReadNextSectionAsync();
@@ -59,65 +62,74 @@ namespace NovaanServer.src.Content
             {
                 var hasContentDispositionHeader = ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out var contentDisposition);
 
-                if (hasContentDispositionHeader)
+                if (contentDisposition == null)
                 {
-                    if (HasFileContentDisposition(contentDisposition))
+                    throw new Exception("Content Disposition is null");
+                }
+                if (!hasContentDispositionHeader)
+                {
+                    throw new Exception("Invalid Content Disposition");
+                }
+                if (HasFileContentDisposition(contentDisposition))
+                {
+                    var streamedFileContent = await ProcessStreamedFile(section, contentDisposition, _permittedVideoExtensions, _videoSizeLimit);
+                    // Upload file to S3
+                    var fileID = await _s3Service.UploadFileAsync(streamedFileContent, section);
+                    // Close stream
+                    streamedFileContent.Close();
+                    // Check if fileId contain string in permittedImageExtensions
+                    if (_permittedImageExtensions.Contains(fileID.Split('.')[1]))
                     {
-                        if (!string.IsNullOrEmpty(contentDisposition.FileName.Value))
-                        {
-                            streamedFileContent = await ProcessStreamedFile(section, contentDisposition, _permittedVideoExtensions, _videoSizeLimit);
-                            culinaryTips.VideoID = await _s3Service.UploadFileAsync(streamedFileContent, section);
-                        }
-                        else
-                        {
-                            throw new Exception("Content Disposition has empty filename");
-                        }
-                    }
-                    else if (HasFormDataContentDisposition(contentDisposition))
-                    {
-                        var key = HeaderUtilities.RemoveQuotes(contentDisposition.Name).Value;
-                        var encoding = GetEncoding(section) ?? throw new Exception("Encoding is null");
-
-                        using (var streamReader = new StreamReader(section.Body, encoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
-                        {
-                            var value = await streamReader.ReadToEndAsync();
-                            if (string.Equals(value, "undefined", StringComparison.OrdinalIgnoreCase))
-                            {
-                                value = string.Empty;
-                            }
-                            formAccumulator.Append(key!, value);
-
-                            if (formAccumulator.ValueCount > _defaultFormOptions.ValueCountLimit)
-                            {
-                                throw new InvalidDataException($"Form key count limit {_defaultFormOptions.ValueCountLimit} exceeded.");
-                            }
-                        }
+                        imageIDs.Add(fileID);
+                        formData.Add("Images", imageIDs);
                     }
                     else
                     {
-                        throw new Exception("Unknown Content Disposition");
+                        videoID = fileID;
+                        formData.Add("Video", videoID);
+                    }
+                }
+                else if (HasFormDataContentDisposition(contentDisposition))
+                {
+                    var key = HeaderUtilities.RemoveQuotes(contentDisposition.Name).Value;
+                    var encoding = GetEncoding(section);
+
+                    if (key == null)
+                    {
+                        throw new Exception("Field name is null");
+                    }
+
+                    using (var streamReader = new StreamReader(section.Body, encoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+                    {
+                        var value = await streamReader.ReadToEndAsync();
+                        if (string.Equals(value, "undefined", StringComparison.OrdinalIgnoreCase))
+                        {
+                            value = string.Empty;
+                        }
+                        formData.Add(key, value);
+
+                        if (formData.Count > _defaultFormOptions.ValueCountLimit)
+                        {
+                            throw new InvalidDataException($"Form key count limit {_defaultFormOptions.ValueCountLimit} exceeded.");
+                        }
                     }
                 }
                 else
                 {
-                    throw new Exception("Invalid Content Disposition");
+                    throw new Exception("Unknown Content Disposition");
                 }
-
                 section = await reader.ReadNextSectionAsync();
             }
 
-            culinaryTips.AccountID = formAccumulator.GetResults()["accountID"];
-            culinaryTips.Title = formAccumulator.GetResults()["title"];
-            return culinaryTips;
+            return formData;
         }
 
-        private Encoding? GetEncoding(MultipartSection section)
+        private Encoding GetEncoding(MultipartSection section)
         {
             var hasMediaTypeHeader =
                 MediaTypeHeaderValue.TryParse(section.ContentType, out var mediaType);
 
-
-            if (!hasMediaTypeHeader || Encoding.UTF8.Equals(mediaType!.Encoding))
+            if (!hasMediaTypeHeader || Encoding.UTF8.Equals(mediaType.Encoding))
             {
                 return Encoding.UTF8;
             }
@@ -125,51 +137,45 @@ namespace NovaanServer.src.Content
             return mediaType.Encoding;
         }
 
-        private async Task<byte[]> ProcessStreamedFile(MultipartSection section, ContentDispositionHeaderValue contentDisposition,
+        private async Task<MemoryStream> ProcessStreamedFile(MultipartSection section, ContentDispositionHeaderValue contentDisposition,
     string[] permittedExtensions, long sizeLimit)
         {
-            using (var memoryStream = new MemoryStream())
+            var memoryStream = new MemoryStream();
+            await section.Body.CopyToAsync(memoryStream);
+
+            // Check if the file is empty or exceeds the size limit.
+            if (memoryStream.Length == 0)
             {
-                await section.Body.CopyToAsync(memoryStream);
-
-                // Check if the file is empty or exceeds the size limit.
-                if (memoryStream.Length == 0)
-                {
-                    throw new Exception("File is empty");
-                }
-
-                if (memoryStream.Length > sizeLimit)
-                {
-                    var megabyteSizeLimit = sizeLimit / 1048576;
-                    throw new Exception($"The file exceeds {megabyteSizeLimit:N1} MB.");
-                }
-
-                var fileName = contentDisposition.FileName.ToString();
-                var error = _fileService.IsValidFileExtensionAndSignature(fileName, memoryStream, permittedExtensions);
-                if (error != null)
-                {
-                    throw new Exception(error);
-                }
-
-                return memoryStream.ToArray();
+                throw new Exception("File is empty");
             }
+
+            if (memoryStream.Length > sizeLimit)
+            {
+                var megabyteSizeLimit = sizeLimit / 1048576;
+                throw new Exception($"The file exceeds {megabyteSizeLimit:N1} MB.");
+            }
+
+            var fileName = contentDisposition.FileName.ToString();
+
+            //validate file extension and signature
+            _fileService.IsValidateFileExtensionAndSignature(fileName, memoryStream, permittedExtensions);
+
+            return memoryStream;
         }
 
 
-        private bool HasFormDataContentDisposition(ContentDispositionHeaderValue? contentDisposition)
+        private bool HasFormDataContentDisposition(ContentDispositionHeaderValue contentDisposition)
         {
             //  For exmaple, Content-Disposition: form-data; name="subdirectory";
-            return contentDisposition != null
-                && contentDisposition.DispositionType.Equals("form-data")
+            return contentDisposition.DispositionType.Equals("form-data")
                 && string.IsNullOrEmpty(contentDisposition.FileName.Value)
                 && string.IsNullOrEmpty(contentDisposition.FileNameStar.Value);
         }
 
-        private bool HasFileContentDisposition(ContentDispositionHeaderValue? contentDisposition)
+        private bool HasFileContentDisposition(ContentDispositionHeaderValue contentDisposition)
         {
             // For example, Content-Disposition: form-data; name="files"; filename="OnScreenControl_7.58.zip"
-            return contentDisposition != null
-                && contentDisposition.DispositionType.Equals("form-data")
+            return contentDisposition.DispositionType.Equals("form-data")
                 && (!string.IsNullOrEmpty(contentDisposition.FileName.Value)
                     || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value));
         }
@@ -219,7 +225,7 @@ namespace NovaanServer.src.Content
                 // Check if size is at least 640 x 480
                 if (fileMetadataDTO.Width < 640 || fileMetadataDTO.Height < 480)
                 {
-					throw new Exception("Image size is too small");
+                    throw new Exception("Image size is too small");
                 }
 
                 if (ConvertSizeToBytes(fileMetadataDTO.FileSize) > _imageSizeLimit)

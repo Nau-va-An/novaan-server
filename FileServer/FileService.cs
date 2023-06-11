@@ -5,11 +5,11 @@ namespace FileServer
 {
     public class FileService
     {
-        public string? IsValidFileExtensionAndSignature(string fileName, Stream data, string[] permittedExtensions)
+        public bool IsValidateFileExtensionAndSignature(string fileName, Stream data, string[] permittedExtensions)
         {
             if (string.IsNullOrEmpty(fileName) || data == null || data.Length == 0)
             {
-                return "Invalid file data or file name.";
+                throw new ArgumentException("File name or data is invalid.");
             }
 
             var inspector = new FileFormatInspector();
@@ -17,17 +17,18 @@ namespace FileServer
 
             if (fileFormat == null)
             {
-                return "Unable to determine file format.";
+                throw new ArgumentException("File format is invalid.");
             }
 
             string fileExtension = Path.GetExtension(fileName);
+            // Remove the dot
+            fileExtension = fileExtension.Substring(1);
 
-            if (permittedExtensions.Contains(fileFormat.Extension) || fileFormat.Extension == fileExtension)
+            if (!permittedExtensions.Contains(fileFormat.Extension) || fileFormat.Extension != fileExtension)
             {
-                return null; // No error, valid file extension and signature
+                throw new ArgumentException("File extension is invalid.");
             }
-
-            return "Invalid file extension or signature.";
+            return true;
         }
 
     }

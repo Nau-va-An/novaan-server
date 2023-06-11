@@ -58,13 +58,14 @@ namespace S3Connector
             return true;
         }
 
-        public async Task<string> UploadFileAsync(byte[] fileStream, MultipartSection section)
+        public async Task<string> UploadFileAsync(MemoryStream fileStream, MultipartSection section)
         {
             var request = new PutObjectRequest()
             {
                 BucketName = _bucketName,
                 Key = System.Guid.NewGuid().ToString() + Path.GetExtension(section.AsFileSection().FileName),
-                InputStream = new MemoryStream(fileStream)
+                // make fileStream open to read
+                InputStream = fileStream
             };
             request.Metadata.Add("Content-Type", section.ContentType);
             var response = await _s3Client.PutObjectAsync(request);
