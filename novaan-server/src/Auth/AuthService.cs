@@ -25,7 +25,10 @@ namespace NovaanServer.Auth
         public async Task<string> SignInWithCredentials(SignInDTOs signInDTO)
         {
             var foundUser = (await _mongoService.Accounts
-                 .FindAsync(acc => acc.Email == signInDTO.UsernameOrEmail))
+                 .FindAsync(
+                    acc => acc.Email == signInDTO.UsernameOrEmail ||
+                     acc.Username == signInDTO.UsernameOrEmail
+                 ))
                  .FirstOrDefault();
             if (foundUser == null)
             {

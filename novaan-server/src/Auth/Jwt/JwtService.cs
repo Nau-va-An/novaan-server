@@ -114,9 +114,9 @@ namespace NovaanServer.src.Auth.Jwt
             {
                 if (string.IsNullOrEmpty(unAuthEx.Message))
                 {
-                    throw new UnauthorizedAccessException(unAuthEx.Message);
+                    throw;
                 }
-                throw new UnauthorizedAccessException("Access token is not valid. Unauthorized");
+                throw new UnauthorizedAccessException(ExceptionMessage.ACCESS_TOKEN_INVALID);
             }
         }
 

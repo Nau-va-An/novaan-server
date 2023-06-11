@@ -21,6 +21,7 @@
     <None Remove="src\ExceptionLayer\CustomExceptions\" />
     <None Remove="src\Common\" />
     <None Remove="src\Common\DTOs\" />
+    <None Remove="src\Common\Attributes\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\" />
@@ -28,6 +29,7 @@
     <Folder Include="src\ExceptionLayer\CustomExceptions\" />
     <Folder Include="src\Common\" />
     <Folder Include="src\Common\DTOs\" />
+    <Folder Include="src\Common\Attributes\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">
