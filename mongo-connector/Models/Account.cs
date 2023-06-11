@@ -21,6 +21,9 @@ namespace MongoConnector.Models
 		public bool Verified { get; set; } = false;
 
 		public bool EmailSent { get; set; } = false;
+
+		// Google ID
+		public string? GoogleId { get; set; }
 	}
 
 	public enum Role

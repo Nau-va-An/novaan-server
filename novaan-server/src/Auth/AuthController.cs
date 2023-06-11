@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
 using NovaanServer.Auth.DTOs;
+using NovaanServer.src.Auth.DTOs;
 using NovaanServer.src.ExceptionLayer;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 
@@ -30,9 +31,9 @@ namespace NovaanServer.Auth
 		}
 
 		[HttpPost("oauth/google")]
-		public async Task<IActionResult> GoogleAuthentication([FromBody] SignUpDTO signUpDTO)
+		public async Task<IActionResult> GoogleAuthentication([FromBody] GoogleOauthDTO googleAuthDTO)
 		{
-			await _authService.GoogleAuthentication(signUpDTO);
+			await _authService.GoogleAuthentication(googleAuthDTO);
 			return Ok();
 		}
 	}
