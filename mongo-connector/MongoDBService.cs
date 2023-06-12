@@ -49,6 +49,13 @@ namespace MongoConnector
                 return MongoDatabase.GetCollection<Account>(MongoCollections.Accounts);
             }
         }
+        public IMongoCollection<RefreshToken> RefreshTokens
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<RefreshToken>(MongoCollections.RefreshTokens);
+            }
+        }
     }
 }
 
