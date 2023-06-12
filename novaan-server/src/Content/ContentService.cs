@@ -154,7 +154,7 @@ namespace NovaanServer.src.Content
 
             if (memoryStream.Length > sizeLimit)
             {
-                var megabyteSizeLimit = sizeLimit / 1048576;
+                var megabyteSizeLimit = sizeLimit / 1024 / 1024;
                 throw new Exception($"The file exceeds {megabyteSizeLimit:N1} MB.");
             }
 
