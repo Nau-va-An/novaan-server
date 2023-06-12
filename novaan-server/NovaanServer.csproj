@@ -19,6 +19,9 @@
     <None Remove="src\Auth\" />
     <None Remove="src\Auth\DTOs\" />
     <None Remove="src\ExceptionLayer\CustomExceptions\" />
+    <None Remove="src\Content\" />
+    <None Remove="src\Content\DTOs\" />
+    <None Remove="src\Filter\" />
     <None Remove="src\Common\" />
     <None Remove="src\Common\DTOs\" />
     <None Remove="src\Common\Attributes\" />
@@ -27,6 +30,9 @@
     <Folder Include="Assets\" />
     <Folder Include="src\Developer\" />
     <Folder Include="src\ExceptionLayer\CustomExceptions\" />
+    <Folder Include="src\Content\" />
+    <Folder Include="src\Content\DTOs\" />
+    <Folder Include="src\Filter\" />
     <Folder Include="src\Common\" />
     <Folder Include="src\Common\DTOs\" />
     <Folder Include="src\Common\Attributes\" />
@@ -36,6 +42,9 @@
       <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
     </ProjectReference>
     <ProjectReference Include="..\S3Connector\S3Connector.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+    <ProjectReference Include="..\FileServer\FileServer.csproj">
       <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
     </ProjectReference>
   </ItemGroup>

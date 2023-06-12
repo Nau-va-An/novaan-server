@@ -1,3 +1,6 @@
+﻿using FileServer;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MongoConnector;
@@ -5,6 +8,7 @@ using NovaanServer.Auth;
 using NovaanServer.Configuration;
 using NovaanServer.Developer;
 using NovaanServer.ExceptionLayer;
+using NovaanServer.src.Content;
 using NovaanServer.src.Auth.Jwt;
 using S3Connector;
 using System.Text;
@@ -21,10 +25,12 @@ builder.Services.AddSwaggerGen();
 // Config MongoDB + AWS S3 Service
 builder.Services.AddSingleton<MongoDBService>();
 builder.Services.AddSingleton<S3Service>();
+builder.Services.AddSingleton<FileService>();
 
 // Server services register
 builder.Services.AddScoped<IDevService, DevService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
 builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection("JwTConfig"));

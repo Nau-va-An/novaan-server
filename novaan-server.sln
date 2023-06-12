@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "S3Connector", "S3Connector\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NovaanServerTest", "NovaanServerTest\NovaanServerTest.csproj", "{9C59281E-AE7A-4376-A2B3-03E7FF828CF8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileServer", "FileServer\FileServer.csproj", "{4098D519-326E-455F-8551-DEA676AFBD6F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{9C59281E-AE7A-4376-A2B3-03E7FF828CF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9C59281E-AE7A-4376-A2B3-03E7FF828CF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9C59281E-AE7A-4376-A2B3-03E7FF828CF8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4098D519-326E-455F-8551-DEA676AFBD6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4098D519-326E-455F-8551-DEA676AFBD6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4098D519-326E-455F-8551-DEA676AFBD6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4098D519-326E-455F-8551-DEA676AFBD6F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
