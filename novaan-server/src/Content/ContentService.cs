@@ -17,9 +17,10 @@ namespace NovaanServer.src.Content
     {
         private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20mb
         private readonly long _imageSizeLimit = 5L * 1024L * 1024L;  // 5mb
+        private const int VALUE_COUNT_LIMIT = 1024;
+        private const int MULTIPART_BOUNDARY_LENGTH_LIMIT = 128;
         private readonly string[] _permittedVideoExtensions = { "mp4" };
         private readonly string[] _permittedImageExtensions = { "jpg", "jpeg", "png" };
-        private static readonly FormOptions _defaultFormOptions = new FormOptions();
         private readonly MongoDBService _mongoService;
         private readonly FileService _fileService;
         private readonly S3Service _s3Service;
@@ -55,7 +56,7 @@ namespace NovaanServer.src.Content
             string videoID = "";
             // Create a dictionary to store form data key-value pairs
             var formData = new Dictionary<string, object>();
-            var boundary = GetBoundary(MediaTypeHeaderValue.Parse(request.ContentType), _defaultFormOptions.MultipartBoundaryLengthLimit);
+            var boundary = GetBoundary(MediaTypeHeaderValue.Parse(request.ContentType));
             var reader = new MultipartReader(boundary, request.Body);
             var section = await reader.ReadNextSectionAsync();
             while (section != null)
@@ -108,9 +109,9 @@ namespace NovaanServer.src.Content
                         }
                         formData.Add(key, value);
 
-                        if (formData.Count > _defaultFormOptions.ValueCountLimit)
+                        if (formData.Count > VALUE_COUNT_LIMIT)
                         {
-                            throw new InvalidDataException($"Form key count limit {_defaultFormOptions.ValueCountLimit} exceeded.");
+                            throw new InvalidDataException($"Form key count limit {VALUE_COUNT_LIMIT} exceeded.");
                         }
                     }
                 }
@@ -158,7 +159,7 @@ namespace NovaanServer.src.Content
             var fileName = contentDisposition.FileName.ToString();
 
             //validate file extension and signature
-            _fileService.IsValidateFileExtensionAndSignature(fileName, memoryStream, permittedExtensions);
+            _fileService.ValidateFileExtensionAndSignature(fileName, memoryStream, permittedExtensions);
 
             return memoryStream;
         }
@@ -180,7 +181,7 @@ namespace NovaanServer.src.Content
                     || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value));
         }
 
-        private static string GetBoundary(MediaTypeHeaderValue contentType, int lengthLimit)
+        private static string GetBoundary(MediaTypeHeaderValue contentType)
         {
             var boundary = HeaderUtilities.RemoveQuotes(contentType.Boundary).Value;
 
@@ -189,10 +190,10 @@ namespace NovaanServer.src.Content
                 throw new InvalidDataException("Missing content-type boundary.");
             }
 
-            if (boundary.Length > lengthLimit)
+            if (boundary.Length > MULTIPART_BOUNDARY_LENGTH_LIMIT)
             {
                 throw new InvalidDataException(
-                    $"Multipart boundary length limit {lengthLimit} exceeded.");
+                    $"Multipart boundary length limit {MULTIPART_BOUNDARY_LENGTH_LIMIT} exceeded.");
             }
 
             return boundary;

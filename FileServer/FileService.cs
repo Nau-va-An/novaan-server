@@ -5,7 +5,7 @@ namespace FileServer
 {
     public class FileService
     {
-        public bool IsValidateFileExtensionAndSignature(string fileName, Stream data, string[] permittedExtensions)
+        public void ValidateFileExtensionAndSignature(string fileName, Stream data, string[] permittedExtensions)
         {
             if (string.IsNullOrEmpty(fileName) || data == null || data.Length == 0)
             {
@@ -28,7 +28,6 @@ namespace FileServer
             {
                 throw new ArgumentException("File extension is invalid.");
             }
-            return true;
         }
 
     }
