@@ -16,7 +16,9 @@ namespace NovaanServer.src.Content
     public class ContentService : IContentService
     {
         private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20mb
-        private readonly long _imageSizeLimit = 5L * 1024L * 1024L;  // 5mb
+        // _imageSizeLimit is 5,242,880 bytes.
+        private readonly long _imageSizeLimit = 5L * 1024L * 1024L; // 5mb
+
         private const int VALUE_COUNT_LIMIT = 1024;
         private const int MULTIPART_BOUNDARY_LENGTH_LIMIT = 128;
         private readonly string[] _permittedVideoExtensions = { "mp4" };
@@ -229,7 +231,7 @@ namespace NovaanServer.src.Content
                     throw new Exception("Image size is too small");
                 }
 
-                if (ConvertSizeToBytes(fileMetadataDTO.FileSize) > _imageSizeLimit)
+                if (fileMetadataDTO.FileSize > _imageSizeLimit)
                 {
                     throw new Exception("File is too large");
                 }
@@ -251,42 +253,14 @@ namespace NovaanServer.src.Content
                     throw new Exception("Video duration is too long");
                 }
 
-                if (ConvertSizeToBytes(fileMetadataDTO.FileSize) > _videoSizeLimit)
+                if (fileMetadataDTO.FileSize > _videoSizeLimit)
                 {
                     throw new Exception("Video size is too large");
                 }
-
             }
             return Task.CompletedTask;
         }
 
-        private long ConvertSizeToBytes(string size)
-        {
-            // Extract the numeric part of the size
-            string numericPart = size.Substring(0, size.Length - 2);
-
-            // Parse the numeric part as a double
-            if (!double.TryParse(numericPart, out double sizeValue))
-            {
-                throw new ArgumentException("Invalid size format");
-            }
-
-            // Get the unit part of the size
-            string unit = size.Substring(size.Length - 2).ToLower();
-
-            // Calculate the size in bytes based on the unit
-            switch (unit)
-            {
-                case "kb":
-                    return (long)(sizeValue * 1024);
-                case "mb":
-                    return (long)(sizeValue * 1024 * 1024);
-                case "gb":
-                    return (long)(sizeValue * 1024 * 1024 * 1024);
-                default:
-                    throw new ArgumentException("Invalid size unit");
-            }
-        }
     }
 }
 
