@@ -5,6 +5,7 @@ namespace MongoConnector.Models
 	{
 		public static string Accounts { get; } = "accounts";
 		public static string CulinaryTips { get; } = "culinaryTips";
-	}
+        public static string RefreshTokens { get; } = "refreshTokens";
+    }
 }
 

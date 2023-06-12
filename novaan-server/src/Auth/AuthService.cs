@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Security.Cryptography;
+using System.Text;
+using Microsoft.AspNetCore.Mvc;
 using MongoConnector;
 using MongoConnector.Models;
 using MongoDB.Bson;
@@ -18,9 +21,27 @@ namespace NovaanServer.Auth
             _mongoService = mongoDBService;
         }
 
-        public Task<bool> SignInWithCredentials(SignInDTOs signInDTO)
+        // Sign in and return userId
+        public async Task<string> SignInWithCredentials(SignInDTOs signInDTO)
         {
-            throw new NotImplementedException();
+            var foundUser = (await _mongoService.Accounts
+                 .FindAsync(
+                    acc => acc.Email == signInDTO.UsernameOrEmail ||
+                     acc.Username == signInDTO.UsernameOrEmail
+                 ))
+                 .FirstOrDefault();
+            if (foundUser == null)
+            {
+                throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
+            }
+
+            var hashPassword = CustomHash.GetHashString(signInDTO.Password);
+            if (foundUser.Password != hashPassword)
+            {
+                throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
+            }
+
+            return foundUser.Id;
         }
 
         public Task<bool> SignInGoogle()
@@ -49,14 +70,7 @@ namespace NovaanServer.Auth
                 Email = signUpDTO.Email,
                 Password = CustomHash.GetHashString(signUpDTO.Password),
             };
-            try
-            {
-                await _mongoService.Accounts.InsertOneAsync(newAccount);
-            }
-            catch
-            {
-                throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
-            }
+            await _mongoService.Accounts.InsertOneAsync(newAccount);
 
             // TODO: Send confirmation email
             // This should be push into a message queue to be processed by background job

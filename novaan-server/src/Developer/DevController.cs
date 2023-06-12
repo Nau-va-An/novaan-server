@@ -3,9 +3,12 @@ using System.IO;
 using MongoConnector;
 using S3Connector;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using NovaanServer.src.Common.Attributes;
 
 namespace NovaanServer.Developer
 {
+    [AllowAnonymous]
     [Route("api/dev")]
     [ApiController]
     public class DevController : Controller
@@ -29,6 +32,7 @@ namespace NovaanServer.Developer
             return StatusCode(500, "Cannot connect to server");
         }
 
+        [DevelopmentOnly]
         [HttpGet("health/db")]
         public IActionResult GetDbHealth()
         {
@@ -40,6 +44,7 @@ namespace NovaanServer.Developer
             return StatusCode(500, "Cannot connect to database");
         }
 
+        [DevelopmentOnly]
         [HttpGet("health/s3")]
         public IActionResult GetS3Health()
         {
@@ -51,7 +56,7 @@ namespace NovaanServer.Developer
             return StatusCode(500, "Cannot connect to S3 Bucket");
         }
 
-        // TODO: Test endpoint. Clear content before commit
+        [DevelopmentOnly]
         [HttpGet("exec")]
         public async Task<IActionResult> Execute()
         {

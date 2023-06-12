@@ -39,6 +39,9 @@ namespace NovaanServer.ExceptionLayer
                 case BadHttpRequestException ex:
                     response.StatusCode = (int)HttpStatusCode.BadRequest;
                     break;
+                case UnauthorizedAccessException ex:
+                    response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                    break;
                 default:
                     response.StatusCode = (int)HttpStatusCode.InternalServerError;
                     break;
@@ -57,7 +60,7 @@ namespace NovaanServer.ExceptionLayer
             // Log the error for later debugging and inspection
             _logger.LogError("Error occured at {endpoint} with message: {message}",
                 context.GetEndpoint(),
-                exception.Message
+                exception.StackTrace
             );
 
             var result = CustomJson.Stringify<BaseErrResponse>(customResponse);

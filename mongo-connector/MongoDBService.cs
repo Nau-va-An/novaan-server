@@ -57,6 +57,13 @@ namespace MongoConnector
                 return MongoDatabase.GetCollection<CulinaryTips>(MongoCollections.CulinaryTips);
             }
         }
+        public IMongoCollection<RefreshToken> RefreshTokens
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<RefreshToken>(MongoCollections.RefreshTokens);
+            }
+        }
     }
 }
 
