@@ -1,24 +1,9 @@
-﻿using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Amazon.Runtime;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
-using Microsoft.Net.Http;
-using MongoConnector;
-using MongoConnector.Models;
-using MongoDB.Bson;
-using MongoDB.Driver;
 using NovaanServer.Auth.DTOs;
-using NovaanServer.Configuration;
 using NovaanServer.src.Auth.DTOs;
 using NovaanServer.src.Auth.Jwt;
-using NovaanServer.src.ExceptionLayer;
-using NovaanServer.src.ExceptionLayer.CustomExceptions;
-using System.Net;
 
 namespace NovaanServer.Auth
 {
