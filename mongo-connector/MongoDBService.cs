@@ -1,6 +1,4 @@
-﻿using System;
-using Utils.Json;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using MongoDB.Bson;
 using MongoConnector.Models;
@@ -54,6 +52,20 @@ namespace MongoConnector
             get
             {
                 return MongoDatabase.GetCollection<Recipe>(MongoCollections.Recipes);
+            }
+        }
+        public IMongoCollection<CulinaryTips> CulinaryTips
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<CulinaryTips>(MongoCollections.CulinaryTips);
+            }
+        }
+        public IMongoCollection<RefreshToken> RefreshTokens
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<RefreshToken>(MongoCollections.RefreshTokens);
             }
         }
     }

@@ -20,8 +20,8 @@
     "NovaanServer": {
       "commandName": "Project",
       "launchBrowser": true,
-      "applicationUrl": "http://localhost:42469",
       "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:42469",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

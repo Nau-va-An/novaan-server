@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.16" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
@@ -18,19 +19,32 @@
     <None Remove="src\Auth\" />
     <None Remove="src\Auth\DTOs\" />
     <None Remove="src\ExceptionLayer\CustomExceptions\" />
+    <None Remove="src\Content\" />
+    <None Remove="src\Content\DTOs\" />
+    <None Remove="src\Filter\" />
+    <None Remove="src\Common\" />
+    <None Remove="src\Common\DTOs\" />
+    <None Remove="src\Common\Attributes\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\" />
     <Folder Include="src\Developer\" />
-    <Folder Include="src\Auth\" />
-    <Folder Include="src\Auth\DTOs\" />
     <Folder Include="src\ExceptionLayer\CustomExceptions\" />
+    <Folder Include="src\Content\" />
+    <Folder Include="src\Content\DTOs\" />
+    <Folder Include="src\Filter\" />
+    <Folder Include="src\Common\" />
+    <Folder Include="src\Common\DTOs\" />
+    <Folder Include="src\Common\Attributes\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">
       <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
     </ProjectReference>
     <ProjectReference Include="..\S3Connector\S3Connector.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+    <ProjectReference Include="..\FileServer\FileServer.csproj">
       <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
     </ProjectReference>
   </ItemGroup>
