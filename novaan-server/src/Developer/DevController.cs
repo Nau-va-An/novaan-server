@@ -5,6 +5,8 @@ using S3Connector;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using NovaanServer.src.Common.Attributes;
+using NovaanServer.src.Developer.DTOs;
+using System.Net;
 
 namespace NovaanServer.Developer
 {
@@ -21,39 +23,65 @@ namespace NovaanServer.Developer
         }
 
         [HttpGet("health")]
-        public IActionResult GetHealthCheck()
+        public HealthCheckRes GetHealthCheck()
         {
             if(_devService.IsServerHealthy())
             {
-                return Ok("Server is up and running");
+                Response.StatusCode = (int) HttpStatusCode.OK;
+                return new HealthCheckRes
+                {
+                    Message = "Server is up running"
+                };
             }
 
             // Should never run to here
-            return StatusCode(500, "Cannot connect to server");
+            Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            return new HealthCheckRes
+            {
+                Message = "Cannot connect to Novaan Server"
+            };
         }
 
         [DevelopmentOnly]
         [HttpGet("health/db")]
-        public IActionResult GetDbHealth()
+        public HealthCheckRes GetDbHealth()
         {
-            if(_devService.IsDatabaseHealthy())
+            if (_devService.IsServerHealthy())
             {
-                return Ok("Database is up and running");
+                Response.StatusCode = (int)HttpStatusCode.OK;
+                return new HealthCheckRes
+                {
+                    Message = "MongoDB Atlas is up and running"
+                };
             }
 
-            return StatusCode(500, "Cannot connect to database");
+            // Should never run to here
+            Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            return new HealthCheckRes
+            {
+                Message = "Cannot connect to MongoDB Atlas"
+            };
         }
 
         [DevelopmentOnly]
         [HttpGet("health/s3")]
-        public IActionResult GetS3Health()
+        public HealthCheckRes GetS3Health()
         {
-            if(_devService.IsS3Healthy())
+            if (_devService.IsServerHealthy())
             {
-                return Ok("S3 Bucket is up and running");
+                Response.StatusCode = (int)HttpStatusCode.OK;
+                return new HealthCheckRes
+                {
+                    Message = "AWS S3 Bucket is up and running"
+                };
             }
 
-            return StatusCode(500, "Cannot connect to S3 Bucket");
+            // Should never run to here
+            Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+            return new HealthCheckRes
+            {
+                Message = "Cannot connect to AWS S3 Bucket"
+            };
         }
 
         [DevelopmentOnly]
