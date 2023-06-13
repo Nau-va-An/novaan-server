@@ -4,6 +4,7 @@ using Amazon.S3;
 using Microsoft.AspNetCore.Http;
 using Amazon.S3.Model;
 using System.Net;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace S3Connector
 {
@@ -38,7 +39,7 @@ namespace S3Connector
             _bucketName = bucketName;
             _region = region;
             _s3Client = new(accessKey, secretKey, Amazon.RegionEndpoint.GetBySystemName(_region));
-            
+
         }
 
         // TODO: Demo S3 upload file, fix if needed
@@ -57,6 +58,19 @@ namespace S3Connector
             return true;
         }
 
+        public async Task<string> UploadFileAsync(MemoryStream fileStream, MultipartSection section)
+        {
+            var request = new PutObjectRequest()
+            {
+                BucketName = _bucketName,
+                Key = System.Guid.NewGuid().ToString() + Path.GetExtension(section.AsFileSection().FileName),
+                // make fileStream open to read
+                InputStream = fileStream
+            };
+            request.Metadata.Add("Content-Type", section.ContentType);
+            var response = await _s3Client.PutObjectAsync(request);
+            return request.Key;
+        }
         // Return a limited time download link
         public string DownloadFileAsync(string keyId)
         {
@@ -76,6 +90,7 @@ namespace S3Connector
                 // Throw custom error here
                 return "";
             }
+
         }
     }
 }
