@@ -28,7 +28,6 @@ builder.Services.AddSingleton<FileService>();
 // Server services register
 builder.Services.AddScoped<IDevService, DevService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IRecipeService, RecipeService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 

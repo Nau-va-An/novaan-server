@@ -1,6 +1,4 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,9 +8,9 @@ namespace MongoConnector.Models
 {
     public class Ingredient
     {
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string? Id { get; set; }
-        public string IngredientName { get; set; }
+        public string Name { get; set;}
+        public int Amount { get; set; }
+        public string Unit { get; set; }
+
     }
 }
