@@ -7,6 +7,7 @@ using MongoConnector.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using NovaanServer.Auth.DTOs;
+using NovaanServer.src.Auth.DTOs;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using Utils.Hash;
 
@@ -78,19 +79,19 @@ namespace NovaanServer.Auth
             return true;
         }
 
-        public async Task<bool> GoogleAuthentication(SignUpDTO signUpDTO)
+        public async Task<bool> GoogleAuthentication(GoogleOauthDTO googleOAuthDTO)
         {
-            // Check if user email exists
-            // Check if user email exists
-            var emailExists = await checkEmailExist(signUpDTO.Email);
-            if (!emailExists)
+            // Check if google id exists
+            var userGoogleId = await checkGoogleIdExist(googleOAuthDTO.Sub);
+            if (!userGoogleId)
             {
                 // Add account to database
                 var newAccount = new Account
                 {
-                    Username = signUpDTO.Username,
-                    Email = signUpDTO.Email,
+                    Username = googleOAuthDTO.Name,
+                    Email = googleOAuthDTO.Email??"",
                     Verified = true,
+                    GoogleId = googleOAuthDTO.Sub,
                 };
                 try
                 {
@@ -102,6 +103,21 @@ namespace NovaanServer.Auth
                 }
             }
             return true;
+        }
+
+        // Check if google id exists
+        private async Task<bool> checkGoogleIdExist(string? googleId)
+        {
+            if (string.IsNullOrEmpty(googleId))
+            {
+                return false;
+            }
+            var foundAccount = await _mongoService.Accounts
+                .Find(
+                    acc => acc.GoogleId == googleId
+                )
+                .FirstOrDefaultAsync();
+            return foundAccount != null;
         }
 
         // Check if email exists
@@ -116,7 +132,7 @@ namespace NovaanServer.Auth
         }
 
         //Check if username exists
-        private async Task<bool> checkUsernameExist(string username)
+        private async Task<bool> checkUsernameExist(string? username)
         {
             var foundAccount = await _mongoService.Accounts
                 .Find(
