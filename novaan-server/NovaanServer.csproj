@@ -26,6 +26,7 @@
     <None Remove="src\Common\" />
     <None Remove="src\Common\DTOs\" />
     <None Remove="src\Common\Attributes\" />
+    <None Remove="src\Developer\DTOs\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\" />
@@ -37,6 +38,7 @@
     <Folder Include="src\Common\" />
     <Folder Include="src\Common\DTOs\" />
     <Folder Include="src\Common\Attributes\" />
+    <Folder Include="src\Developer\DTOs\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">
