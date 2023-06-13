@@ -79,19 +79,19 @@ namespace NovaanServer.Auth
             return true;
         }
 
-        public async Task<bool> GoogleAuthentication(GoogleOauthDTO googleOauthDTO)
+        public async Task<bool> GoogleAuthentication(GoogleOauthDTO googleOAuthDTO)
         {
             // Check if google id exists
-            var userGoogleId = await checkGoogleIdExist(googleOauthDTO.Sub);
+            var userGoogleId = await checkGoogleIdExist(googleOAuthDTO.Sub);
             if (!userGoogleId)
             {
                 // Add account to database
                 var newAccount = new Account
                 {
-                    Username = googleOauthDTO.Name??"",
-                    Email = googleOauthDTO.Email??"",
+                    Username = googleOAuthDTO.Name,
+                    Email = googleOAuthDTO.Email??"",
                     Verified = true,
-                    GoogleId = googleOauthDTO.Sub,
+                    GoogleId = googleOAuthDTO.Sub,
                 };
                 try
                 {
