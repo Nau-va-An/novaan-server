@@ -40,6 +40,11 @@ namespace MongoConnector
             return true;
         }
 
+        public IMongoCollection<T> GetCollection<T>()
+        {
+            return MongoDatabase.GetCollection<T>(typeof(T).Name.ToLower());
+        }
+
         public IMongoCollection<Account> Accounts
         {
             get
@@ -47,11 +52,11 @@ namespace MongoConnector
                 return MongoDatabase.GetCollection<Account>(MongoCollections.Accounts);
             }
         }
-        public IMongoCollection<Recipe> Recipes
+        public IMongoCollection<Recipes> Recipes
         {
             get
             {
-                return MongoDatabase.GetCollection<Recipe>(MongoCollections.Recipes);
+                return MongoDatabase.GetCollection<Recipes>(MongoCollections.Recipes);
             }
         }
         public IMongoCollection<CulinaryTips> CulinaryTips

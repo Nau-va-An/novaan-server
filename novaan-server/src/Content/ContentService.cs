@@ -337,7 +337,7 @@ namespace NovaanServer.src.Content
             return Task.CompletedTask;
         }
 
-        public async Task UploadRecipe(Recipe recipe)
+        public async Task UploadRecipe(Recipes recipe)
         {
             try
             {
