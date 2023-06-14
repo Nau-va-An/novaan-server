@@ -143,7 +143,12 @@ namespace NovaanServer.src.Content
 
         private static void MappingObjectData<T>(T? obj, PropertyInfo? property, string value, string subFieldName = "", int key = 0)
         {
-            var propertyType = property.PropertyType;
+            if (property == null)
+            {
+                throw new Exception("Unknown Property");
+            }
+
+            Type propertyType = property.PropertyType;
 
             // Handle special cases for enums
             if (propertyType.IsEnum)
@@ -181,7 +186,7 @@ namespace NovaanServer.src.Content
                 }
                 else
                 {
-                    var listValue = CustomJson.Deserialzie<T>(value);
+                    var listValue = JsonConvert.DeserializeObject(value, propertyType);
                     property.SetValue(obj, listValue);
                 }
             }
@@ -340,7 +345,7 @@ namespace NovaanServer.src.Content
             }
             catch (System.Exception)
             {
-                
+
                 throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
             }
         }
