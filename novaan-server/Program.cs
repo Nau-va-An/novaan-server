@@ -11,6 +11,7 @@ using System.Text;
 using NovaanServer.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using NovaanServer.src.Preference;
+using NovaanServer.src.Admin;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,7 @@ builder.Services.AddScoped<IDevService, DevService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IPreferenceService, PreferenceService>();
+builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
 builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection("JwTConfig"));
