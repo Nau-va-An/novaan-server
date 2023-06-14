@@ -13,7 +13,7 @@ namespace MongoConnector.Models
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string? Id { get; set; }
+        public string Id { get; set; }
         public string TagName { get; set; }
         public string Field { get; set; }
     }

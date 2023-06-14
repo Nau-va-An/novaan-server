@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using S3Connector;
+using Utils.Json;
 
 namespace NovaanServer.src.Content
 {
@@ -88,6 +89,9 @@ namespace NovaanServer.src.Content
                         }
                         else
                         {
+                            // For example, object T have a property named "Instruction" with data type is List<Instruction>
+                            // Instruction object have a property named "Image" with data type is string
+                            // The fieldName that front-end passed to back-end will be "Instruction_Image_1"
                             var splitValues = fieldName.Split('_');
                             if (splitValues.Length != 3)
                             {
@@ -177,7 +181,7 @@ namespace NovaanServer.src.Content
                 }
                 else
                 {
-                    var listValue = JsonConvert.DeserializeObject(value, propertyType);
+                    var listValue = CustomJson.Deserialzie<T>(value);
                     property.SetValue(obj, listValue);
                 }
             }
