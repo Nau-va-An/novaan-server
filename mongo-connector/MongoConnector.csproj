@@ -16,5 +16,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Remove="Models\" />
+    <None Remove="Enums\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Enums\" />
   </ItemGroup>
 </Project>

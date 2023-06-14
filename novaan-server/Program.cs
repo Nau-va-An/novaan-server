@@ -10,6 +10,7 @@ using S3Connector;
 using System.Text;
 using NovaanServer.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using NovaanServer.src.Admin;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,7 @@ builder.Services.AddSingleton<FileService>();
 builder.Services.AddScoped<IDevService, DevService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IContentService, ContentService>();
+builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
 builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection("JwTConfig"));
