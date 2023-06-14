@@ -1,5 +1,6 @@
 ﻿using System;
 using NovaanServer.Auth.DTOs;
+using NovaanServer.src.Auth.DTOs;
 
 namespace NovaanServer.Auth
 {
@@ -9,7 +10,7 @@ namespace NovaanServer.Auth
 
 		public Task<string> SignInWithCredentials(SignInDTOs signInDTO);
 
-		public Task<bool> GoogleAuthentication(SignUpDTO signUpDTO);
+		public Task<bool> GoogleAuthentication(GoogleOauthDTO googleOauthDTO);
 	}
 }
 

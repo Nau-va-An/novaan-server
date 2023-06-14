@@ -1,10 +1,9 @@
-﻿using System;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoConnector.Models
 {
-	public class Account
+    public class Account
 	{
 		[BsonId]
 		[BsonRepresentation(BsonType.ObjectId)]
@@ -20,7 +19,11 @@ namespace MongoConnector.Models
 
         public bool Verified { get; set; } = false;
 
-        public bool EmailSent { get; set; } = false;
+		public bool EmailSent { get; set; } = false;
+
+		// Google ID
+		public string? GoogleId { get; set; }
+
 	}
 
 	public enum Role

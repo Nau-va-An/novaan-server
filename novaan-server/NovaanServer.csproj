@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.16" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +26,7 @@
     <None Remove="src\Common\" />
     <None Remove="src\Common\DTOs\" />
     <None Remove="src\Common\Attributes\" />
+    <None Remove="src\Developer\DTOs\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\" />
@@ -36,6 +38,7 @@
     <Folder Include="src\Common\" />
     <Folder Include="src\Common\DTOs\" />
     <Folder Include="src\Common\Attributes\" />
+    <Folder Include="src\Developer\DTOs\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">

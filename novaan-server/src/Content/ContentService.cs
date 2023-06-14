@@ -1,15 +1,16 @@
-﻿using System;
+﻿﻿using System.Collections;
+using System.Reflection;
 using System.Text;
 using FileServer;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using MongoConnector;
 using MongoConnector.Models;
+using Newtonsoft.Json;
 using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using S3Connector;
+using Utils.Json;
 
 namespace NovaanServer.src.Content
 {
@@ -18,11 +19,9 @@ namespace NovaanServer.src.Content
         private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20mb
         // _imageSizeLimit is 5,242,880 bytes.
         private readonly long _imageSizeLimit = 5L * 1024L * 1024L; // 5mb
-
-        private const int VALUE_COUNT_LIMIT = 1024;
         private const int MULTIPART_BOUNDARY_LENGTH_LIMIT = 128;
         private readonly string[] _permittedVideoExtensions = { "mp4" };
-        private readonly string[] _permittedImageExtensions = { "jpg", "jpeg", "png" };
+        private readonly string[] _permittedImageExtensions = { "jpg", "jpeg", "png", "webp" };
         private readonly MongoDBService _mongoService;
         private readonly FileService _fileService;
         private readonly S3Service _s3Service;
@@ -45,63 +44,77 @@ namespace NovaanServer.src.Content
         }
 
         // Process multipart request
-        public async Task<Dictionary<string, object>> ProcessMultipartRequest(HttpRequest request)
+        public async Task<T> ProcessMultipartRequest<T>(HttpRequest request)
         {
-            // Checks if the request's content type is a multipart form data
             if (!IsMultipartContentType(request.ContentType))
             {
                 throw new Exception($"Expected a multipart request, but got {request.ContentType}");
             }
-            // Create an array to store file ID
-            var imageIDs = new List<string>();
-            // variable to store videoID
-            string videoID = "";
-            // Create a dictionary to store form data key-value pairs
-            var formData = new Dictionary<string, object>();
+
             var boundary = GetBoundary(MediaTypeHeaderValue.Parse(request.ContentType));
             var reader = new MultipartReader(boundary, request.Body);
             var section = await reader.ReadNextSectionAsync();
+
+            var obj = Activator.CreateInstance<T>();
+            var properties = typeof(T).GetProperties();
+
             while (section != null)
             {
-                var hasContentDispositionHeader = ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out var contentDisposition);
-
-                if (contentDisposition == null)
-                {
-                    throw new Exception("Content Disposition is null");
-                }
-                if (!hasContentDispositionHeader)
+                var contentDisposition = ContentDispositionHeaderValue.Parse(section.ContentDisposition);
+                if (contentDisposition == null || contentDisposition.Name == null)
                 {
                     throw new Exception("Invalid Content Disposition");
                 }
+                var fieldName = HeaderUtilities.RemoveQuotes(contentDisposition.Name).Value.ToLowerInvariant();
+                var property = properties.FirstOrDefault(p => p.Name.ToLowerInvariant() == fieldName);
+
                 if (HasFileContentDisposition(contentDisposition))
                 {
-                    var streamedFileContent = await ProcessStreamedFile(section, contentDisposition, _permittedVideoExtensions, _videoSizeLimit);
-                    // Upload file to S3
-                    var fileID = await _s3Service.UploadFileAsync(streamedFileContent, section);
-                    // Close stream
-                    streamedFileContent.Close();
-                    // Check if fileId contain string in permittedImageExtensions
-                    if (_permittedImageExtensions.Contains(fileID.Split('.')[1]))
+                    if (contentDisposition.FileName.Value == null)
                     {
-                        imageIDs.Add(fileID);
-                        formData.Add("Images", imageIDs);
+                        throw new Exception("Invalid File Name");
                     }
-                    else
+                    var fileExtension = contentDisposition.FileName.Value.Split('.')[1];
+                    var isImage = _permittedImageExtensions.Contains(fileExtension);
+                    var permittedExtensions = isImage ? _permittedImageExtensions : _permittedVideoExtensions;
+                    var sizeLimit = isImage ? _imageSizeLimit : _videoSizeLimit;
+
+                    using (var streamedFileContent = await ProcessStreamedFile(section, contentDisposition, permittedExtensions, sizeLimit))
                     {
-                        videoID = fileID;
-                        formData.Add("Video", videoID);
+                        var fileID = await _s3Service.UploadFileAsync(streamedFileContent, section);
+
+                        if (property != null)
+                        {
+                            MappingObjectData(obj, property, fileID);
+                        }
+                        else
+                        {
+                            // For example, object T have a property named "Instruction" with data type is List<Instruction>
+                            // Instruction object have a property named "Image" with data type is string
+                            // The fieldName that front-end passed to back-end will be "Instruction_Image_1"
+                            var splitValues = fieldName.Split('_');
+                            if (splitValues.Length != 3)
+                            {
+                                throw new Exception("Invalid Field Name");
+                            }
+
+                            var fieldNameSplit = splitValues[0];
+                            var subFieldName = splitValues[1];
+                            var key = splitValues[2];
+
+                            property = properties.FirstOrDefault(p => p.Name.ToLowerInvariant() == fieldNameSplit);
+                            if (property == null)
+                            {
+                                throw new Exception("Unknown Field Name");
+                            }
+
+                            MappingObjectData(obj, property, fileID, subFieldName, int.Parse(key));
+                        }
                     }
                 }
                 else if (HasFormDataContentDisposition(contentDisposition))
                 {
-                    var key = HeaderUtilities.RemoveQuotes(contentDisposition.Name).Value;
                     var encoding = GetEncoding(section);
-
-                    if (key == null)
-                    {
-                        throw new Exception("Field name is null");
-                    }
-
                     using (var streamReader = new StreamReader(section.Body, encoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
                     {
                         var value = await streamReader.ReadToEndAsync();
@@ -109,11 +122,10 @@ namespace NovaanServer.src.Content
                         {
                             value = string.Empty;
                         }
-                        formData.Add(key, value);
 
-                        if (formData.Count > VALUE_COUNT_LIMIT)
+                        if (property != null)
                         {
-                            throw new InvalidDataException($"Form key count limit {VALUE_COUNT_LIMIT} exceeded.");
+                            MappingObjectData(obj, property, value);
                         }
                     }
                 }
@@ -121,10 +133,74 @@ namespace NovaanServer.src.Content
                 {
                     throw new Exception("Unknown Content Disposition");
                 }
+
                 section = await reader.ReadNextSectionAsync();
             }
 
-            return formData;
+            return obj;
+        }
+
+
+        private static void MappingObjectData<T>(T? obj, PropertyInfo? property, string value, string subFieldName = "", int key = 0)
+        {
+            if (property == null)
+            {
+                throw new Exception("Unknown Property");
+            }
+
+            Type propertyType = property.PropertyType;
+
+            // Handle special cases for enums
+            if (propertyType.IsEnum)
+            {
+                var enumValue = Enum.Parse(propertyType, value);
+                property.SetValue(obj, enumValue);
+            }
+
+            // Handle special cases for TimeSpan
+            else if (propertyType == typeof(TimeSpan))
+            {
+                if (TimeSpan.TryParse(value, out var timeSpan))
+                {
+                    property.SetValue(obj, timeSpan);
+                }
+            }
+
+            // Handle special cases for lists of objects
+            else if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
+            {
+                var listItemType = propertyType.GetGenericArguments()[0];
+                var list = property.GetValue(obj) as IList;
+                var listItemProperties = listItemType.GetProperties();
+
+                if (key != 0 && key <= list.Count)
+                {
+                    var listItem = list[key - 1];
+                    var subProperty = listItemProperties.FirstOrDefault(p => p.Name.ToLower() == subFieldName.ToLower());
+
+                    if (subProperty != null)
+                    {
+                        var convertedValue = Convert.ChangeType(value, subProperty.PropertyType);
+                        subProperty.SetValue(listItem, convertedValue);
+                    }
+                }
+                else
+                {
+                    var listValue = JsonConvert.DeserializeObject(value, propertyType);
+                    property.SetValue(obj, listValue);
+                }
+            }
+            // Default case: convert value to the property type
+            else
+            {
+                var convertedValue = value as IConvertible;
+                if (convertedValue != null)
+                {
+                    var targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+                    var convertedObject = convertedValue.ToType(targetType, null);
+                    property.SetValue(obj, convertedObject);
+                }
+            }
         }
 
         private Encoding GetEncoding(MultipartSection section)
@@ -261,6 +337,18 @@ namespace NovaanServer.src.Content
             return Task.CompletedTask;
         }
 
+        public async Task UploadRecipe(Recipe recipe)
+        {
+            try
+            {
+                _mongoService.Recipes.InsertOne(recipe);
+            }
+            catch (System.Exception)
+            {
+
+                throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
+            }
+        }
     }
 }
 

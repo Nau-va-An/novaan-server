@@ -1,11 +1,7 @@
-﻿using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Net.Http.Headers;
+﻿using Microsoft.AspNetCore.Mvc;
 using MongoConnector.Models;
 using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.Filter;
-using S3Connector;
 
 namespace NovaanServer.src.Content
 {
@@ -23,31 +19,29 @@ namespace NovaanServer.src.Content
         [DisableFormValueModelBinding]
         public async Task<IActionResult> UploadCulinaryTips()
         {
-            var culinaryData = await _contentService.ProcessMultipartRequest(Request);
-            CulinaryTips culinaryTips = new CulinaryTips();
-            //mapping each key-value pair to a CulinaryTips using reflection
-            foreach (var (key, value) in culinaryData)
-            {
-                var property = typeof(CulinaryTips).GetProperties().FirstOrDefault(p => p.Name.ToLower() == key.ToLower());
-                if (property != null)
-                {
-                    var values = Convert.ChangeType(value, property.PropertyType);
-                    property.SetValue(culinaryTips, value);
-                }
-            }
-
+            var culinaryTips = await _contentService.ProcessMultipartRequest<CulinaryTips>(Request);
             // Add to database
             await _contentService.AddCulinaryTips(culinaryTips);
             return Ok();
         }
 
-		// Validate file metadata
-		[HttpPost("validate")]
-		public async Task<IActionResult> ValidateFileMetadata([FromBody] FileInformationDTO fileMetadataDTO)
-		{
-			await _contentService.ValidateFileMetadata(fileMetadataDTO);
-			return Ok();
-		}
+        // Validate file metadata
+        [HttpPost("validate")]
+        public async Task<IActionResult> ValidateFileMetadata([FromBody] FileInformationDTO fileMetadataDTO)
+        {
+            await _contentService.ValidateFileMetadata(fileMetadataDTO);
+            return Ok();
+        }
+
+        [HttpPost("upload/recipe")]
+        [DisableFormValueModelBinding]
+        public async Task<IActionResult> UploadRecipe()
+        {
+            Recipe recipe = await _contentService.ProcessMultipartRequest<Recipe>(Request);
+            await _contentService.UploadRecipe(recipe);
+            return Ok();
+
+        }
     }
 }
 
