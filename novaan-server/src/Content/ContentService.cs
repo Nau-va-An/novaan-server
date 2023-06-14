@@ -74,8 +74,7 @@ namespace NovaanServer.src.Content
                     {
                         throw new Exception("Invalid File Name");
                     }
-                    var fileExtension = contentDisposition.FileName.Value.Split('.')[1];
-                    var isImage = _permittedImageExtensions.Contains(fileExtension);
+                    var isImage = fieldName.Contains("image");
                     var permittedExtensions = isImage ? _permittedImageExtensions : _permittedVideoExtensions;
                     var sizeLimit = isImage ? _imageSizeLimit : _videoSizeLimit;
 
