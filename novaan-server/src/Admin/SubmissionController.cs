@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
+using MongoConnector.Models;
 
 namespace NovaanServer.src.Admin
 {
@@ -31,7 +32,33 @@ namespace NovaanServer.src.Admin
             return Ok(submissions);
         }
 
-       
+        /// <summary>
+        /// Update status of recipe 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="status"></param>
+        /// <returns></returns>
+        [HttpPut("update-status/recipe")]
+        public async Task<IActionResult> UpdateStatus([FromQuery] string id, [FromQuery] int status)
+        {
+            // Calling Service to update status
+            await _submissionService.UpdateStatus<Recipes>(id, status);
+            return Ok();
+        }
+
+        /// <summary>
+        /// Update status of culinary tips
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="status"></param>
+        /// <returns></returns>
+        [HttpPut("update-status/culinary-tips")]
+        public async Task<IActionResult> UpdateStatusCulinaryTips([FromQuery] string id, [FromQuery] int status)
+        {
+            // Calling Service to update status
+            await _submissionService.UpdateStatus<CulinaryTips>(id, status);
+            return Ok();
+        }
     }
 }
 
