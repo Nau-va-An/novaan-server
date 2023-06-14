@@ -47,7 +47,7 @@ namespace NovaanServer.Auth
         public async Task<RefreshTokenResDTO> RefreshToken()
         {
             Request.Headers.TryGetValue(HeaderNames.Authorization, out var authorizationHeader);
-            var accessToken = authorizationHeader.ToString().Substring("Bearer ".Length);
+            var accessToken = authorizationHeader.ToString()["Bearer ".Length..];
             var newToken = await _jwtService.RefreshToken(accessToken);
 
             return new RefreshTokenResDTO
@@ -56,12 +56,18 @@ namespace NovaanServer.Auth
                 Token = newToken
             };
         }
-        	[HttpPost("oauth/google")]
-		public async Task<IActionResult> GoogleAuthentication([FromBody] GoogleOauthDTO googleAuthDTO)
-		{
-			await _authService.GoogleAuthentication(googleAuthDTO);
-			return Ok();
-		}
+
+        [HttpPost("google")]
+        public async Task<SignInResDTO> GoogleAuthentication([FromBody] GoogleOAuthDTO googleOAuthDTO)
+        {
+            var userId = await _authService.GoogleAuthentication(googleOAuthDTO);
+            var token = await _jwtService.GenerateJwtToken(new UserJwt { UserId = userId });
+            return new SignInResDTO
+            {
+                Success = true,
+                Token = token
+            };
+        }
     }
 }
 

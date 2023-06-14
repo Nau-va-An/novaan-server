@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using MongoConnector;
 using MongoConnector.Models;
@@ -30,11 +32,8 @@ namespace NovaanServer.Auth
                     acc => acc.Email == signInDTO.UsernameOrEmail ||
                      acc.Username == signInDTO.UsernameOrEmail
                  ))
-                 .FirstOrDefault();
-            if (foundUser == null)
-            {
-                throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
-            }
+                 .FirstOrDefault()
+                 ?? throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
 
             var hashPassword = CustomHash.GetHashString(signInDTO.Password);
             if (foundUser.Password != hashPassword)
@@ -45,20 +44,15 @@ namespace NovaanServer.Auth
             return foundUser.Id;
         }
 
-        public Task<bool> SignInGoogle()
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<bool> SignUpWithCredentials(SignUpDTO signUpDTO)
         {
-            var emailExisted = await checkEmailExist(signUpDTO.Email);
+            var emailExisted = await CheckEmailExist(signUpDTO.Email);
             if (emailExisted)
             {
                 throw new BadHttpRequestException(ExceptionMessage.EMAIL_TAKEN);
             }
 
-            var usernameExisted = await checkUsernameExist(signUpDTO.Username);
+            var usernameExisted = await CheckUsernameExist(signUpDTO.Username);
             if (usernameExisted)
             {
                 throw new BadHttpRequestException(ExceptionMessage.USERNAME_TAKEN);
@@ -79,19 +73,41 @@ namespace NovaanServer.Auth
             return true;
         }
 
-        public async Task<bool> GoogleAuthentication(GoogleOauthDTO googleOAuthDTO)
+        public async Task<string> GoogleAuthentication(GoogleOAuthDTO googleOAuthDTO)
         {
-            // Check if google id exists
-            var userGoogleId = await checkGoogleIdExist(googleOAuthDTO.Sub);
-            if (!userGoogleId)
+            // Request Google account info from given access token
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", googleOAuthDTO.Token);
+
+            var response = await httpClient.GetAsync("https://www.googleapis.com/userinfo/v2/me");
+            if (!response.IsSuccessStatusCode)
             {
-                // Add account to database
+                throw new Exception("Cannot connect to Google OAuth API");
+            }
+
+            var ggAcountInfo = await response.Content.ReadFromJsonAsync<GoogleOAuthAPIResponse>()
+                ?? throw new Exception("Cannot parse Google account info with selected format");
+
+            // Find existing account associated with fetched account's googleId
+            var foundAccount = _mongoService.Accounts
+                .Find(acc => acc.GoogleId == ggAcountInfo.GoogleId)
+                .FirstOrDefault();
+
+            // Create new account if none found
+            if (foundAccount == null)
+            {
                 var newAccount = new Account
                 {
-                    Username = googleOAuthDTO.Name,
-                    Email = googleOAuthDTO.Email??"",
+                    Username = ggAcountInfo.Name,
+                    Email = ggAcountInfo.Email,
                     Verified = true,
-                    GoogleId = googleOAuthDTO.Sub,
+                    GoogleId = ggAcountInfo.GoogleId,
+                    // This can be changed later if user want to
+                    Password = Guid.NewGuid().ToString()
                 };
                 try
                 {
@@ -101,27 +117,15 @@ namespace NovaanServer.Auth
                 {
                     throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
                 }
-            }
-            return true;
-        }
 
-        // Check if google id exists
-        private async Task<bool> checkGoogleIdExist(string? googleId)
-        {
-            if (string.IsNullOrEmpty(googleId))
-            {
-                return false;
+                return newAccount.Id;
             }
-            var foundAccount = await _mongoService.Accounts
-                .Find(
-                    acc => acc.GoogleId == googleId
-                )
-                .FirstOrDefaultAsync();
-            return foundAccount != null;
+
+            return foundAccount.Id;
         }
 
         // Check if email exists
-        private async Task<bool> checkEmailExist(string email)
+        private async Task<bool> CheckEmailExist(string email)
         {
             var foundAccount = await _mongoService.Accounts
                 .Find(
@@ -132,7 +136,7 @@ namespace NovaanServer.Auth
         }
 
         //Check if username exists
-        private async Task<bool> checkUsernameExist(string? username)
+        private async Task<bool> CheckUsernameExist(string? username)
         {
             var foundAccount = await _mongoService.Accounts
                 .Find(
@@ -141,6 +145,16 @@ namespace NovaanServer.Auth
                 .FirstOrDefaultAsync();
             return foundAccount != null;
         }
+    }
+
+    internal class GoogleOAuthAPIResponse
+    {
+        [JsonPropertyName("id")]
+        public string GoogleId { get; set; }
+
+        public string Email { get; set; }
+
+        public string Name { get; set; }
     }
 }
 
