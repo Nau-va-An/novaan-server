@@ -1,17 +1,15 @@
 ﻿using FileServer;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MongoConnector;
 using NovaanServer.Auth;
-using NovaanServer.Configuration;
 using NovaanServer.Developer;
 using NovaanServer.ExceptionLayer;
 using NovaanServer.src.Content;
 using NovaanServer.src.Auth.Jwt;
 using S3Connector;
 using System.Text;
+using NovaanServer.Configuration;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 

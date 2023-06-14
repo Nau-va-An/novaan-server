@@ -1,10 +1,9 @@
-﻿using System;
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoConnector.Models
 {
-	public class Account
+    public class Account
 	{
 		[BsonId]
 		[BsonRepresentation(BsonType.ObjectId)]

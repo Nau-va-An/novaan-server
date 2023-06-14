@@ -7,7 +7,8 @@ namespace NovaanServer.src.Content
     public interface IContentService
     {
         Task AddCulinaryTips(CulinaryTips culinaryTips);
-        Task<Dictionary<string,object>> ProcessMultipartRequest(HttpRequest request);
+        Task UploadRecipe(Recipe recipe);
+        Task<T> ProcessMultipartRequest<T>(HttpRequest request);
         Task ValidateFileMetadata(FileInformationDTO fileMetadata);
     }
 }
