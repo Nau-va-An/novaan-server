@@ -4,10 +4,10 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoConnector.Models
 {
-    public class CulinaryTips
+    public class CulinaryTip
     {
         [BsonId]
-		[BsonRepresentation(BsonType.ObjectId)]
+        [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
         // Title
         public string Title { get; set; }
@@ -18,5 +18,5 @@ namespace MongoConnector.Models
         //Status
         public Status Status { get; set; } = Status.Pending;
     }
-    
+
 }

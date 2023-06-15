@@ -56,7 +56,7 @@ namespace NovaanServer.src.Admin
         public async Task<IActionResult> UpdateStatusCulinaryTips([FromQuery] string id, [FromQuery] int status)
         {
             // Calling Service to update status
-            await _submissionService.UpdateStatus<CulinaryTips>(id, status);
+            await _submissionService.UpdateStatus<CulinaryTip>(id, status);
             return Ok();
         }
     }
