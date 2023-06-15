@@ -18,12 +18,12 @@ namespace NovaanServer.src.Preference
         {
             var diet = _mongoService.Diets.Find(_ => true).ToList();
             var cuisine = _mongoService.Cuisines.Find(_ => true).ToList();
-            var mealType = _mongoService.MealTypes.Find(_ => true).ToList();
+            var allergen = _mongoService.Allergens.Find(_ => true).ToList();
             return new PreferenceDTO
             {
                 Diets = diet,
                 Cuisines = cuisine,
-                MealTypes = mealType
+                Allergens = allergen,
             };
         }
 
@@ -31,11 +31,15 @@ namespace NovaanServer.src.Preference
         {
             // get all preferences from user collection with user id
             var user = _mongoService.Users.Find(_ => _.Id == userId).FirstOrDefault();
+            if(user == null)
+            {
+                throw new Exception("User not found");
+            }
             return new UserPreferenceDTO
             {
-                Diets = user.DietID,
-                Cuisines = user.CuisineID,
-                MealTypes = user.MealTypeID,
+                Diets = user.Diet,
+                Cuisines = user.Cuisine,
+                Allergens = user.Allergen,
             };
         }
 
@@ -43,9 +47,14 @@ namespace NovaanServer.src.Preference
         {
             // Update list of preferences for user id
             var filter = Builders<User>.Filter.Eq("Id", userPreferenceDTO.UserID);
-            var update = Builders<User>.Update.Set("DietID", userPreferenceDTO.Diets)
-                .Set("CuisineID", userPreferenceDTO.Cuisines)
-                .Set("MealTypeID", userPreferenceDTO.MealTypes);
+            // Check if any object found from filter
+            if (_mongoService.Users.Find(filter).FirstOrDefault() == null)
+            {
+                throw new Exception("User not found");
+            }
+            var update = Builders<User>.Update.Set("Diet", userPreferenceDTO.Diets)
+                        .Set("Cuisine", userPreferenceDTO.Cuisines)
+                        .Set("Allergen", userPreferenceDTO.Allergens);
             return _mongoService.Users.UpdateOneAsync(filter, update);
         }
     }

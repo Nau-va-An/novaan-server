@@ -11,11 +11,11 @@ namespace MongoConnector.Models
 		public string Id { get; set; }
 		public string DisplayName { get; set; }
 		[BsonRepresentation(BsonType.ObjectId)]
-		public List<string> DietID { get; set; }
+		public List<string> Diet { get; set; }
 		[BsonRepresentation(BsonType.ObjectId)]
-		public List<string> CuisineID { get; set; }
+		public List<string> Cuisine { get; set; }
 		[BsonRepresentation(BsonType.ObjectId)]
-		public List<string> MealTypeID { get; set; }
+		public List<string> Allergen { get; set; }
 		
 	}
 }

@@ -6,7 +6,7 @@ namespace NovaanServer.src.Preference.DTOs
         public string? UserID { get; set; }
         public List<string> Diets { get; set; }
         public List<string> Cuisines { get; set; }
-        public List<string> MealTypes { get; set; }
+        public List<string> Allergens { get; set; }
     }
 }
 
