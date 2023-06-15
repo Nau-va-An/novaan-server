@@ -9,6 +9,7 @@
 		public static string Diets { get; } = "diets";
 		public static string MealTypes { get; } = "mealTypes";
 		public static string Cuisines { get; } = "cuisines";
+        public static string Users { get; } = "users";
     }
 }
 

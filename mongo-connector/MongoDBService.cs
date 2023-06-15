@@ -133,6 +133,14 @@ namespace MongoConnector
                 return MongoDatabase.GetCollection<RefreshToken>(MongoCollections.RefreshTokens);
             }
         }
+
+        public IMongoCollection<User> Users
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<User>(MongoCollections.Users);
+            }
+        }
     }
 }
 

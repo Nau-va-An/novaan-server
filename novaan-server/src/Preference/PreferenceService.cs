@@ -26,6 +26,18 @@ namespace NovaanServer.src.Preference
             };
         }
 
+        public UserPreferenceDTO GetPreference(string userId)
+        {
+            // get all preferences from user collection with user id
+            var user = _mongoService.Users.Find(_ => _.Id == userId).FirstOrDefault();
+            return new UserPreferenceDTO
+            {
+                Diets = user.DietID,
+                Cuisines = user.CuisineID,
+                MealTypes = user.MealTypeID,
+            };
+        }
+
         public Task UpdatePreference()
         {
             throw new NotImplementedException();

@@ -12,25 +12,29 @@ namespace NovaanServer.src.Preference
         {
             _preferenceService = preferenceService;
         }
-        
-        /// <summary>
-        /// Get all preference
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
+
+        [HttpGet("all")]
         public PreferenceDTO GetAllPreference()
         {
             var result =  _preferenceService.GetAllPreferences();
             return result;
         }
 
-        // update preference for user id with preference id
-        [HttpPut]
-        public async Task<IActionResult> UpdatePreference()
+        // get preference for user id
+        [HttpGet("user")]
+        public UserPreferenceDTO GetPreference([FromBody] string userId)
         {
-            await _preferenceService.UpdatePreference();
-            return Ok();
+            var result =  _preferenceService.GetPreference(userId);
+            return result;
         }
+
+        // update preference for user id with preference id
+        // [HttpPut]
+        // public async Task<IActionResult> UpdatePreference(string userId, string dietId, string cuisineId, string mealTypeId, string dishTypeId)
+        // {
+        //     await _preferenceService.UpdatePreference(userId, dietId, cuisineId, mealTypeId, dishTypeId);
+        //     return Ok();
+        // }
     }
     
 }
