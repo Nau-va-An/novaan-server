@@ -38,11 +38,11 @@ namespace NovaanServer.src.Admin
         /// <param name="id"></param>
         /// <param name="status"></param>
         /// <returns></returns>
-        [HttpPut("update-status/recipe")]
+        [HttpPut("status/recipe")]
         public async Task<IActionResult> UpdateStatus([FromQuery] string id, [FromQuery] int status)
         {
             // Calling Service to update status
-            await _submissionService.UpdateStatus<Recipes>(id, status);
+            await _submissionService.UpdateStatus<Recipe>(id, status);
             return Ok();
         }
 
@@ -52,7 +52,7 @@ namespace NovaanServer.src.Admin
         /// <param name="id"></param>
         /// <param name="status"></param>
         /// <returns></returns>
-        [HttpPut("update-status/culinary-tips")]
+        [HttpPut("status/culinary-tips")]
         public async Task<IActionResult> UpdateStatusCulinaryTips([FromQuery] string id, [FromQuery] int status)
         {
             // Calling Service to update status
