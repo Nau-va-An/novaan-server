@@ -42,7 +42,7 @@ namespace NovaanServer.src.Admin
             try
             {
                 // Get collection of object
-                var collection = _mongoService.GetCollection<T>();
+                var collection = _mongoService.GetCollection<T>(typeof(T).Name);
                 // Get object by id, note that id in database is object id
                 var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(id));
                 var obj = collection.Find(filter).FirstOrDefault();

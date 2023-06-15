@@ -31,7 +31,7 @@ namespace NovaanServer.src.Content
             _fileService = fileService;
             _s3Service = s3Service;
         }
-        public async Task AddCulinaryTips(CulinaryTips culinaryTips)
+        public async Task AddCulinaryTips(CulinaryTip culinaryTips)
         {
             try
             {
