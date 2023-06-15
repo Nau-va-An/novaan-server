@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoConnector.Models;
 
@@ -6,6 +7,7 @@ namespace NovaanServer.src.Admin
 {
     [Route("api/admin")]
     [ApiController]
+    [Authorize]
     public class AdminController : ControllerBase
     {
         private readonly IAdminService _submissionService;
