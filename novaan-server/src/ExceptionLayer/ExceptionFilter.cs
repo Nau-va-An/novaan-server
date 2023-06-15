@@ -53,7 +53,7 @@ namespace NovaanServer.ExceptionLayer
                 Success = false,
                 Body = new
                 {
-                    Message = exception.Message
+                    message = exception.Message
                 }
             };
 

@@ -41,7 +41,6 @@ namespace NovaanServer.src.Content
             Recipe recipe = await _contentService.ProcessMultipartRequest<Recipe>(Request);
             await _contentService.UploadRecipe(recipe);
             return Ok();
-
         }
     }
 }
