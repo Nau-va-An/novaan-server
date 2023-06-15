@@ -1,5 +1,4 @@
-﻿using System;
-namespace NovaanServer.src.Content.DTOs
+﻿namespace NovaanServer.src.Content.DTOs
 {
     public class FileInformationDTO
     {

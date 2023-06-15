@@ -10,6 +10,7 @@ using S3Connector;
 using System.Text;
 using NovaanServer.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using NovaanServer.src.Preference;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,7 @@ builder.Services.AddSingleton<FileService>();
 builder.Services.AddScoped<IDevService, DevService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IContentService, ContentService>();
+builder.Services.AddScoped<IPreferenceService, PreferenceService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
 builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection("JwTConfig"));
@@ -50,6 +52,16 @@ builder.Services
 builder.Services.AddSingleton<TokenValidationParameters>(tokenSettings);
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var mongoDBService = services.GetRequiredService<MongoDBService>();
+    mongoDBService.PingDatabase();
+    await mongoDBService.SeedDietData();
+    await mongoDBService.SeedCuisineData();
+    await mongoDBService.SeedMealTypeData();
+}
 
 app.UseMiddleware<ExceptionFilter>();
 
@@ -85,4 +97,5 @@ static TokenValidationParameters GetTokenValidationParameters(WebApplicationBuil
         ValidateLifetime = true,
     };
 }
+
 
