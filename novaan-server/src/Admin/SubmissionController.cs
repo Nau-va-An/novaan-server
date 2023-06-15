@@ -38,25 +38,20 @@ namespace NovaanServer.src.Admin
         /// <param name="id"></param>
         /// <param name="status"></param>
         /// <returns></returns>
-        [HttpPut("status/recipe")]
-        public async Task<IActionResult> UpdateStatus([FromQuery] string id, [FromQuery] int status)
+        [HttpPut("status/{submissionType}")]
+        public async Task<IActionResult> UpdateStatus(string submissionType, [FromForm] string id, [FromForm] int status)
         {
-            // Calling Service to update status
-            await _submissionService.UpdateStatus<Recipe>(id, status);
-            return Ok();
-        }
-
-        /// <summary>
-        /// Update status of culinary tips
-        /// </summary>
-        /// <param name="id"></param>
-        /// <param name="status"></param>
-        /// <returns></returns>
-        [HttpPut("status/culinary-tips")]
-        public async Task<IActionResult> UpdateStatusCulinaryTips([FromQuery] string id, [FromQuery] int status)
-        {
-            // Calling Service to update status
-            await _submissionService.UpdateStatus<CulinaryTip>(id, status);
+            switch (submissionType)
+            {
+                case "recipes":
+                    await _submissionService.UpdateStatus<Recipe>(submissionType,id, status);
+                    break;
+                case "culinaryTips":
+                    await _submissionService.UpdateStatus<CulinaryTip>(submissionType,id, status);
+                    break;
+                default:
+                    return BadRequest("Invalid submission type");
+            }
             return Ok();
         }
     }
