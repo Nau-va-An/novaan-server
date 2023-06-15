@@ -51,6 +51,14 @@ builder.Services.AddSingleton<TokenValidationParameters>(tokenSettings);
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var mongoDBService = services.GetRequiredService<MongoDBService>();
+    mongoDBService.PingDatabase();
+    await mongoDBService.SeedDietData();
+}
+
 app.UseMiddleware<ExceptionFilter>();
 
 if (app.Environment.IsDevelopment())
@@ -85,4 +93,5 @@ static TokenValidationParameters GetTokenValidationParameters(WebApplicationBuil
         ValidateLifetime = true,
     };
 }
+
 

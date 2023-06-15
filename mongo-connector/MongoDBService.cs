@@ -2,6 +2,7 @@
 using MongoDB.Driver;
 using MongoDB.Bson;
 using MongoConnector.Models;
+using Newtonsoft.Json;
 
 namespace MongoConnector
 {
@@ -38,6 +39,19 @@ namespace MongoConnector
         {
             var result = MongoDatabase.RunCommand<BsonDocument>(new BsonDocument("ping", 1));
             return true;
+        }
+
+        // Seed data Diet
+        public async Task SeedDietData()
+        {
+            var dietCollection = MongoDatabase.GetCollection<Diet>(MongoCollections.Diets);
+            var dietData = await dietCollection.Find(_ => true).ToListAsync();
+            if (dietData.Count == 0)
+            {
+                var dietJson = File.ReadAllText("dietPreferences.json");
+                var dietList = JsonConvert.DeserializeObject<List<Diet>>(dietJson);
+                await dietCollection.InsertManyAsync(dietList);
+            }
         }
 
         public IMongoCollection<Account> Accounts
