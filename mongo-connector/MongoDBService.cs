@@ -80,6 +80,40 @@ namespace MongoConnector
             }
         }
 
+        // Seed data allergen
+        public async Task SeedAllergenData()
+        {
+            var allergenCollection = MongoDatabase.GetCollection<Allergen>(MongoCollections.Allergens);
+            var allergenData = await allergenCollection.Find(_ => true).ToListAsync();
+            if (allergenData.Count == 0)
+            {
+                var allergenJson = File.ReadAllText("Seeder/allergenPreferences.json");
+                var allergenList = JsonConvert.DeserializeObject<List<Allergen>>(allergenJson);
+                await allergenCollection.InsertManyAsync(allergenList);
+            }
+        }
+
+        // // Seed data user
+        // public async Task SeedUserData()
+        // {
+        //     var userCollection = MongoDatabase.GetCollection<User>(MongoCollections.Users);
+        //     var userData = await userCollection.Find(_ => true).ToListAsync();
+        //     if (userData.Count == 0)
+        //     {
+        //         // Seed one user with id from account collection, and some preferences (diet, cuisine, allergen) and display name is from account collection username
+        //         var accountCollection = MongoDatabase.GetCollection<Account>(MongoCollections.Accounts);
+        //         var user = new User
+        //         {
+        //             Id = accountCollection.Find(_ => true).FirstOrDefault().Id,
+        //             DisplayName = accountCollection.Find(_ => true).FirstOrDefault().Username,
+        //             DietID = new List<string> { "1", "2" },
+        //             CuisineID = new List<string> { "1", "2" },
+        //             AllergenID = new List<string> { "1", "2" }
+        //         };
+
+        //     }
+        // }
+
         public IMongoCollection<Account> Accounts
         {
             get
@@ -139,6 +173,14 @@ namespace MongoConnector
             get
             {
                 return MongoDatabase.GetCollection<User>(MongoCollections.Users);
+            }
+        }
+
+        public IMongoCollection<Allergen> Allergens
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Allergen>(MongoCollections.Allergens);
             }
         }
     }

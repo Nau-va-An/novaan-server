@@ -10,6 +10,7 @@
 		public static string MealTypes { get; } = "mealTypes";
 		public static string Cuisines { get; } = "cuisines";
         public static string Users { get; } = "users";
+        public static string Allergens { get; } = "allergens";
     }
 }
 
