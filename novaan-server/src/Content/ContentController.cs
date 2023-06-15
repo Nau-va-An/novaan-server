@@ -19,7 +19,7 @@ namespace NovaanServer.src.Content
         [DisableFormValueModelBinding]
         public async Task<IActionResult> UploadCulinaryTips()
         {
-            var culinaryTips = await _contentService.ProcessMultipartRequest<CulinaryTips>(Request);
+            var culinaryTips = await _contentService.ProcessMultipartRequest<CulinaryTip>(Request);
             // Add to database
             await _contentService.AddCulinaryTips(culinaryTips);
             return Ok();
