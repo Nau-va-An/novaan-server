@@ -4,6 +4,7 @@ namespace NovaanServer.src.Preference
 {
     public interface IPreferenceService
     {
-        List<PreferenceDTO> GetAllPreference();
+        PreferenceDTO GetAllPreferences();
+        Task UpdatePreference();
     }
 }

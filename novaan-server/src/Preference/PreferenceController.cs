@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using NovaanServer.src.Preference.DTOs;
 
 namespace NovaanServer.src.Preference
 {
@@ -17,10 +18,18 @@ namespace NovaanServer.src.Preference
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public IActionResult GetAllPreference()
+        public PreferenceDTO GetAllPreference()
         {
-            var result =  _preferenceService.GetAllPreference();
-            return Ok(result);
+            var result =  _preferenceService.GetAllPreferences();
+            return result;
+        }
+
+        // update preference for user id with preference id
+        [HttpPut]
+        public async Task<IActionResult> UpdatePreference()
+        {
+            await _preferenceService.UpdatePreference();
+            return Ok();
         }
     }
     

@@ -6,9 +6,9 @@
 		public static string Recipes { get; } = "recipes";
 		public static string CulinaryTips { get; } = "culinaryTips";
         public static string RefreshTokens { get; } = "refreshTokens";
-		public static string Diets { get; } = "diet";
-		public static string MealTypes { get; } = "mealType";
-		public static string Cuisines { get; } = "cuisine";
+		public static string Diets { get; } = "diets";
+		public static string MealTypes { get; } = "mealTypes";
+		public static string Cuisines { get; } = "cuisines";
     }
 }
 
