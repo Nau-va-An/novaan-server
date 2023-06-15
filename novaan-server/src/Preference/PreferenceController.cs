@@ -30,9 +30,9 @@ namespace NovaanServer.src.Preference
 
         // update preference for user id with preference id
         [HttpPut("user")]
-        public async Task<IActionResult> UpdatePreference([FromBody] string userId, List<string> dietId, List<string> cuisineId, List<string> mealTypeId)
+        public async Task<IActionResult> UpdatePreference([FromBody] UserPreferenceDTO userPreferenceDTO)
         {
-            await _preferenceService.UpdatePreference(userId, dietId, cuisineId, mealTypeId);
+            await _preferenceService.UpdatePreference(userPreferenceDTO);
             return Ok();
         }
     }

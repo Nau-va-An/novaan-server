@@ -39,15 +39,14 @@ namespace NovaanServer.src.Preference
             };
         }
 
-        public Task UpdatePreference(string userId, List<string> dietId, List<string> cuisineId, List<string> mealTypeId)
+        public Task UpdatePreference(UserPreferenceDTO userPreferenceDTO)
         {
             // Update list of preferences for user id
-            var filter = Builders<User>.Filter.Eq("Id", userId);
-            var update = Builders<User>.Update.Set("DietID", dietId)
-                .Set("CuisineID", cuisineId)
-                .Set("MealTypeID", mealTypeId);
+            var filter = Builders<User>.Filter.Eq("Id", userPreferenceDTO.UserID);
+            var update = Builders<User>.Update.Set("DietID", userPreferenceDTO.Diets)
+                .Set("CuisineID", userPreferenceDTO.Cuisines)
+                .Set("MealTypeID", userPreferenceDTO.MealTypes);
             return _mongoService.Users.UpdateOneAsync(filter, update);
         }
     }
-
 }
