@@ -4,7 +4,7 @@ using MongoConnector.Models;
 
 namespace NovaanServer.src.Admin
 {
-    [Route("api/admin/[controller]")]
+    [Route("api/admin")]
     [ApiController]
     public class AdminController : ControllerBase
     {
