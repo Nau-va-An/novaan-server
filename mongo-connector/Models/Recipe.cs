@@ -4,7 +4,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoConnector.Models
 {
-    public class Recipes
+    public class Recipe
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]

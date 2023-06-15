@@ -52,11 +52,11 @@ namespace MongoConnector
                 return MongoDatabase.GetCollection<Account>(MongoCollections.Accounts);
             }
         }
-        public IMongoCollection<Recipes> Recipes
+        public IMongoCollection<Recipe> Recipes
         {
             get
             {
-                return MongoDatabase.GetCollection<Recipes>(MongoCollections.Recipes);
+                return MongoDatabase.GetCollection<Recipe>(MongoCollections.Recipes);
             }
         }
         public IMongoCollection<CulinaryTips> CulinaryTips

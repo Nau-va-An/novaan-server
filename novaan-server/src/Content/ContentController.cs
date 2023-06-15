@@ -38,7 +38,7 @@ namespace NovaanServer.src.Content
         [DisableFormValueModelBinding]
         public async Task<IActionResult> UploadRecipe()
         {
-            Recipes recipe = await _contentService.ProcessMultipartRequest<Recipes>(Request);
+            Recipe recipe = await _contentService.ProcessMultipartRequest<Recipe>(Request);
             await _contentService.UploadRecipe(recipe);
             return Ok();
 
