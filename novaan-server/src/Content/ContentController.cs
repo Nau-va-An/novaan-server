@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MongoConnector.Models;
 using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.Filter;
@@ -10,7 +10,6 @@ namespace NovaanServer.src.Content
     public class ContentController : ControllerBase
     {
         private readonly IContentService _contentService;
-
         public ContentController(IContentService contentService)
         {
             _contentService = contentService;
