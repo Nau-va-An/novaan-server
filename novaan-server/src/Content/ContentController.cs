@@ -15,6 +15,17 @@ namespace NovaanServer.src.Content
             _contentService = contentService;
         }
 
+        /// <summary>
+        /// Get all recipes and culinary tips from users, where status is Approved
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("posts")]
+        public async Task<IActionResult> GetPosts()
+        {
+            var posts = _contentService.GetPosts();
+            return Ok(posts);
+        }
+
         [HttpPost("upload/culinary-tips")]
         [DisableFormValueModelBinding]
         public async Task<IActionResult> UploadCulinaryTips()

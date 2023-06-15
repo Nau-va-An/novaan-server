@@ -9,13 +9,13 @@ namespace MongoConnector.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
-        // Title
-        public string Title { get; set; }
-        // VideoURL
-        public string Video { get; set; }
-        // AccountID
-        public string AccountID { get; set; }
-        //Status
+        
+        public string Title { get; set; } = string.Empty;
+        
+        public string Video { get; set; } = string.Empty;
+        
+        public string AccountID { get; set; } = string.Empty;
+        
         public Status Status { get; set; } = Status.Pending;
     }
 
