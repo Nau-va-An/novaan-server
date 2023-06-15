@@ -101,6 +101,31 @@ namespace MongoConnector
                 return MongoDatabase.GetCollection<CulinaryTips>(MongoCollections.CulinaryTips);
             }
         }
+
+        public IMongoCollection<Diet> Diets
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Diet>(MongoCollections.Diets);
+            }
+        }
+
+        public IMongoCollection<Cuisine> Cuisines
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Cuisine>(MongoCollections.Cuisines);
+            }
+        }
+
+        public IMongoCollection<MealType> MealTypes
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<MealType>(MongoCollections.MealTypes);
+            }
+        }
+        
         public IMongoCollection<RefreshToken> RefreshTokens
         {
             get
