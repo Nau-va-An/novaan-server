@@ -36,16 +36,19 @@ namespace NovaanServer.src.Admin
 			}
         }
 
-        public Task UpdateStatus<T>(string id, int status)
+        public Task UpdateStatus<T>(string submissionType,string id, int status)
         {
             var statusEnum = (Status)status;
             try
             {
                 // Get collection of object
-                var collection = _mongoService.GetCollection<T>(typeof(T).Name);
+                var collection = _mongoService.GetCollection<T>(submissionType);
                 // Get object by id, note that id in database is object id
                 var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(id));
-                var obj = collection.Find(filter).FirstOrDefault();
+                if(collection.Find(filter).FirstOrDefault() == null)
+                {
+                    throw new Exception("Recipe not found");
+                }
                 // Update status
                 var update = Builders<T>.Update.Set("Status", statusEnum);
                 // Update object
