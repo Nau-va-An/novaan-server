@@ -5,7 +5,7 @@ using NovaanServer.src.Filter;
 
 namespace NovaanServer.src.Content
 {
-    [Route("api/[controller]")]
+    [Route("api/content")]
     [ApiController]
     public class ContentController : ControllerBase
     {
