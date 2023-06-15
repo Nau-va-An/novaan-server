@@ -20,7 +20,7 @@ namespace NovaanServer.src.Admin
         /// </summary>
         /// <param name="status"></param>
         /// <returns></returns>
-        [HttpGet("get-submissions")]
+        [HttpGet("submissions")]
         public async Task<IActionResult> GetSubmissions([FromQuery] int? status)
         {
             if (status == null)
