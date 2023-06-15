@@ -6,11 +6,11 @@ namespace NovaanServer.src.Admin
 {
     [Route("api/admin/[controller]")]
     [ApiController]
-    public class SubmissionController : ControllerBase
+    public class AdminController : ControllerBase
     {
-        private readonly ISubmissionService _submissionService;
+        private readonly IAdminService _submissionService;
 
-        public SubmissionController(ISubmissionService submissionService)
+        public AdminController(IAdminService submissionService)
         {
             _submissionService = submissionService;
         }

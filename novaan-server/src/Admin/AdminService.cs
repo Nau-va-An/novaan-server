@@ -8,10 +8,10 @@ using NovaanServer.src.Admin.DTOs;
 
 namespace NovaanServer.src.Admin
 {
-    public class SubmissionService : ISubmissionService
+    public class AdminService : IAdminService
     {
         private readonly MongoDBService _mongoService;
-        public SubmissionService(MongoDBService mongoService)
+        public AdminService(MongoDBService mongoService)
         {
             _mongoService = mongoService;
         }
