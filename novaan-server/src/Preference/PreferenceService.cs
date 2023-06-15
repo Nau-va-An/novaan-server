@@ -1,4 +1,5 @@
 using MongoConnector;
+using MongoConnector.Models;
 using MongoDB.Driver;
 using NovaanServer.src.Preference.DTOs;
 
@@ -38,9 +39,14 @@ namespace NovaanServer.src.Preference
             };
         }
 
-        public Task UpdatePreference()
+        public Task UpdatePreference(string userId, List<string> dietId, List<string> cuisineId, List<string> mealTypeId)
         {
-            throw new NotImplementedException();
+            // Update list of preferences for user id
+            var filter = Builders<User>.Filter.Eq("Id", userId);
+            var update = Builders<User>.Update.Set("DietID", dietId)
+                .Set("CuisineID", cuisineId)
+                .Set("MealTypeID", mealTypeId);
+            return _mongoService.Users.UpdateOneAsync(filter, update);
         }
     }
 

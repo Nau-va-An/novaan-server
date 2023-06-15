@@ -6,5 +6,6 @@ namespace NovaanServer.src.Preference
     {
         PreferenceDTO GetAllPreferences();
         UserPreferenceDTO GetPreference(string userId);
+        Task UpdatePreference(string userId, List<string> dietId, List<string> cuisineId, List<string> mealTypeId);
     }
 }

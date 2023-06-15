@@ -5,7 +5,7 @@ namespace NovaanServer.src.Preference
 {
     [Route("api/preference")]
     [ApiController]
-    public class PreferenceController :ControllerBase
+    public class PreferenceController : ControllerBase
     {
         private readonly IPreferenceService _preferenceService;
         public PreferenceController(IPreferenceService preferenceService)
@@ -16,7 +16,7 @@ namespace NovaanServer.src.Preference
         [HttpGet("all")]
         public PreferenceDTO GetAllPreference()
         {
-            var result =  _preferenceService.GetAllPreferences();
+            var result = _preferenceService.GetAllPreferences();
             return result;
         }
 
@@ -24,17 +24,17 @@ namespace NovaanServer.src.Preference
         [HttpGet("user")]
         public UserPreferenceDTO GetPreference([FromBody] string userId)
         {
-            var result =  _preferenceService.GetPreference(userId);
+            var result = _preferenceService.GetPreference(userId);
             return result;
         }
 
         // update preference for user id with preference id
-        // [HttpPut]
-        // public async Task<IActionResult> UpdatePreference(string userId, string dietId, string cuisineId, string mealTypeId, string dishTypeId)
-        // {
-        //     await _preferenceService.UpdatePreference(userId, dietId, cuisineId, mealTypeId, dishTypeId);
-        //     return Ok();
-        // }
+        [HttpPut("user")]
+        public async Task<IActionResult> UpdatePreference([FromBody] string userId, List<string> dietId, List<string> cuisineId, List<string> mealTypeId)
+        {
+            await _preferenceService.UpdatePreference(userId, dietId, cuisineId, mealTypeId);
+            return Ok();
+        }
     }
-    
+
 }
