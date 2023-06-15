@@ -48,7 +48,7 @@ namespace MongoConnector
             var dietData = await dietCollection.Find(_ => true).ToListAsync();
             if (dietData.Count == 0)
             {
-                var dietJson = File.ReadAllText("dietPreferences.json");
+                var dietJson = File.ReadAllText("Seeder/dietPreferences.json");
                 var dietList = JsonConvert.DeserializeObject<List<Diet>>(dietJson);
                 await dietCollection.InsertManyAsync(dietList);
             }
@@ -61,7 +61,7 @@ namespace MongoConnector
             var cuisineData = await cuisineCollection.Find(_ => true).ToListAsync();
             if (cuisineData.Count == 0)
             {
-                var cuisineJson = File.ReadAllText("cuisinePreferences.json");
+                var cuisineJson = File.ReadAllText("Seeder/cuisinePreferences.json");
                 var cuisineList = JsonConvert.DeserializeObject<List<Cuisine>>(cuisineJson);
                 await cuisineCollection.InsertManyAsync(cuisineList);
             }
@@ -74,7 +74,7 @@ namespace MongoConnector
             var mealTypeData = await mealTypeCollection.Find(_ => true).ToListAsync();
             if (mealTypeData.Count == 0)
             {
-                var mealTypeJson = File.ReadAllText("mealTypePreferences.json");
+                var mealTypeJson = File.ReadAllText("Seeder/mealTypePreferences.json");
                 var mealTypeList = JsonConvert.DeserializeObject<List<MealType>>(mealTypeJson);
                 await mealTypeCollection.InsertManyAsync(mealTypeList);
             }
@@ -125,7 +125,7 @@ namespace MongoConnector
                 return MongoDatabase.GetCollection<MealType>(MongoCollections.MealTypes);
             }
         }
-        
+
         public IMongoCollection<RefreshToken> RefreshTokens
         {
             get

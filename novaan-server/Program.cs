@@ -53,15 +53,7 @@ builder.Services.AddSingleton<TokenValidationParameters>(tokenSettings);
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var mongoDBService = services.GetRequiredService<MongoDBService>();
-    mongoDBService.PingDatabase();
-    await mongoDBService.SeedDietData();
-    await mongoDBService.SeedCuisineData();
-    await mongoDBService.SeedMealTypeData();
-}
+await SeedData(app);
 
 app.UseMiddleware<ExceptionFilter>();
 
@@ -96,6 +88,19 @@ static TokenValidationParameters GetTokenValidationParameters(WebApplicationBuil
         RequireExpirationTime = false, // need to update when refresh token implement
         ValidateLifetime = true,
     };
+}
+
+static async Task SeedData(WebApplication app)
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        var mongoDBService = services.GetRequiredService<MongoDBService>();
+        mongoDBService.PingDatabase();
+        await mongoDBService.SeedDietData();
+        await mongoDBService.SeedCuisineData();
+        await mongoDBService.SeedMealTypeData();
+    }
 }
 
 

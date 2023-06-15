@@ -13,19 +13,22 @@ namespace NovaanServer.src.Preference
             _mongoService = mongoService;
         }
 
-        public List<PreferenceDTO> GetAllPreference()
+        public PreferenceDTO GetAllPreferences()
         {
-            var preference = new List<PreferenceDTO>();
             var diet = _mongoService.Diets.Find(_ => true).ToList();
             var cuisine = _mongoService.Cuisines.Find(_ => true).ToList();
             var mealType = _mongoService.MealTypes.Find(_ => true).ToList();
-            preference.Add(new PreferenceDTO()
+            return new PreferenceDTO
             {
                 Diets = diet,
                 Cuisines = cuisine,
                 MealTypes = mealType
-            });
-            return preference;
+            };
+        }
+
+        public Task UpdatePreference()
+        {
+            throw new NotImplementedException();
         }
     }
 
