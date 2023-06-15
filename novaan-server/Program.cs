@@ -57,6 +57,8 @@ using (var scope = app.Services.CreateScope())
     var mongoDBService = services.GetRequiredService<MongoDBService>();
     mongoDBService.PingDatabase();
     await mongoDBService.SeedDietData();
+    await mongoDBService.SeedCuisineData();
+    await mongoDBService.SeedMealTypeData();
 }
 
 app.UseMiddleware<ExceptionFilter>();

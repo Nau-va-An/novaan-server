@@ -54,6 +54,32 @@ namespace MongoConnector
             }
         }
 
+        // Seed data Cuisine
+        public async Task SeedCuisineData()
+        {
+            var cuisineCollection = MongoDatabase.GetCollection<Cuisine>(MongoCollections.Cuisines);
+            var cuisineData = await cuisineCollection.Find(_ => true).ToListAsync();
+            if (cuisineData.Count == 0)
+            {
+                var cuisineJson = File.ReadAllText("cuisinePreferences.json");
+                var cuisineList = JsonConvert.DeserializeObject<List<Cuisine>>(cuisineJson);
+                await cuisineCollection.InsertManyAsync(cuisineList);
+            }
+        }
+
+        // Seed data mealType
+        public async Task SeedMealTypeData()
+        {
+            var mealTypeCollection = MongoDatabase.GetCollection<MealType>(MongoCollections.MealTypes);
+            var mealTypeData = await mealTypeCollection.Find(_ => true).ToListAsync();
+            if (mealTypeData.Count == 0)
+            {
+                var mealTypeJson = File.ReadAllText("mealTypePreferences.json");
+                var mealTypeList = JsonConvert.DeserializeObject<List<MealType>>(mealTypeJson);
+                await mealTypeCollection.InsertManyAsync(mealTypeList);
+            }
+        }
+
         public IMongoCollection<Account> Accounts
         {
             get
