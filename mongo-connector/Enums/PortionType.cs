@@ -3,8 +3,8 @@ namespace MongoConnector.Enums
 {
     public enum PortionType
     {
-        Servings,
-        Pieces
+        Servings = 0,
+        Pieces = 1
     }
 }
 

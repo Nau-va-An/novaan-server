@@ -3,10 +3,10 @@ namespace MongoConnector.Enums
 {
 	public enum Status
 	{
-		Pending,
-		Approved,
-		Rejected,
-		Reported
+		Pending = 0,
+		Approved = 1,
+		Rejected = 2,
+		Reported = 3
 	}
 }
 
