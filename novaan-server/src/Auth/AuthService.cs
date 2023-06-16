@@ -95,6 +95,13 @@ namespace NovaanServer.Auth
             // Create new account if none found
             if (foundAccount == null)
             {
+                // Reject request if email existed
+                var emailExisted = await CheckEmailExist(ggAcountInfo.Email);
+                if (emailExisted)
+                {
+                    throw new BadHttpRequestException(ExceptionMessage.EMAIL_TAKEN);
+                }
+
                 var newAccount = new Account
                 {
                     Username = ggAcountInfo.Name,
