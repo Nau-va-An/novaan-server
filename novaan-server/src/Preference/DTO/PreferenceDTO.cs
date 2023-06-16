@@ -5,6 +5,6 @@ namespace NovaanServer.src.Preference.DTOs
     {
         public List<Diet> Diets { get; set; }
         public List<Cuisine> Cuisines { get; set; }
-        public List<MealType> MealTypes { get; set; }
+        public List<Allergen> Allergens { get; set; }
     }
 }

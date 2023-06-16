@@ -80,6 +80,19 @@ namespace MongoConnector
             }
         }
 
+        // Seed data allergen
+        public async Task SeedAllergenData()
+        {
+            var allergenCollection = MongoDatabase.GetCollection<Allergen>(MongoCollections.Allergens);
+            var allergenData = await allergenCollection.Find(_ => true).ToListAsync();
+            if (allergenData.Count == 0)
+            {
+                var allergenJson = File.ReadAllText("Seeder/allergenPreferences.json");
+                var allergenList = JsonConvert.DeserializeObject<List<Allergen>>(allergenJson);
+                await allergenCollection.InsertManyAsync(allergenList);
+            }
+        }
+
         public IMongoCollection<Account> Accounts
         {
             get
@@ -131,6 +144,22 @@ namespace MongoConnector
             get
             {
                 return MongoDatabase.GetCollection<RefreshToken>(MongoCollections.RefreshTokens);
+            }
+        }
+
+        public IMongoCollection<User> Users
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<User>(MongoCollections.Users);
+            }
+        }
+
+        public IMongoCollection<Allergen> Allergens
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Allergen>(MongoCollections.Allergens);
             }
         }
     }

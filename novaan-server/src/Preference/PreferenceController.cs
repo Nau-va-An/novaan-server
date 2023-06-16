@@ -5,32 +5,36 @@ namespace NovaanServer.src.Preference
 {
     [Route("api/preference")]
     [ApiController]
-    public class PreferenceController :ControllerBase
+    public class PreferenceController : ControllerBase
     {
         private readonly IPreferenceService _preferenceService;
         public PreferenceController(IPreferenceService preferenceService)
         {
             _preferenceService = preferenceService;
         }
-        
-        /// <summary>
-        /// Get all preference
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet]
+
+        [HttpGet("all")]
         public PreferenceDTO GetAllPreference()
         {
-            var result =  _preferenceService.GetAllPreferences();
+            var result = _preferenceService.GetAllPreferences();
+            return result;
+        }
+
+        // get preference for user id
+        [HttpGet("user")]
+        public UserPreferenceDTO GetPreference([FromBody] string userId)
+        {
+            var result = _preferenceService.GetPreference(userId);
             return result;
         }
 
         // update preference for user id with preference id
-        [HttpPut]
-        public async Task<IActionResult> UpdatePreference()
+        [HttpPut("user")]
+        public async Task<IActionResult> UpdatePreference([FromBody] UserPreferenceDTO userPreferenceDTO)
         {
-            await _preferenceService.UpdatePreference();
+            await _preferenceService.UpdatePreference(userPreferenceDTO);
             return Ok();
         }
     }
-    
+
 }
