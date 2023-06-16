@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MongoConnector.Models;
 using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.Filter;
@@ -7,6 +8,7 @@ namespace NovaanServer.src.Content
 {
     [Route("api/content")]
     [ApiController]
+    [Authorize]
     public class ContentController : ControllerBase
     {
         private readonly IContentService _contentService;
