@@ -5,8 +5,9 @@ namespace NovaanServer.src.Content.DTOs
 {
 	public class PostDTO
 	{
-		public List<Recipe> RecipeList { get; set; }
-		public List<CulinaryTip> CulinaryTipList { get; set; }
+		public List<Recipe> RecipeList { get; set; } = new List<Recipe>();
+
+		public List<CulinaryTip> CulinaryTipList { get; set; } = new List<CulinaryTip>();
 	}
 }
 

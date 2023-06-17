@@ -354,24 +354,15 @@ namespace NovaanServer.src.Content
         public List<PostDTO> GetPosts()
         {
             List<PostDTO> posts = new List<PostDTO>();
-            // Get all recipes and culinary tips from users, where status is Approved
-            try
+            var recipes = _mongoService.Recipes.Find(r => r.Status == Status.Approved).ToList();
+            var culinaryTips = _mongoService.CulinaryTips.Find(c => c.Status == Status.Approved).ToList();
+            posts.Add(new PostDTO
             {
-                var recipes = _mongoService.Recipes.Find(r => r.Status == Status.Approved).ToList();
-                var culinaryTips = _mongoService.CulinaryTips.Find(c => c.Status == Status.Approved).ToList();
-                posts.Add(new PostDTO
-                {
-                    RecipeList = recipes,
-                    CulinaryTipList = culinaryTips
-                });
-                return posts;
-            }
-            catch (System.Exception)
-            {
-
-                throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
+                RecipeList = recipes,
+                CulinaryTipList = culinaryTips
+            });
+            return posts;
         }
-    }
     }
 }
 

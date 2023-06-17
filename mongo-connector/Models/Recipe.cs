@@ -10,9 +10,9 @@ namespace MongoConnector.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
-        public string Video { get; set; }
+        public string Video { get; set; } = string.Empty;
 
         public Difficulty Difficulty { get; set; } = Difficulty.Easy;
 
@@ -24,13 +24,13 @@ namespace MongoConnector.Models
 
         public TimeSpan CookTime { get; set; }
 
-        public List<Instruction> Instructions { get; set; }
+        public List<Instruction> Instructions { get; set; } = new List<Instruction>();
 
 
         [BsonRepresentation(BsonType.ObjectId)]
         public string CreatorId { get; set; }
 
-        public List<Ingredient> Ingredients { get; set; }
+        public List<Ingredient> Ingredients { get; set; } = new List<Ingredient>();
 
         public Status Status { get; set; } = Status.Pending;
     }

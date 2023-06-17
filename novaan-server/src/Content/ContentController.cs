@@ -22,10 +22,9 @@ namespace NovaanServer.src.Content
         /// </summary>
         /// <returns></returns>
         [HttpGet("posts")]
-        public async Task<IActionResult> GetPosts()
+        public List<PostDTO> GetPosts()
         {
-            var posts = _contentService.GetPosts();
-            return Ok(posts);
+            return _contentService.GetPosts();
         }
 
         [HttpPost("upload/culinary-tips")]
@@ -50,10 +49,9 @@ namespace NovaanServer.src.Content
         [DisableFormValueModelBinding]
         public async Task<IActionResult> UploadRecipe()
         {
-            Recipe recipe = await _contentService.ProcessMultipartRequest<Recipe>(Request);
+            var recipe = await _contentService.ProcessMultipartRequest<Recipe>(Request);
             await _contentService.UploadRecipe(recipe);
             return Ok();
-
         }
     }
 }
