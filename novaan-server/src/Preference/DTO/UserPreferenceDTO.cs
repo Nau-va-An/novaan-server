@@ -1,12 +1,17 @@
-﻿using System;
+﻿using System.ComponentModel.DataAnnotations;
+
 namespace NovaanServer.src.Preference.DTOs
 {
     public class UserPreferenceDTO
     {
-        public string? UserID { get; set; }
-        public List<string> Diets { get; set; }
-        public List<string> Cuisines { get; set; }
-        public List<string> Allergens { get; set; }
+        [Required]
+        public List<string> Diets { get; set; } = new List<string>();
+
+        [Required]
+        public List<string> Cuisines { get; set; } = new List<string>();
+
+        [Required]
+        public List<string> Allergens { get; set; } = new List<string>();
     }
 }
 

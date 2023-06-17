@@ -1,5 +1,6 @@
 using MongoConnector;
 using MongoConnector.Models;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using NovaanServer.src.Preference.DTOs;
 
@@ -14,12 +15,13 @@ namespace NovaanServer.src.Preference
             _mongoService = mongoService;
         }
 
-        public PreferenceDTO GetAllPreferences()
+        // TODO: Check if can reduce to one request
+        public AllPreferencesDTO GetAllPreferences()
         {
             var diet = _mongoService.Diets.Find(_ => true).ToList();
             var cuisine = _mongoService.Cuisines.Find(_ => true).ToList();
             var allergen = _mongoService.Allergens.Find(_ => true).ToList();
-            return new PreferenceDTO
+            return new AllPreferencesDTO
             {
                 Diets = diet,
                 Cuisines = cuisine,
@@ -27,14 +29,13 @@ namespace NovaanServer.src.Preference
             };
         }
 
-        public UserPreferenceDTO GetPreference(string userId)
+        public async Task<UserPreferenceDTO> GetUserPreferences(string userId)
         {
-            // get all preferences from user collection with user id
-            var user = _mongoService.Users.Find(_ => _.Id == userId).FirstOrDefault();
-            if(user == null)
-            {
-                throw new Exception("User not found");
-            }
+            var user = (await _mongoService.Users
+                .FindAsync(user => user.Id == userId))
+                .FirstOrDefault()
+                ?? throw new BadHttpRequestException("User not found");
+
             return new UserPreferenceDTO
             {
                 Diets = user.Diet,
@@ -43,19 +44,17 @@ namespace NovaanServer.src.Preference
             };
         }
 
-        public Task UpdatePreference(UserPreferenceDTO userPreferenceDTO)
+        public async Task UpdateUserPreferences(string userId, UserPreferenceDTO userPreferenceDTO)
         {
-            // Update list of preferences for user id
-            var filter = Builders<User>.Filter.Eq("Id", userPreferenceDTO.UserID);
-            // Check if any object found from filter
-            if (_mongoService.Users.Find(filter).FirstOrDefault() == null)
-            {
-                throw new Exception("User not found");
-            }
+            var foundUser = (await _mongoService.Users
+                .FindAsync(user => user.Id == userId))
+                .FirstOrDefault()
+                ?? throw new BadHttpRequestException("User not found");
+
             var update = Builders<User>.Update.Set("Diet", userPreferenceDTO.Diets)
                         .Set("Cuisine", userPreferenceDTO.Cuisines)
                         .Set("Allergen", userPreferenceDTO.Allergens);
-            return _mongoService.Users.UpdateOneAsync(filter, update);
+            await _mongoService.Users.UpdateOneAsync(user => user.Id == userId, update);
         }
     }
 }
