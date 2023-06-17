@@ -1,0 +1,50 @@
+[
+  {
+    "title": "Ẩm thực Việt Nam",
+    "description": "Ẩm thực Việt Nam đa dạng và phong phú, nổi tiếng với các món như phở, bánh mì, nem nướng, bánh xèo và nhiều món ăn đậm đà hương vị đặc trưng."
+  },
+  {
+    "title": "Ẩm thực Trung Hoa",
+    "description": "Ẩm thực Trung Hoa có một lịch sử lâu đời và đa dạng, với các món như mì xào, lẩu, dimsum, xôi, và các phong cách nấu ăn khác nhau từ miền Bắc đến miền Nam."
+  },
+  {
+    "title": "Ẩm thực Nhật Bản",
+    "description": "Ẩm thực Nhật Bản nổi tiếng với sự tinh tế và sự đa dạng của các món ăn như sushi, sashimi, ramen, tempura, sukiyaki, và nhiều món truyền thống khác."
+  },
+  {
+    "title": "Ẩm thực Hàn Quốc",
+    "description": "Ẩm thực Hàn Quốc đặc trưng với món kimchi, gimbap, bulgogi, bibimbap, tteokbokki và nhiều món ăn chua cay hấp dẫn khác."
+  },
+  {
+    "title": "Ẩm thực Thái Lan",
+    "description": "Ẩm thực Thái Lan nổi tiếng với hương vị cay nồng và hấp dẫn, bao gồm món pad Thai, tom yum, green curry, mango sticky rice và nhiều món ăn đường phố đặc trưng."
+  },
+  {
+    "title": "Ẩm thực Ấn Độ",
+    "description": "Ẩm thực Ấn Độ phong phú và đậm đà, với các món như curry, tandoori, biryani, samosa, naan và nhiều loại thức ăn chay."
+  },
+  {
+    "title": "Ẩm thực Ý",
+    "description": "Ẩm thực Ý nổi tiếng với các món pasta, pizza, risotto, tiramisu, gelato và nhiều món ăn đậm hương vị địa phương."
+  },
+  {
+    "title": "Ẩm thực Pháp",
+    "description": "Ẩm thực Pháp nổi tiếng với sự tinh tế và các món ăn như bánh mì baguette, escargot, quiche, croissant, bouillabaisse và nhiều món tráng miệng ngon lành."
+  },
+  {
+    "title": "Ẩm thực Tây Ban Nha",
+    "description": "Ẩm thực Tây Ban Nha mang đậm nét văn hóa địa phương, bao gồm các món như paella, tapas, sangria, jamón, gazpacho và các món ăn biển phong phú."
+  },
+  {
+    "title": "Ẩm thực Mexico",
+    "description": "Ẩm thực Mexico nổi tiếng với các món như tacos, guacamole, enchiladas, burritos, salsa, margarita và nhiều món ăn đậm đà hương vị."
+  },
+  {
+    "title": "Ẩm thực Mỹ",
+    "description": "Ẩm thực Mỹ đa dạng và ảnh hưởng từ nhiều nền văn hóa, bao gồm các món như hamburger, hot dog, steak, fried chicken, apple pie và các món tráng miệng hấp dẫn."
+  },
+  {
+    "title": "Ẩm thực Brazil",
+    "description": "Ẩm thực Brazil phản ánh sự đa dạng của đất nước này, với các món như feijoada, pão de queijo, churrasco, brigadeiro và nhiều món hương vị đặc trưng."
+  }
+]

@@ -11,11 +11,18 @@ using System.Text;
 using NovaanServer.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using NovaanServer.src.Admin;
+using Newtonsoft.Json.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+.AddNewtonsoftJson(options =>
+{
+    options.SerializerSettings.Converters.Add(new StringEnumConverter());
+});
+
+builder.Services.AddSwaggerGenNewtonsoftSupport();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -53,6 +60,8 @@ builder.Services.AddSingleton<TokenValidationParameters>(tokenSettings);
 
 var app = builder.Build();
 
+await SeedData(app);
+
 app.UseMiddleware<ExceptionFilter>();
 
 if (app.Environment.IsDevelopment())
@@ -87,4 +96,18 @@ static TokenValidationParameters GetTokenValidationParameters(WebApplicationBuil
         ValidateLifetime = true,
     };
 }
+
+static async Task SeedData(WebApplication app)
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        var mongoDBService = services.GetRequiredService<MongoDBService>();
+        mongoDBService.PingDatabase();
+        await mongoDBService.SeedDietData();
+        await mongoDBService.SeedCuisineData();
+        await mongoDBService.SeedMealTypeData();
+    }
+}
+
 

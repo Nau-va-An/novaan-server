@@ -1,7 +1,9 @@
 ﻿using System;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoConnector.Enums;
 using MongoConnector.Models;
+using NovaanServer.src.Admin.DTOs;
 
 namespace NovaanServer.src.Admin
 {
@@ -17,42 +19,22 @@ namespace NovaanServer.src.Admin
             _submissionService = submissionService;
         }
 
-        /// <summary>
-        /// View all recipe and culinary tips from users, if status is not specified, return pending status
-        /// </summary>
-        /// <param name="status"></param>
-        /// <returns></returns>
         [HttpGet("submissions")]
-        public async Task<IActionResult> GetSubmissions([FromQuery] int? status)
+        public List<SubmissionsDTO> GetSubmissions([FromQuery] Status status)
         {
-            if (status == null)
-            {
-                status = 0;
-            }
-            // Calling Service to get list of submissions
-            var submissions = _submissionService.GetSubmissions(status.Value);
-            return Ok(submissions);
+            return _submissionService.GetSubmissions(status);
         }
 
-        /// <summary>
-        /// Update status of recipe 
-        /// </summary>
-        /// <param name="id"></param>
-        /// <param name="status"></param>
-        /// <returns></returns>
-        [HttpPut("status/{submissionType}")]
-        public async Task<IActionResult> UpdateStatus(string submissionType, [FromForm] string id, [FromForm] int status)
+        [HttpPut("status")]
+        public IActionResult UpdateStatus([FromBody] StatusDTO statusDTO)
         {
-            switch (submissionType)
+            if (statusDTO.SubmissionType == SubmissionType.Recipe)
             {
-                case "recipes":
-                    await _submissionService.UpdateStatus<Recipe>(submissionType,id, status);
-                    break;
-                case "culinaryTips":
-                    await _submissionService.UpdateStatus<CulinaryTip>(submissionType,id, status);
-                    break;
-                default:
-                    return BadRequest("Invalid submission type");
+                _submissionService.UpdateStatus<Recipe>(statusDTO);
+            }
+            else
+            {
+                _submissionService.UpdateStatus<CulinaryTip>(statusDTO);
             }
             return Ok();
         }

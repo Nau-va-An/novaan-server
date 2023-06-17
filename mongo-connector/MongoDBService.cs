@@ -2,6 +2,7 @@
 using MongoDB.Driver;
 using MongoDB.Bson;
 using MongoConnector.Models;
+using Newtonsoft.Json;
 
 namespace MongoConnector
 {
@@ -40,7 +41,44 @@ namespace MongoConnector
             return true;
         }
 
-        // Get collection of T objects
+        // Seed data Diet
+        public async Task SeedDietData()
+        {
+            var dietCollection = MongoDatabase.GetCollection<Diet>(MongoCollections.Diets);
+            var dietData = await dietCollection.Find(_ => true).ToListAsync();
+            if (dietData.Count == 0)
+            {
+                var dietJson = File.ReadAllText("Seeder/dietPreferences.json");
+                var dietList = JsonConvert.DeserializeObject<List<Diet>>(dietJson);
+                await dietCollection.InsertManyAsync(dietList);
+            }
+        }
+
+        // Seed data Cuisine
+        public async Task SeedCuisineData()
+        {
+            var cuisineCollection = MongoDatabase.GetCollection<Cuisine>(MongoCollections.Cuisines);
+            var cuisineData = await cuisineCollection.Find(_ => true).ToListAsync();
+            if (cuisineData.Count == 0)
+            {
+                var cuisineJson = File.ReadAllText("Seeder/cuisinePreferences.json");
+                var cuisineList = JsonConvert.DeserializeObject<List<Cuisine>>(cuisineJson);
+                await cuisineCollection.InsertManyAsync(cuisineList);
+            }
+        }
+
+        // Seed data mealType
+        public async Task SeedMealTypeData()
+        {
+            var mealTypeCollection = MongoDatabase.GetCollection<MealType>(MongoCollections.MealTypes);
+            var mealTypeData = await mealTypeCollection.Find(_ => true).ToListAsync();
+            if (mealTypeData.Count == 0)
+            {
+                var mealTypeJson = File.ReadAllText("Seeder/mealTypePreferences.json");
+                var mealTypeList = JsonConvert.DeserializeObject<List<MealType>>(mealTypeJson);
+                await mealTypeCollection.InsertManyAsync(mealTypeList);
+            }
+        }
         public IMongoCollection<T> GetCollection<T>(string collectionName)
         {
             return MongoDatabase.GetCollection<T>(collectionName);
@@ -67,6 +105,31 @@ namespace MongoConnector
                 return MongoDatabase.GetCollection<CulinaryTip>(MongoCollections.CulinaryTips);
             }
         }
+
+        public IMongoCollection<Diet> Diets
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Diet>(MongoCollections.Diets);
+            }
+        }
+
+        public IMongoCollection<Cuisine> Cuisines
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Cuisine>(MongoCollections.Cuisines);
+            }
+        }
+
+        public IMongoCollection<MealType> MealTypes
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<MealType>(MongoCollections.MealTypes);
+            }
+        }
+
         public IMongoCollection<RefreshToken> RefreshTokens
         {
             get

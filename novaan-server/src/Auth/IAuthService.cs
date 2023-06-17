@@ -4,13 +4,13 @@ using NovaanServer.src.Auth.DTOs;
 
 namespace NovaanServer.Auth
 {
-	public interface IAuthService
-	{
-		public Task<bool> SignUpWithCredentials(SignUpDTO signUpDTO);
+    public interface IAuthService
+    {
+        public Task<bool> SignUpWithCredentials(SignUpDTO signUpDTO);
 
-		public Task<string> SignInWithCredentials(SignInDTOs signInDTO);
+        public Task<string> SignInWithCredentials(SignInDTOs signInDTO);
 
-		public Task<bool> GoogleAuthentication(GoogleOauthDTO googleOauthDTO);
-	}
+        public Task<bool> GoogleAuthentication(GoogleOauthDTO googleOauthDTO);
+    }
 }
 
