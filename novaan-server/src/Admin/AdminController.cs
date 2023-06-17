@@ -9,7 +9,7 @@ namespace NovaanServer.src.Admin
 {
     [Route("api/admin")]
     [ApiController]
-    // [Authorize]
+    [Authorize]
     public class AdminController : ControllerBase
     {
         private readonly IAdminService _submissionService;

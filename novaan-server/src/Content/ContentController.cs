@@ -17,6 +17,16 @@ namespace NovaanServer.src.Content
             _contentService = contentService;
         }
 
+        /// <summary>
+        /// Get all recipes and culinary tips from users, where status is Approved
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("posts")]
+        public List<PostDTO> GetPosts()
+        {
+            return _contentService.GetPosts();
+        }
+
         [HttpPost("upload/culinary-tips")]
         [DisableFormValueModelBinding]
         public async Task<IActionResult> UploadCulinaryTips()
@@ -39,10 +49,9 @@ namespace NovaanServer.src.Content
         [DisableFormValueModelBinding]
         public async Task<IActionResult> UploadRecipe()
         {
-            Recipe recipe = await _contentService.ProcessMultipartRequest<Recipe>(Request);
+            var recipe = await _contentService.ProcessMultipartRequest<Recipe>(Request);
             await _contentService.UploadRecipe(recipe);
             return Ok();
-
         }
     }
 }

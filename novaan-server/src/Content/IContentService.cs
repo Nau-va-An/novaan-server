@@ -10,6 +10,7 @@ namespace NovaanServer.src.Content
         Task UploadRecipe(Recipe recipe);
         Task<T> ProcessMultipartRequest<T>(HttpRequest request);
         Task ValidateFileMetadata(FileInformationDTO fileMetadata);
+        List<PostDTO> GetPosts();
     }
 }
 

@@ -5,7 +5,9 @@ using FileServer;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using MongoConnector;
+using MongoConnector.Enums;
 using MongoConnector.Models;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
@@ -347,6 +349,19 @@ namespace NovaanServer.src.Content
 
                 throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
             }
+        }
+
+        public List<PostDTO> GetPosts()
+        {
+            List<PostDTO> posts = new List<PostDTO>();
+            var recipes = _mongoService.Recipes.Find(r => r.Status == Status.Approved).ToList();
+            var culinaryTips = _mongoService.CulinaryTips.Find(c => c.Status == Status.Approved).ToList();
+            posts.Add(new PostDTO
+            {
+                RecipeList = recipes,
+                CulinaryTipList = culinaryTips
+            });
+            return posts;
         }
     }
 }
