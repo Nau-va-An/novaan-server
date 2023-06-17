@@ -34,7 +34,7 @@ namespace NovaanServer.Developer
 
         public bool IsS3Healthy()
         {
-            if(_s3Service == null)
+            if (_s3Service == null)
             {
                 _logger.LogError("S3 service is missing");
                 return false;
