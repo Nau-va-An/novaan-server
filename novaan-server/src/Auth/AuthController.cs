@@ -56,12 +56,12 @@ namespace NovaanServer.Auth
                 Token = newToken
             };
         }
-        	[HttpPost("oauth/google")]
-		public async Task<IActionResult> GoogleAuthentication([FromBody] GoogleOauthDTO googleAuthDTO)
-		{
-			await _authService.GoogleAuthentication(googleAuthDTO);
-			return Ok();
-		}
+        [HttpPost("oauth/google")]
+        public async Task<IActionResult> GoogleAuthentication([FromBody] GoogleOauthDTO googleAuthDTO)
+        {
+            await _authService.GoogleAuthentication(googleAuthDTO);
+            return Ok();
+        }
     }
 }
 

@@ -85,7 +85,8 @@ namespace S3Connector
             try
             {
                 return _s3Client.GetPreSignedURL(downloadReq);
-            } catch
+            }
+            catch
             {
                 // Throw custom error here
                 return "";

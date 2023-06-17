@@ -2,7 +2,7 @@
 
 namespace NovaanServer.src.Auth.DTOs
 {
-    public class SignInResDTO: BaseResponse
+    public class SignInResDTO : BaseResponse
     {
         public string Token { get; set; }
     }
