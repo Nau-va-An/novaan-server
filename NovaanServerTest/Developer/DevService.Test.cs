@@ -6,14 +6,14 @@ using S3Connector;
 
 namespace NovaanServerTest.Developer
 {
-	public class DevServiceTest
-	{
-		[Fact]
-		public void IsServerHealthy_InputNone_ReturnTrue()
-		{
-			var devService = new DevService(null, null, null);
-			Assert.True(devService.IsServerHealthy());
-		}
-	}
+    public class DevServiceTest
+    {
+        [Fact]
+        public void IsServerHealthy_InputNone_ReturnTrue()
+        {
+            var devService = new DevService(null, null, null);
+            Assert.True(devService.IsServerHealthy());
+        }
+    }
 }
 

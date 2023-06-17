@@ -12,11 +12,18 @@ using NovaanServer.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using NovaanServer.src.Preference;
 using NovaanServer.src.Admin;
+using Newtonsoft.Json.Converters;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+.AddNewtonsoftJson(options =>
+{
+    options.SerializerSettings.Converters.Add(new StringEnumConverter());
+});
+
+builder.Services.AddSwaggerGenNewtonsoftSupport();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -32,7 +39,6 @@ builder.Services.AddScoped<IDevService, DevService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IPreferenceService, PreferenceService>();
-builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 

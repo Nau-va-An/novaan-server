@@ -25,9 +25,9 @@ namespace NovaanServer.Developer
         [HttpGet("health")]
         public HealthCheckRes GetHealthCheck()
         {
-            if(_devService.IsServerHealthy())
+            if (_devService.IsServerHealthy())
             {
-                Response.StatusCode = (int) HttpStatusCode.OK;
+                Response.StatusCode = (int)HttpStatusCode.OK;
                 return new HealthCheckRes
                 {
                     Message = "Server is up running"

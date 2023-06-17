@@ -79,8 +79,6 @@ namespace MongoConnector
                 await mealTypeCollection.InsertManyAsync(mealTypeList);
             }
         }
-        
-        // Get collection of T objects
         public IMongoCollection<T> GetCollection<T>(string collectionName)
         {
             return MongoDatabase.GetCollection<T>(collectionName);

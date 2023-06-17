@@ -15,7 +15,7 @@ using Amazon.Runtime;
 
 namespace NovaanServer.src.Auth.Jwt
 {
-    public class JwtService: IJwtService
+    public class JwtService : IJwtService
     {
         private readonly MongoDBService _mongoDBService;
         private readonly JwtConfig _jwtConfig;
@@ -33,7 +33,7 @@ namespace NovaanServer.src.Auth.Jwt
             var jwtId = Guid.NewGuid().ToString();
             var tokenDescriptor = getTokenDescriptor(jwtId, userToken.UserId, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
             var jwtToken = jwtTokenHanler.CreateEncodedJwt(tokenDescriptor);
-            if(jwtToken == null)
+            if (jwtToken == null)
             {
                 throw new Exception("Unable to generate new access token");
             }
@@ -42,7 +42,7 @@ namespace NovaanServer.src.Auth.Jwt
                 .FindAsync(rt => rt.UserId == userToken.UserId))
                 .FirstOrDefault();
 
-            if(foundRefreshToken == null)
+            if (foundRefreshToken == null)
             {
                 // First time login
                 var refreshToken = new RefreshToken()
@@ -56,7 +56,8 @@ namespace NovaanServer.src.Auth.Jwt
                     IsRevoked = false,
                 };
                 await _mongoDBService.RefreshTokens.InsertOneAsync(refreshToken);
-            } else
+            }
+            else
             {
                 // Next device onward
                 await appendValidAccessToken(foundRefreshToken, jwtToken);

@@ -9,7 +9,7 @@ namespace NovaanServer.src.Admin
 {
     [Route("api/admin")]
     [ApiController]
-    [Authorize]
+    // [Authorize]
     public class AdminController : ControllerBase
     {
         private readonly IAdminService _submissionService;
@@ -19,20 +19,21 @@ namespace NovaanServer.src.Admin
             _submissionService = submissionService;
         }
 
-        [HttpGet("submissions/{status}")]
-        public async Task<IActionResult> GetSubmissions([FromQuery] Status status)
+        [HttpGet("submissions")]
+        public List<SubmissionsDTO> GetSubmissions([FromQuery] Status status)
         {
-            var submissions = _submissionService.GetSubmissions((int)status);
-            return Ok(submissions);
+            return _submissionService.GetSubmissions(status);
         }
 
         [HttpPut("status")]
-        public async Task<IActionResult> UpdateStatus([FromBody] StatusDTO statusDTO)
+        public IActionResult UpdateStatus([FromBody] StatusDTO statusDTO)
         {
             if (statusDTO.SubmissionType == SubmissionType.Recipe)
             {
                 _submissionService.UpdateStatus<Recipe>(statusDTO);
-            }else{
+            }
+            else
+            {
                 _submissionService.UpdateStatus<CulinaryTip>(statusDTO);
             }
             return Ok();

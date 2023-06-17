@@ -89,7 +89,7 @@ namespace NovaanServer.Auth
                 var newAccount = new Account
                 {
                     Username = googleOAuthDTO.Name,
-                    Email = googleOAuthDTO.Email??"",
+                    Email = googleOAuthDTO.Email ?? "",
                     Verified = true,
                     GoogleId = googleOAuthDTO.Sub,
                 };

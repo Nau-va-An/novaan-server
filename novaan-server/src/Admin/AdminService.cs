@@ -16,42 +16,26 @@ namespace NovaanServer.src.Admin
             _mongoService = mongoService;
         }
 
-        public List<SubmissionsDTO> GetSubmissions(int status)
+        public List<SubmissionsDTO> GetSubmissions(Status status)
         {
-            var statusEnum = (Status)status;
             var submissions = new List<SubmissionsDTO>();
-            try
-            {
-                // Get all recipes with status
-                var recipes = _mongoService.Recipes.Find(x => x.Status == statusEnum).ToList();
-                // Get all culinary tips with status
-                var culinaryTips = _mongoService.CulinaryTips.Find(x => x.Status == statusEnum).ToList();
-                // Add to DTO
-                submissions.Add(new SubmissionsDTO { Recipes = recipes, CulinaryTips = culinaryTips });
-                return submissions;
-            }
-            catch (System.Exception)
-            {
-                throw;
-            }
+            var foundRecipes = _mongoService.Recipes.Find(x => x.Status == status).ToList();
+            var foundTips = _mongoService.CulinaryTips.Find(x => x.Status == status).ToList();
+            submissions.Add(new SubmissionsDTO { Recipes = foundRecipes, CulinaryTips = foundTips });
+            return submissions;
         }
 
         public void UpdateStatus<T>(StatusDTO statusDTO)
         {
             var statusEnum = (Status)statusDTO.Status;
-            // get string of statusDTO.SubmissionType
             var submissionType = statusDTO.SubmissionType.ToString().ToLower();
-            // Get collection of object
             var collection = _mongoService.GetCollection<T>(submissionType);
-            // Get object by id, note that id in database is object id
             var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(statusDTO.UserID));
             if (collection.Find(filter).FirstOrDefault() == null)
             {
                 throw new Exception("Recipe not found");
             }
-            // Update status
             var update = Builders<T>.Update.Set("Status", statusEnum);
-            // Update object
             collection.UpdateOne(filter, update);
         }
     }
