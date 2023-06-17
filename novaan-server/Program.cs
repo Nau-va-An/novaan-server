@@ -107,6 +107,7 @@ static async Task SeedData(WebApplication app)
         await mongoDBService.SeedDietData();
         await mongoDBService.SeedCuisineData();
         await mongoDBService.SeedMealTypeData();
+        await mongoDBService.SeedAllergenData();
     }
 }
 
