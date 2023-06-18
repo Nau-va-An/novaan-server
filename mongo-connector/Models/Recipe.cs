@@ -26,7 +26,6 @@ namespace MongoConnector.Models
 
         public List<Instruction> Instructions { get; set; } = new List<Instruction>();
 
-
         [BsonRepresentation(BsonType.ObjectId)]
         public string CreatorId { get; set; }
 
