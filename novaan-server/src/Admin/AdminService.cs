@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Net;
+using Microsoft.AspNetCore.Authorization;
 using MongoConnector;
 using MongoConnector.Enums;
 using MongoConnector.Models;
@@ -28,7 +30,7 @@ namespace NovaanServer.src.Admin
             }
             catch
             {
-                throw new Exception(ErrorCodes.DATABASE_UNAVAILABLE);
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
             }
         }
 
@@ -39,7 +41,7 @@ namespace NovaanServer.src.Admin
 
             // Check if the submission is available
             var foundSubmission = collection.Find(filter).FirstOrDefault() ??
-                throw new NotFoundException($"Submission with id: {statusDTO.PostId} not found");
+                throw new NovaanException(ErrorCodes.ADMIN_NO_SUBMISSION_WITH_ID, HttpStatusCode.NotFound);
 
             // Try to update the submission with inputted status
             var update = Builders<T>.Update.Set("Status", statusDTO.Status);
@@ -52,7 +54,7 @@ namespace NovaanServer.src.Admin
                 }
             }catch
             {
-                throw new Exception(ErrorCodes.DATABASE_UNAVAILABLE);
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
             }
         }
     }

@@ -28,14 +28,14 @@ namespace NovaanServer.Auth
                      acc.Username == ExtractUsernameFromEmail(signInDTO.UsernameOrEmail)
                  ))
                  .FirstOrDefault()
-                 ?? throw new NovaanException(HttpStatusCode.BadRequest, ErrorCodes.EMAIL_OR_PASSWORD_NOT_FOUND);
+                 ?? throw new NovaanException(ErrorCodes.EMAIL_OR_PASSWORD_NOT_FOUND, HttpStatusCode.BadRequest);
 
             var hashPassword = CustomHash.GetHashString(signInDTO.Password);
             if (foundUser.Password != hashPassword)
             {
                 throw new NovaanException(
-                    HttpStatusCode.BadRequest,
-                    ErrorCodes.EMAIL_OR_PASSWORD_NOT_FOUND
+                    ErrorCodes.EMAIL_OR_PASSWORD_NOT_FOUND,
+                    HttpStatusCode.BadRequest
                 );
             }
 
@@ -47,7 +47,7 @@ namespace NovaanServer.Auth
             var emailExisted = await CheckEmailExist(signUpDTO.Email);
             if (emailExisted)
             {
-                throw new NovaanException(HttpStatusCode.BadRequest, ErrorCodes.EMAIL_TAKEN_BASIC);
+                throw new NovaanException(ErrorCodes.EMAIL_TAKEN_BASIC, HttpStatusCode.BadRequest);
             }
 
             // Add account + user to database
@@ -59,7 +59,7 @@ namespace NovaanServer.Auth
             }
             catch
             {
-                throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.DATABASE_UNAVAILABLE);
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
             }
 
             // TODO: Send confirmation email
@@ -84,7 +84,7 @@ namespace NovaanServer.Auth
                 var emailExisted = await CheckEmailExist(ggAcountInfo.Email);
                 if (emailExisted)
                 {
-                    throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.EMAIL_TAKEN_BASIC);
+                    throw new NovaanException(ErrorCodes.EMAIL_TAKEN_BASIC, HttpStatusCode.BadRequest);
                 }
 
                 try
@@ -96,7 +96,7 @@ namespace NovaanServer.Auth
                 }
                 catch
                 {
-                    throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.DATABASE_UNAVAILABLE);
+                    throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
                 }
             }
 
@@ -127,7 +127,7 @@ namespace NovaanServer.Auth
             var response = await httpClient.GetAsync("https://www.googleapis.com/userinfo/v2/me");
             if (!response.IsSuccessStatusCode)
             {
-                throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.GG_UNAVAILABLE);
+                throw new NovaanException(ErrorCodes.GG_UNAVAILABLE);
             }
 
             var ggAcountInfo = await response.Content.ReadFromJsonAsync<GoogleAccountInfoDTO>()

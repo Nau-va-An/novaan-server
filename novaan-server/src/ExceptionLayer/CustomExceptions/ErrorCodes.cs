@@ -3,6 +3,8 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
 {
     public static class ErrorCodes
     {
+        // Please update latest error code to avoid duplicate value
+        // Latest error code: 1008
         // Common
         public const int SERVER_UNAVAILABLE = 1000;
         public const int DATABASE_UNAVAILABLE = 1001;
@@ -15,6 +17,9 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int EMAIL_OR_PASSWORD_NOT_FOUND = 1006;
         public const int RT_JWT_INVALID = 1007;
         public const int RT_JWT_UNAUTHORIZED = 1008;
+
+        // Admin
+        public const int ADMIN_NO_SUBMISSION_WITH_ID = 1009;
     }
 }
 

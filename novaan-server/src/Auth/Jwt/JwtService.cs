@@ -73,13 +73,13 @@ namespace NovaanServer.src.Auth.Jwt
             var token = jwtTokenHanler.ReadJwtToken(accessToken);
             if (token == null)
             {
-                throw new NovaanException(HttpStatusCode.BadRequest, ErrorCodes.RT_JWT_INVALID);
+                throw new NovaanException(ErrorCodes.RT_JWT_INVALID, HttpStatusCode.BadRequest);
             }
 
             var userId = token.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.NameId);
             if (userId == null)
             {
-                throw new NovaanException(HttpStatusCode.BadRequest, ErrorCodes.RT_JWT_INVALID);
+                throw new NovaanException(ErrorCodes.RT_JWT_INVALID, HttpStatusCode.BadRequest);
             }
 
             // Find refresh token linked with payload userId
@@ -88,7 +88,7 @@ namespace NovaanServer.src.Auth.Jwt
                 .FirstOrDefault();
             if (refreshToken == null)
             {
-                throw new NovaanException(HttpStatusCode.Unauthorized, ErrorCodes.RT_JWT_UNAUTHORIZED);
+                throw new NovaanException(ErrorCodes.RT_JWT_UNAUTHORIZED, HttpStatusCode.Unauthorized);
             }
 
             // Revoke refresh token if previously used or expired
@@ -96,7 +96,7 @@ namespace NovaanServer.src.Auth.Jwt
                 refreshToken.ExpiryDate.CompareTo(DateTime.UtcNow) < 0)
             {
                 revokeRefreshToken(refreshToken);
-                throw new NovaanException(HttpStatusCode.Unauthorized, ErrorCodes.RT_JWT_UNAUTHORIZED);
+                throw new NovaanException(ErrorCodes.RT_JWT_UNAUTHORIZED, HttpStatusCode.Unauthorized);
             }
 
             var jwtId = Guid.NewGuid().ToString();
@@ -138,7 +138,7 @@ namespace NovaanServer.src.Auth.Jwt
                 _mongoDBService.RefreshTokens.UpdateOne(filter, update);
             } catch
             {
-                throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.DATABASE_UNAVAILABLE);
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
             }
         }
 
@@ -154,7 +154,7 @@ namespace NovaanServer.src.Auth.Jwt
             }
             catch
             {
-                throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.DATABASE_UNAVAILABLE);
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
             }
         }
 
@@ -171,7 +171,7 @@ namespace NovaanServer.src.Auth.Jwt
             }
             catch
             {
-                throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.DATABASE_UNAVAILABLE);
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
             }
         }
     }
