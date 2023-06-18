@@ -6,8 +6,8 @@ namespace NovaanServer.Auth.DTOs
     public class SignUpDTO
     {
         [Required]
-        [MinLength(5)] // Facebook min username length
-        public string Username { get; set; } = "";
+        [MaxLength(64)]
+        public string DisplayName { get; set; } = "";
 
         [Required]
         [MinLength(8)] // Recommended minimum length by NIST

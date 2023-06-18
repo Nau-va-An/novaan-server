@@ -34,33 +34,38 @@ namespace NovaanServer.ExceptionLayer
         {
             // Filter exceptions to derive status code
             var response = context.Response;
+
             response.ContentType = "application/json";
             response.StatusCode = exception switch
             {
-                BadHttpRequestException => (int)HttpStatusCode.BadRequest,
-                UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
-                NotFoundException => (int) HttpStatusCode.NotFound,
+                NovaanException ex => (int)ex.StatusCode,
                 _ => (int)HttpStatusCode.InternalServerError,
             };
 
-            // Create custom response based on pre-defined format
-            var customResponse = new BaseErrResponse()
-            {
-                Success = false,
-                Body = new
+            var responseMessage = CustomJson.Stringify<BaseErrResponse>(
+                exception switch
                 {
-                    message = exception.Message
-                }
-            };
+                    NovaanException ex => new BaseErrResponse
+                    {
+                        Success = false,
+                        ErrCode = ex.ErrCode,
+                        Message = ex.Message
+                    },
+                    Exception ex => new BaseErrResponse
+                    {
+                        Success = false,
+                        ErrCode = ErrorCodes.SERVER_UNAVAILABLE,
+                        Message = ex.Message
+                    }
+                });
 
             // Log the error for later debugging and inspection
-            _logger.LogError("Error occured at {endpoint} with message: {message}",
+            _logger.LogError("Error occured at {endpoint} with stack trade: {message}",
                 context.GetEndpoint(),
                 exception.StackTrace
             );
 
-            var result = CustomJson.Stringify<BaseErrResponse>(customResponse);
-            await context.Response.WriteAsync(result);
+            await context.Response.WriteAsync(responseMessage);
         }
     }
 }

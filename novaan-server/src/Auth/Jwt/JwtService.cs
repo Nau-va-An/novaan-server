@@ -12,6 +12,7 @@ using NovaanServer.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Amazon.Runtime;
+using System.Net;
 
 namespace NovaanServer.src.Auth.Jwt
 {
@@ -68,57 +69,46 @@ namespace NovaanServer.src.Auth.Jwt
 
         public async Task<string> RefreshToken(string accessToken)
         {
-            try
+            var jwtTokenHanler = new JwtSecurityTokenHandler();
+            var token = jwtTokenHanler.ReadJwtToken(accessToken);
+            if (token == null)
             {
-                var jwtTokenHanler = new JwtSecurityTokenHandler();
-                var token = jwtTokenHanler.ReadJwtToken(accessToken);
-                if (token == null)
-                {
-                    throw new UnauthorizedAccessException();
-                }
-
-                var userId = token.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.NameId);
-                if (userId == null)
-                {
-                    throw new UnauthorizedAccessException();
-                }
-
-                // Find refresh token linked with payload userId
-                var refreshToken = (await _mongoDBService.RefreshTokens
-                    .FindAsync(rt => rt.UserId.Equals(userId.Value) && !rt.IsRevoked))
-                    .FirstOrDefault();
-                if (refreshToken == null)
-                {
-                    throw new UnauthorizedAccessException();
-                }
-
-                // Revoke refresh token if previously used or expired
-                if (refreshToken.RevokeTokenFamily.Contains(accessToken) ||
-                    refreshToken.ExpiryDate.CompareTo(DateTime.UtcNow) < 0)
-                {
-                    revokeRefreshToken(refreshToken);
-                    throw new UnauthorizedAccessException();
-                }
-
-                var jwtId = Guid.NewGuid().ToString();
-                var tokenDescriptor = getTokenDescriptor(jwtId, userId.Value, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
-                var newAccessToken = jwtTokenHanler.CreateEncodedJwt(tokenDescriptor);
-                if (newAccessToken == null)
-                {
-                    throw new Exception("Unable to generate new access token");
-                }
-
-                await refreshAccessToken(refreshToken, accessToken);
-                return newAccessToken;
+                throw new NovaanException(HttpStatusCode.BadRequest, ErrorCodes.RT_JWT_INVALID);
             }
-            catch (UnauthorizedAccessException unAuthEx)
+
+            var userId = token.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.NameId);
+            if (userId == null)
             {
-                if (string.IsNullOrEmpty(unAuthEx.Message))
-                {
-                    throw;
-                }
-                throw new UnauthorizedAccessException(ExceptionMessage.ACCESS_TOKEN_INVALID);
+                throw new NovaanException(HttpStatusCode.BadRequest, ErrorCodes.RT_JWT_INVALID);
             }
+
+            // Find refresh token linked with payload userId
+            var refreshToken = (await _mongoDBService.RefreshTokens
+                .FindAsync(rt => rt.UserId.Equals(userId.Value) && !rt.IsRevoked))
+                .FirstOrDefault();
+            if (refreshToken == null)
+            {
+                throw new NovaanException(HttpStatusCode.Unauthorized, ErrorCodes.RT_JWT_UNAUTHORIZED);
+            }
+
+            // Revoke refresh token if previously used or expired
+            if (refreshToken.RevokeTokenFamily.Contains(accessToken) ||
+                refreshToken.ExpiryDate.CompareTo(DateTime.UtcNow) < 0)
+            {
+                revokeRefreshToken(refreshToken);
+                throw new NovaanException(HttpStatusCode.Unauthorized, ErrorCodes.RT_JWT_UNAUTHORIZED);
+            }
+
+            var jwtId = Guid.NewGuid().ToString();
+            var tokenDescriptor = getTokenDescriptor(jwtId, userId.Value, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
+            var newAccessToken = jwtTokenHanler.CreateEncodedJwt(tokenDescriptor);
+            if (newAccessToken == null)
+            {
+                throw new Exception("Unable to generate new access token");
+            }
+
+            await refreshAccessToken(refreshToken, accessToken);
+            return newAccessToken;
         }
 
         private SecurityTokenDescriptor getTokenDescriptor(string jwtId, string userId, byte[] key)
@@ -143,7 +133,13 @@ namespace NovaanServer.src.Auth.Jwt
                         .Eq(rt => rt.Id, refreshToken.Id);
             var update = Builders<RefreshToken>.Update
                 .Set(rt => rt.IsRevoked, true);
-            _mongoDBService.RefreshTokens.UpdateOne(filter, update);
+            try
+            {
+                _mongoDBService.RefreshTokens.UpdateOne(filter, update);
+            } catch
+            {
+                throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.DATABASE_UNAVAILABLE);
+            }
         }
 
         private async Task refreshAccessToken(RefreshToken refreshToken, string oldToken)
@@ -152,7 +148,14 @@ namespace NovaanServer.src.Auth.Jwt
                 .Eq(rt => rt.Id, refreshToken.Id);
             var update = Builders<RefreshToken>.Update
                 .Push(rt => rt.RevokeTokenFamily, oldToken);
-            await _mongoDBService.RefreshTokens.UpdateOneAsync(filter, update);
+            try
+            {
+                await _mongoDBService.RefreshTokens.UpdateOneAsync(filter, update);
+            }
+            catch
+            {
+                throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.DATABASE_UNAVAILABLE);
+            }
         }
 
         private async Task appendValidAccessToken(RefreshToken refreshToken, string newToken)
@@ -161,7 +164,15 @@ namespace NovaanServer.src.Auth.Jwt
                 .Eq(rt => rt.Id, refreshToken.Id);
             var update = Builders<RefreshToken>.Update
                 .Push(rt => rt.ValidTokenFamily, newToken);
-            await _mongoDBService.RefreshTokens.UpdateOneAsync(filter, update);
+            try
+            {
+                await _mongoDBService.RefreshTokens.UpdateOneAsync(filter, update);
+
+            }
+            catch
+            {
+                throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.DATABASE_UNAVAILABLE);
+            }
         }
     }
 }

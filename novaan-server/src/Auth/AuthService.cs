@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using MongoConnector;
 using MongoConnector.Models;
@@ -24,15 +25,18 @@ namespace NovaanServer.Auth
             var foundUser = (await _mongoService.Accounts
                  .FindAsync(
                     acc => acc.Email == signInDTO.UsernameOrEmail ||
-                     acc.Username == signInDTO.UsernameOrEmail
+                     acc.Username == ExtractUsernameFromEmail(signInDTO.UsernameOrEmail)
                  ))
                  .FirstOrDefault()
-                 ?? throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
+                 ?? throw new NovaanException(HttpStatusCode.BadRequest, ErrorCodes.EMAIL_OR_PASSWORD_NOT_FOUND);
 
             var hashPassword = CustomHash.GetHashString(signInDTO.Password);
             if (foundUser.Password != hashPassword)
             {
-                throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
+                throw new NovaanException(
+                    HttpStatusCode.BadRequest,
+                    ErrorCodes.EMAIL_OR_PASSWORD_NOT_FOUND
+                );
             }
 
             return foundUser.Id;
@@ -43,13 +47,7 @@ namespace NovaanServer.Auth
             var emailExisted = await CheckEmailExist(signUpDTO.Email);
             if (emailExisted)
             {
-                throw new BadHttpRequestException(ExceptionMessage.EMAIL_TAKEN);
-            }
-
-            var usernameExisted = await CheckUsernameExist(signUpDTO.Username);
-            if (usernameExisted)
-            {
-                throw new BadHttpRequestException(ExceptionMessage.USERNAME_TAKEN);
+                throw new NovaanException(HttpStatusCode.BadRequest, ErrorCodes.EMAIL_TAKEN_BASIC);
             }
 
             // Add account + user to database
@@ -57,11 +55,11 @@ namespace NovaanServer.Auth
             {
                 var password = CustomHash.GetHashString(signUpDTO.Password);
                 await CreateNewAccount(signUpDTO.Email, password, null);
-                await CreateNewUser(signUpDTO.Username);
+                await CreateNewUser(signUpDTO.DisplayName);
             }
             catch
             {
-                throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
+                throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.DATABASE_UNAVAILABLE);
             }
 
             // TODO: Send confirmation email
@@ -86,10 +84,9 @@ namespace NovaanServer.Auth
                 var emailExisted = await CheckEmailExist(ggAcountInfo.Email);
                 if (emailExisted)
                 {
-
-                    throw new BadHttpRequestException(ExceptionMessage.EMAIL_TAKEN);
+                    throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.EMAIL_TAKEN_BASIC);
                 }
-                
+
                 try
                 {
                     var accountId = await CreateNewAccount(ggAcountInfo.Email, null, ggAcountInfo.GoogleId);
@@ -99,7 +96,7 @@ namespace NovaanServer.Auth
                 }
                 catch
                 {
-                    throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
+                    throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.DATABASE_UNAVAILABLE);
                 }
             }
 
@@ -112,17 +109,6 @@ namespace NovaanServer.Auth
             var foundAccount = await _mongoService.Accounts
                 .Find(
                     acc => acc.Email == email
-                )
-                .FirstOrDefaultAsync();
-            return foundAccount != null;
-        }
-
-        // Check if username exists
-        private async Task<bool> CheckUsernameExist(string? username)
-        {
-            var foundAccount = await _mongoService.Accounts
-                .Find(
-                    acc => acc.Username == username
                 )
                 .FirstOrDefaultAsync();
             return foundAccount != null;
@@ -141,7 +127,7 @@ namespace NovaanServer.Auth
             var response = await httpClient.GetAsync("https://www.googleapis.com/userinfo/v2/me");
             if (!response.IsSuccessStatusCode)
             {
-                throw new Exception("Cannot connect to Google OAuth API");
+                throw new NovaanException(HttpStatusCode.InternalServerError, ErrorCodes.GG_UNAVAILABLE);
             }
 
             var ggAcountInfo = await response.Content.ReadFromJsonAsync<GoogleAccountInfoDTO>()

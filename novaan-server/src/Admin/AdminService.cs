@@ -28,7 +28,7 @@ namespace NovaanServer.src.Admin
             }
             catch
             {
-                throw new Exception(ExceptionMessage.DATABASE_UNAVAILABLE);
+                throw new Exception(ErrorCodes.DATABASE_UNAVAILABLE);
             }
         }
 
@@ -52,7 +52,7 @@ namespace NovaanServer.src.Admin
                 }
             }catch
             {
-                throw new Exception(ExceptionMessage.DATABASE_UNAVAILABLE);
+                throw new Exception(ErrorCodes.DATABASE_UNAVAILABLE);
             }
         }
     }

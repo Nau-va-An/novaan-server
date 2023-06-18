@@ -45,7 +45,7 @@ namespace NovaanServer.src.Content
             }
             catch
             {
-                throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
+                throw new Exception(ErrorCodes.SERVER_UNAVAILABLE);
             }
         }
 
@@ -265,7 +265,7 @@ namespace NovaanServer.src.Content
             catch
             {
 
-                throw new Exception(ExceptionMessage.DATABASE_UNAVAILABLE);
+                throw new Exception(ErrorCodes.DATABASE_UNAVAILABLE);
             }
         }
 
