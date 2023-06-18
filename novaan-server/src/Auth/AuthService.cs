@@ -70,22 +70,8 @@ namespace NovaanServer.Auth
 
         public async Task<string> GoogleAuthentication(GoogleOAuthDTO googleOAuthDTO)
         {
-            // Request Google account info from given access token
-            var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders
-                .Accept
-                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", googleOAuthDTO.Token);
 
-            var response = await httpClient.GetAsync("https://www.googleapis.com/userinfo/v2/me");
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new Exception("Cannot connect to Google OAuth API");
-            }
-
-            var ggAcountInfo = await response.Content.ReadFromJsonAsync<GoogleOAuthAPIResponse>()
-                ?? throw new Exception("Cannot parse Google account info with selected format");
+            var ggAcountInfo = await GetGoogleAccountInfo(googleOAuthDTO);
 
             // Find existing account associated with fetched account's googleId
             var foundAccount = _mongoService.Accounts
@@ -137,7 +123,7 @@ namespace NovaanServer.Auth
             return foundAccount != null;
         }
 
-        //Check if username exists
+        // Check if username exists
         private async Task<bool> CheckUsernameExist(string? username)
         {
             var foundAccount = await _mongoService.Accounts
@@ -147,16 +133,28 @@ namespace NovaanServer.Auth
                 .FirstOrDefaultAsync();
             return foundAccount != null;
         }
-    }
 
-    internal class GoogleOAuthAPIResponse
-    {
-        [JsonPropertyName("id")]
-        public string GoogleId { get; set; }
+        private static async Task<GoogleAccountInfoDTO> GetGoogleAccountInfo(GoogleOAuthDTO googleOAuthDTO)
+        {
+            // Request Google account info from given access token
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", googleOAuthDTO.Token);
 
-        public string Email { get; set; }
+            var response = await httpClient.GetAsync("https://www.googleapis.com/userinfo/v2/me");
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception("Cannot connect to Google OAuth API");
+            }
 
-        public string Name { get; set; }
+            var ggAcountInfo = await response.Content.ReadFromJsonAsync<GoogleAccountInfoDTO>()
+                ?? throw new Exception("Cannot parse Google account info with selected format");
+
+            return ggAcountInfo;
+        }
     }
 }
 
