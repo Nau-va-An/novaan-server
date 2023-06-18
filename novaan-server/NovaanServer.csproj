@@ -23,13 +23,13 @@
     <None Remove="src\ExceptionLayer\CustomExceptions\" />
     <None Remove="src\Content\" />
     <None Remove="src\Content\DTOs\" />
-    <None Remove="src\Filter\" />
     <None Remove="src\Common\" />
     <None Remove="src\Common\DTOs\" />
     <None Remove="src\Common\Attributes\" />
     <None Remove="src\Developer\DTOs\" />
     <None Remove="src\Admin\" />
     <None Remove="src\Admin\DTOs\" />
+    <None Remove="src\Common\Filter\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\" />
@@ -37,13 +37,13 @@
     <Folder Include="src\ExceptionLayer\CustomExceptions\" />
     <Folder Include="src\Content\" />
     <Folder Include="src\Content\DTOs\" />
-    <Folder Include="src\Filter\" />
     <Folder Include="src\Common\" />
     <Folder Include="src\Common\DTOs\" />
     <Folder Include="src\Common\Attributes\" />
     <Folder Include="src\Developer\DTOs\" />
     <Folder Include="src\Admin\" />
     <Folder Include="src\Admin\DTOs\" />
+    <Folder Include="src\Common\Filter\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">
