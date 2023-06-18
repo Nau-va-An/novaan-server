@@ -10,7 +10,7 @@ namespace NovaanServer.Auth
 
         public Task<string> SignInWithCredentials(SignInDTOs signInDTO);
 
-        public Task<bool> GoogleAuthentication(GoogleOauthDTO googleOauthDTO);
+        public Task<string> GoogleAuthentication(GoogleOAuthDTO googleOAuthDTO);
     }
 }
 

@@ -34,18 +34,12 @@ namespace NovaanServer.ExceptionLayer
             // Filter exceptions to derive status code
             var response = context.Response;
             response.ContentType = "application/json";
-            switch (exception)
+            response.StatusCode = exception switch
             {
-                case BadHttpRequestException ex:
-                    response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    break;
-                case UnauthorizedAccessException ex:
-                    response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                    break;
-                default:
-                    response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    break;
-            }
+                BadHttpRequestException => (int)HttpStatusCode.BadRequest,
+                UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
+                _ => (int)HttpStatusCode.InternalServerError,
+            };
 
             // Create custom response based on pre-defined format
             var customResponse = new BaseErrResponse()
@@ -53,7 +47,7 @@ namespace NovaanServer.ExceptionLayer
                 Success = false,
                 Body = new
                 {
-                    Message = exception.Message
+                    message = exception.Message
                 }
             };
 
