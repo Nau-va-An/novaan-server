@@ -7,7 +7,7 @@ namespace NovaanServer.src.Admin.DTOs
     public class StatusDTO
     {
         [BsonRepresentation(BsonType.ObjectId)]
-        public string UserID { get; set; } = string.Empty;
+        public string PostID { get; set; } = string.Empty;
 
         public Status Status { get; set; }
 

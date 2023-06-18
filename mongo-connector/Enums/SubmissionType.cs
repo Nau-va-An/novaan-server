@@ -3,8 +3,8 @@ namespace MongoConnector.Enums
 {
     public enum SubmissionType
     {
-        Recipe = 0,
-        CulinaryTip = 1
+        Recipes = 0,
+        CulinaryTips = 1
     }
 }
 

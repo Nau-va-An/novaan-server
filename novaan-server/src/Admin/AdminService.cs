@@ -30,10 +30,11 @@ namespace NovaanServer.src.Admin
             var statusEnum = (Status)statusDTO.Status;
             var submissionType = statusDTO.SubmissionType.ToString().ToLower();
             var collection = _mongoService.GetCollection<T>(submissionType);
-            var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(statusDTO.UserID));
-            if (collection.Find(filter).FirstOrDefault() == null)
+            var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(statusDTO.PostID));
+            var list = collection.Find(_ => true).ToList();
+            if (list.Count == 0 || collection.Find(filter).FirstOrDefault() == null)
             {
-                throw new Exception("Recipe not found");
+                throw new Exception("Post not found");
             }
             var update = Builders<T>.Update.Set("Status", statusEnum);
             collection.UpdateOne(filter, update);

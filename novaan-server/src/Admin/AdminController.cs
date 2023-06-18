@@ -9,7 +9,7 @@ namespace NovaanServer.src.Admin
 {
     [Route("api/admin")]
     [ApiController]
-    // [Authorize]
+    [Authorize]
     public class AdminController : ControllerBase
     {
         private readonly IAdminService _submissionService;
@@ -28,7 +28,7 @@ namespace NovaanServer.src.Admin
         [HttpPut("status")]
         public IActionResult UpdateStatus([FromBody] StatusDTO statusDTO)
         {
-            if (statusDTO.SubmissionType == SubmissionType.Recipe)
+            if (statusDTO.SubmissionType == SubmissionType.Recipes)
             {
                 _submissionService.UpdateStatus<Recipe>(statusDTO);
             }

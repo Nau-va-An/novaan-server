@@ -81,7 +81,7 @@ namespace MongoConnector
         }
         public IMongoCollection<T> GetCollection<T>(string collectionName)
         {
-            return MongoDatabase.GetCollection<T>(collectionName);
+            return MongoDatabase.GetCollection<T>(collectionName.ToLower());
         }
 
         public IMongoCollection<Account> Accounts
