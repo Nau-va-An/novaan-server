@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using FileServer;
@@ -16,6 +17,7 @@ using Utils.Json;
 
 namespace NovaanServer.src.Content
 {
+    // TODO: WARNING: Need to do a full refactor on this service
     public class ContentService : IContentService
     {
         private const int MULTIPART_BOUNDARY_LENGTH_LIMIT = 128;
@@ -45,7 +47,7 @@ namespace NovaanServer.src.Content
             }
             catch
             {
-                throw new Exception(ErrorCodes.SERVER_UNAVAILABLE);
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
             }
         }
 
@@ -54,7 +56,7 @@ namespace NovaanServer.src.Content
         {
             if (!IsMultipartContentType(request.ContentType))
             {
-                throw new Exception($"Expected a multipart request, but got {request.ContentType}");
+                throw new NovaanException(ErrorCodes.CONTENT_CONTENT_TYPE_INVALID, HttpStatusCode.BadRequest);
             }
 
             var boundary = GetBoundary(MediaTypeHeaderValue.Parse(request.ContentType));
@@ -69,7 +71,7 @@ namespace NovaanServer.src.Content
                 var contentDisposition = ContentDispositionHeaderValue.Parse(section.ContentDisposition);
                 if (contentDisposition == null || contentDisposition.Name == null)
                 {
-                    throw new Exception("Invalid Content Disposition");
+                    throw new NovaanException(ErrorCodes.CONTENT_DISPOSITION_INVALID, HttpStatusCode.BadRequest);
                 }
                 var fieldName = HeaderUtilities.RemoveQuotes(contentDisposition.Name).Value.ToLowerInvariant();
                 var property = properties.FirstOrDefault(p => p.Name.ToLowerInvariant() == fieldName);
@@ -78,7 +80,7 @@ namespace NovaanServer.src.Content
                 {
                     if (contentDisposition.FileName.Value == null)
                     {
-                        throw new Exception("Invalid File Name");
+                        throw new NovaanException(ErrorCodes.CONTENT_FILENAME_INVALID, HttpStatusCode.BadRequest);
                     }
                     var isImage = fieldName.Contains("image");
                     var permittedExtensions = isImage ? _permittedImageExtensions : _permittedVideoExtensions;
@@ -100,7 +102,7 @@ namespace NovaanServer.src.Content
                             var splitValues = fieldName.Split('_');
                             if (splitValues.Length != 3)
                             {
-                                throw new Exception("Invalid Field Name");
+                                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
                             }
 
                             var fieldNameSplit = splitValues[0];
@@ -110,7 +112,7 @@ namespace NovaanServer.src.Content
                             property = properties.FirstOrDefault(p => p.Name.ToLowerInvariant() == fieldNameSplit);
                             if (property == null)
                             {
-                                throw new Exception("Unknown Field Name");
+                                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
                             }
 
                             MappingObjectData(obj, property, fileID, subFieldName, int.Parse(key));
@@ -136,7 +138,7 @@ namespace NovaanServer.src.Content
                 }
                 else
                 {
-                    throw new Exception("Unknown Content Disposition");
+                    throw new NovaanException(ErrorCodes.CONTENT_DISPOSITION_INVALID, HttpStatusCode.BadRequest);
                 }
 
                 section = await reader.ReadNextSectionAsync();
@@ -214,42 +216,39 @@ namespace NovaanServer.src.Content
             if (!_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension) &&
                 !_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
             {
-                throw new Exception("Invalid file extension");
+                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
             }
 
-            // If file is image
+            // Image requirements check
             if (_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
             {
-                // Check if size is at least 640 x 480
                 if (fileMetadataDTO.Width < 640 || fileMetadataDTO.Height < 480)
                 {
-                    throw new Exception("Image size is too small");
+                    throw new NovaanException(ErrorCodes.CONTENT_IMG_RESO_INVALID, HttpStatusCode.BadRequest);
                 }
 
                 if (fileMetadataDTO.FileSize > _imageSizeLimit)
                 {
-                    throw new Exception("File is too large");
+                    throw new NovaanException(ErrorCodes.CONTENT_IMG_SIZE_INVALID, HttpStatusCode.BadRequest);
                 }
             }
 
-            // If file is video
+            // Video requirements check
             if (_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension))
             {
-                // Check if it has ratio is 16:9
                 if (fileMetadataDTO.Width / fileMetadataDTO.Height != 16 / 9)
                 {
-                    throw new Exception("Video ratio is not in 16:9 ratio");
+                    throw new NovaanException(ErrorCodes.CONTENT_VID_RESO_INVALID, HttpStatusCode.BadRequest);
                 }
 
-                // Check if video duration is less than 2 minutes
                 if (fileMetadataDTO.VideoDuration > TimeSpan.FromMinutes(2))
                 {
-                    throw new Exception("Video duration is too long");
+                    throw new NovaanException(ErrorCodes.CONTENT_VID_LEN_INVALID, HttpStatusCode.BadRequest);
                 }
 
                 if (fileMetadataDTO.FileSize > _videoSizeLimit)
                 {
-                    throw new Exception("Video size is too large");
+                    throw new NovaanException(ErrorCodes.CONTENT_VID_SIZE_INVALID, HttpStatusCode.BadRequest);
                 }
             }
 
@@ -265,19 +264,26 @@ namespace NovaanServer.src.Content
             catch
             {
 
-                throw new Exception(ErrorCodes.DATABASE_UNAVAILABLE);
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
             }
         }
 
         public PostDTO GetPosts()
         {
-            var recipes = _mongoService.Recipes.Find(r => r.Status == Status.Approved).ToList();
-            var culinaryTips = _mongoService.CulinaryTips.Find(c => c.Status == Status.Approved).ToList();
-            return new PostDTO
+            try
             {
-                RecipeList = recipes,
-                CulinaryTips = culinaryTips
-            };
+                var recipes = _mongoService.Recipes.Find(r => r.Status == Status.Approved).ToList();
+                var culinaryTips = _mongoService.CulinaryTips.Find(c => c.Status == Status.Approved).ToList();
+                return new PostDTO
+                {
+                    RecipeList = recipes,
+                    CulinaryTips = culinaryTips
+                };
+            }
+            catch
+            {
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
+            }
         }
 
         private static bool HasFormDataContentDisposition(ContentDispositionHeaderValue contentDisposition)
