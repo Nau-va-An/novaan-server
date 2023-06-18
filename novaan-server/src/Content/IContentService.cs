@@ -6,10 +6,11 @@ namespace NovaanServer.src.Content
 {
     public interface IContentService
     {
-        Task AddCulinaryTips(CulinaryTips culinaryTips);
+        Task AddCulinaryTips(CulinaryTip culinaryTips);
         Task UploadRecipe(Recipe recipe);
         Task<T> ProcessMultipartRequest<T>(HttpRequest request);
         Task ValidateFileMetadata(FileInformationDTO fileMetadata);
+        List<PostDTO> GetPosts();
     }
 }
 

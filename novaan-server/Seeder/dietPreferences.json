@@ -1,0 +1,38 @@
+[
+  {
+    "title": "Ăn chay",
+    "description": "Ăn chay là việc không sử dụng thực phẩm từ động vật, bao gồm thịt, cá, gia cầm và sản phẩm từ sữa và trứng."
+  },
+  {
+    "title": "Ăn chay hữu cơ",
+    "description": "Ăn chay hữu cơ là việc ăn các loại thực phẩm từ động vật theo chế độ chay kết hợp với sử dụng các sản phẩm hữu cơ không sử dụng hóa chất."
+  },
+  {
+    "title": "Ăn chay nhẹ",
+    "description": "Ăn chay nhẹ là việc ăn các món ăn chay nhẹ nhàng, không sử dụng các sản phẩm từ động vật và giảm thiểu sử dụng các loại dầu và đường."
+  },
+  {
+    "title": "Ăn chay truyền thống",
+    "description": "Ăn chay truyền thống là việc ăn chay theo các phong cách ẩm thực truyền thống của các nền văn hóa và quốc gia khác nhau."
+  },
+  {
+    "title": "Ăn chay không men",
+    "description": "Ăn chay không men là việc ăn chay mà không sử dụng các sản phẩm có chứa men, như miso, nước mắm và các loại sốt chua."
+  },
+  {
+    "title": "Ăn ít thịt",
+    "description": "Ăn ít thịt là việc giảm lượng thịt trong chế độ ăn hàng ngày và tăng cường sử dụng các nguồn thực phẩm khác như rau quả, hạt, đậu và các sản phẩm từ đậu nành."
+  },
+  {
+    "title": "Ăn không gluten",
+    "description": "Ăn không gluten là việc loại bỏ gluten, một loại protein có trong lúa mì, lúa mạch và lạc tiên, khỏi chế độ ăn."
+  },
+  {
+    "title": "Ăn không sữa",
+    "description": "Ăn không sữa là việc không sử dụng các sản phẩm từ sữa và các sản phẩm từ sữa, thường do dị ứng hoặc cảm giác không dung nạp được lactose."
+  },
+  {
+    "title": "Ăn ít đường",
+    "description": "Ăn ít đường là việc giảm lượng đường trong chế độ ăn hàng ngày và hạn chế sử dụng các sản phẩm có chứa đường tinh khiết."
+  }
+]
