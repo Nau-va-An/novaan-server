@@ -72,7 +72,6 @@ namespace NovaanServer.Auth
 
         public async Task<string> GoogleAuthentication(GoogleOAuthDTO googleOAuthDTO)
         {
-
             var ggAcountInfo = await GetGoogleAccountInfo(googleOAuthDTO);
 
             // Find existing account associated with fetched account's googleId

@@ -37,7 +37,6 @@ namespace NovaanServer.Auth
 
             return new SignInResDTO
             {
-                Success = true,
                 Token = token
             };
         }
@@ -49,10 +48,8 @@ namespace NovaanServer.Auth
             Request.Headers.TryGetValue(HeaderNames.Authorization, out var authorizationHeader);
             var accessToken = authorizationHeader.ToString()["Bearer ".Length..];
             var newToken = await _jwtService.RefreshToken(accessToken);
-
             return new RefreshTokenResDTO
             {
-                Success = true,
                 Token = newToken
             };
         }
@@ -64,7 +61,6 @@ namespace NovaanServer.Auth
             var token = await _jwtService.GenerateJwtToken(new UserJwt { UserId = userId });
             return new SignInResDTO
             {
-                Success = true,
                 Token = token
             };
         }
