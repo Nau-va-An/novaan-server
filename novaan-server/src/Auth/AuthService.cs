@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 using System.Net.Http.Headers;
-using System.Text.Json.Serialization;
 using MongoConnector;
-=======
-﻿using MongoConnector;
->>>>>>> dev
 using MongoConnector.Models;
 using MongoDB.Driver;
 using NovaanServer.Auth.DTOs;
@@ -58,13 +53,16 @@ namespace NovaanServer.Auth
             }
 
             // Add account to database
-            var newAccount = new Account
+            try
             {
-                Username = signUpDTO.Username,
-                Email = signUpDTO.Email,
-                Password = CustomHash.GetHashString(signUpDTO.Password),
-            };
-            await _mongoService.Accounts.InsertOneAsync(newAccount);
+                var password = CustomHash.GetHashString(signUpDTO.Password);
+                await CreateNewAccount(signUpDTO.Email, password, null);
+                await CreateNewUser(signUpDTO.Username);
+            }
+            catch
+            {
+                throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
+            }
 
             // TODO: Send confirmation email
             // This should be push into a message queue to be processed by background job
@@ -92,25 +90,17 @@ namespace NovaanServer.Auth
                     throw new BadHttpRequestException(ExceptionMessage.EMAIL_TAKEN);
                 }
 
-                var newAccount = new Account
-                {
-                    Username = ggAcountInfo.Name,
-                    Email = ggAcountInfo.Email,
-                    Verified = true,
-                    GoogleId = ggAcountInfo.GoogleId,
-                    // This can be changed later if user want to
-                    Password = Guid.NewGuid().ToString()
-                };
                 try
                 {
-                    await _mongoService.Accounts.InsertOneAsync(newAccount);
+                    var accountId = await CreateNewAccount(ggAcountInfo.Email, null, ggAcountInfo.GoogleId);
+                    await CreateNewUser(ggAcountInfo.Name);
+
+                    return accountId;
                 }
                 catch
                 {
                     throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
                 }
-
-                return newAccount.Id;
             }
 
             return foundAccount.Id;
@@ -158,6 +148,39 @@ namespace NovaanServer.Auth
                 ?? throw new Exception("Cannot parse Google account info with selected format");
 
             return ggAcountInfo;
+        }
+
+        private async Task<string> CreateNewAccount(string email, string? password = null, string? googleId = null)
+        {
+            var newAccount = new Account
+            {
+                Username = ExtractUsernameFromEmail(email),
+                Email = email,
+                Verified = true,
+                GoogleId = googleId,
+                // This can be changed later if user want to
+                Password = password ?? Guid.NewGuid().ToString(),
+            };
+            await _mongoService.Accounts.InsertOneAsync(newAccount);
+
+            return newAccount.Id;
+        }
+
+        private async Task<string> CreateNewUser(string displayName)
+        {
+            var newUser = new User
+            {
+                DisplayName = displayName
+            };
+
+            await _mongoService.Users.InsertOneAsync(newUser);
+
+            return newUser.Id;
+        }
+
+        private static string ExtractUsernameFromEmail(string email)
+        {
+            return email[..email.IndexOf("@")];
         }
     }
 }
