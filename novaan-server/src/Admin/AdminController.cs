@@ -20,22 +20,23 @@ namespace NovaanServer.src.Admin
         }
 
         [HttpGet("submissions")]
-        public List<SubmissionsDTO> GetSubmissions([FromQuery] Status status)
+        public SubmissionsDTO GetSubmissions([FromQuery] Status status)
         {
             return _submissionService.GetSubmissions(status);
         }
 
-        [HttpPut("status")]
-        public IActionResult UpdateStatus([FromBody] StatusDTO statusDTO)
+        [HttpPut("status/{type}")]
+        public IActionResult UpdateStatus([FromBody] StatusDTO statusDTO, SubmissionType type)
         {
-            if (statusDTO.SubmissionType == SubmissionType.Recipe)
+            if (type == SubmissionType.Recipe)
             {
-                _submissionService.UpdateStatus<Recipe>(statusDTO);
+                _submissionService.UpdateStatus<Recipe>(statusDTO, MongoCollections.Recipes);
             }
             else
             {
-                _submissionService.UpdateStatus<CulinaryTip>(statusDTO);
+                _submissionService.UpdateStatus<CulinaryTip>(statusDTO, MongoCollections.CulinaryTips);
             }
+
             return Ok();
         }
     }

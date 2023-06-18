@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace NovaanServer.src.Auth.DTOs
 {
+
     public class GoogleOAuthDTO
     {
         [Required]

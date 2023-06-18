@@ -79,10 +79,6 @@ namespace MongoConnector
                 await mealTypeCollection.InsertManyAsync(mealTypeList);
             }
         }
-        public IMongoCollection<T> GetCollection<T>(string collectionName)
-        {
-            return MongoDatabase.GetCollection<T>(collectionName);
-        }
 
         // Seed data allergen
         public async Task SeedAllergenData()
@@ -95,6 +91,11 @@ namespace MongoConnector
                 var allergenList = JsonConvert.DeserializeObject<List<Allergen>>(allergenJson);
                 await allergenCollection.InsertManyAsync(allergenList);
             }
+        }
+
+        public IMongoCollection<T> GetCollection<T>(string collectionName)
+        {
+            return MongoDatabase.GetCollection<T>(collectionName);
         }
 
         public IMongoCollection<Account> Accounts

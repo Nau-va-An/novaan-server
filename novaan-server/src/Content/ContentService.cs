@@ -18,28 +18,32 @@ namespace NovaanServer.src.Content
 {
     public class ContentService : IContentService
     {
-        private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20mb
-        // _imageSizeLimit is 5,242,880 bytes.
-        private readonly long _imageSizeLimit = 5L * 1024L * 1024L; // 5mb
         private const int MULTIPART_BOUNDARY_LENGTH_LIMIT = 128;
+
+        private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20mb
+        private readonly long _imageSizeLimit = 5L * 1024L * 1024L; // 5mb
+
         private readonly string[] _permittedVideoExtensions = { "mp4" };
         private readonly string[] _permittedImageExtensions = { "jpg", "jpeg", "png", "webp" };
+
         private readonly MongoDBService _mongoService;
         private readonly FileService _fileService;
         private readonly S3Service _s3Service;
+
         public ContentService(MongoDBService mongoDBService, FileService fileService, S3Service s3Service)
         {
             _mongoService = mongoDBService;
             _fileService = fileService;
             _s3Service = s3Service;
         }
+
         public async Task AddCulinaryTips(CulinaryTip culinaryTips)
         {
             try
             {
                 await _mongoService.CulinaryTips.InsertOneAsync(culinaryTips);
             }
-            catch (Exception ex)
+            catch
             {
                 throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
             }
@@ -204,47 +208,79 @@ namespace NovaanServer.src.Content
             }
         }
 
-        private Encoding GetEncoding(MultipartSection section)
+        public bool ValidateFileMetadata(FileInformationDTO fileMetadataDTO)
         {
-            var hasMediaTypeHeader =
-                MediaTypeHeaderValue.TryParse(section.ContentType, out var mediaType);
-
-            if (!hasMediaTypeHeader || Encoding.UTF8.Equals(mediaType.Encoding))
+            // Check if file extension is in permitted extensions
+            if (!_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension) &&
+                !_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
             {
-                return Encoding.UTF8;
+                throw new Exception("Invalid file extension");
             }
 
-            return mediaType.Encoding;
+            // If file is image
+            if (_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
+            {
+                // Check if size is at least 640 x 480
+                if (fileMetadataDTO.Width < 640 || fileMetadataDTO.Height < 480)
+                {
+                    throw new Exception("Image size is too small");
+                }
+
+                if (fileMetadataDTO.FileSize > _imageSizeLimit)
+                {
+                    throw new Exception("File is too large");
+                }
+            }
+
+            // If file is video
+            if (_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension))
+            {
+                // Check if it has ratio is 16:9
+                if (fileMetadataDTO.Width / fileMetadataDTO.Height != 16 / 9)
+                {
+                    throw new Exception("Video ratio is not in 16:9 ratio");
+                }
+
+                // Check if video duration is less than 2 minutes
+                if (fileMetadataDTO.VideoDuration > TimeSpan.FromMinutes(2))
+                {
+                    throw new Exception("Video duration is too long");
+                }
+
+                if (fileMetadataDTO.FileSize > _videoSizeLimit)
+                {
+                    throw new Exception("Video size is too large");
+                }
+            }
+
+            return true;
         }
 
-        private async Task<MemoryStream> ProcessStreamedFile(MultipartSection section, ContentDispositionHeaderValue contentDisposition,
-    string[] permittedExtensions, long sizeLimit)
+        public async Task UploadRecipe(Recipe recipe)
         {
-            var memoryStream = new MemoryStream();
-            await section.Body.CopyToAsync(memoryStream);
-
-            // Check if the file is empty or exceeds the size limit.
-            if (memoryStream.Length == 0)
+            try
             {
-                throw new Exception("File is empty");
+                await _mongoService.Recipes.InsertOneAsync(recipe);
             }
-
-            if (memoryStream.Length > sizeLimit)
+            catch
             {
-                var megabyteSizeLimit = sizeLimit / 1024 / 1024;
-                throw new Exception($"The file exceeds {megabyteSizeLimit:N1} MB.");
+
+                throw new Exception(ExceptionMessage.DATABASE_UNAVAILABLE);
             }
-
-            var fileName = contentDisposition.FileName.ToString();
-
-            //validate file extension and signature
-            _fileService.ValidateFileExtensionAndSignature(fileName, memoryStream, permittedExtensions);
-
-            return memoryStream;
         }
 
+        public PostDTO GetPosts()
+        {
+            var recipes = _mongoService.Recipes.Find(r => r.Status == Status.Approved).ToList();
+            var culinaryTips = _mongoService.CulinaryTips.Find(c => c.Status == Status.Approved).ToList();
+            return new PostDTO
+            {
+                RecipeList = recipes,
+                CulinaryTips = culinaryTips
+            };
+        }
 
-        private bool HasFormDataContentDisposition(ContentDispositionHeaderValue contentDisposition)
+        private static bool HasFormDataContentDisposition(ContentDispositionHeaderValue contentDisposition)
         {
             //  For exmaple, Content-Disposition: form-data; name="subdirectory";
             return contentDisposition.DispositionType.Equals("form-data")
@@ -252,12 +288,18 @@ namespace NovaanServer.src.Content
                 && string.IsNullOrEmpty(contentDisposition.FileNameStar.Value);
         }
 
-        private bool HasFileContentDisposition(ContentDispositionHeaderValue contentDisposition)
+        private static bool HasFileContentDisposition(ContentDispositionHeaderValue contentDisposition)
         {
             // For example, Content-Disposition: form-data; name="files"; filename="OnScreenControl_7.58.zip"
             return contentDisposition.DispositionType.Equals("form-data")
                 && (!string.IsNullOrEmpty(contentDisposition.FileName.Value)
                     || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value));
+        }
+
+        private static bool IsMultipartContentType(string? contentType)
+        {
+            return !string.IsNullOrEmpty(contentType)
+                  && contentType.Contains("multipart/", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string GetBoundary(MediaTypeHeaderValue contentType)
@@ -278,90 +320,49 @@ namespace NovaanServer.src.Content
             return boundary;
         }
 
-
-        private bool IsMultipartContentType(string? contentType)
+        private async Task<MemoryStream> ProcessStreamedFile(
+            MultipartSection section,
+            ContentDispositionHeaderValue contentDisposition,
+            string[] permittedExtensions,
+            long sizeLimit
+        )
         {
-            return !string.IsNullOrEmpty(contentType)
-                  && contentType.IndexOf("multipart/", StringComparison.OrdinalIgnoreCase) >= 0;
+            var memoryStream = new MemoryStream();
+            await section.Body.CopyToAsync(memoryStream);
+
+            // Check if the file is empty or exceeds the size limit.
+            if (memoryStream.Length == 0)
+            {
+                throw new Exception("File is empty");
+            }
+
+            if (memoryStream.Length > sizeLimit)
+            {
+                var megabyteSizeLimit = sizeLimit / 1024 / 1024;
+                throw new Exception($"The file exceeds {megabyteSizeLimit:N1} MB.");
+            }
+
+            var fileName = contentDisposition.FileName.ToString();
+
+            // Validate file extension and signature
+            _fileService.ValidateFileExtensionAndSignature(fileName, memoryStream, permittedExtensions);
+
+            return memoryStream;
         }
 
-        public Task ValidateFileMetadata(FileInformationDTO fileMetadataDTO)
+        private static Encoding GetEncoding(MultipartSection section)
         {
-            // Check if file extension is in permitted extensions
-            if (!_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension) || !_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
+            var hasMediaTypeHeader =
+                MediaTypeHeaderValue.TryParse(section.ContentType, out var mediaType);
+
+            if (!hasMediaTypeHeader ||
+                mediaType == null ||
+                mediaType.Encoding == null)
             {
-                throw new Exception("Invalid file extension");
+                return Encoding.UTF8;
             }
 
-            // Check if file size is null
-            if (fileMetadataDTO.FileSize == null)
-            {
-                throw new Exception("File size is null");
-            }
-
-            // If file is image
-            if (_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
-            {
-                // Check if size is at least 640 x 480
-                if (fileMetadataDTO.Width < 640 || fileMetadataDTO.Height < 480)
-                {
-                    throw new Exception("Image size is too small");
-                }
-
-                if (fileMetadataDTO.FileSize > _imageSizeLimit)
-                {
-                    throw new Exception("File is too large");
-                }
-
-            }
-
-            // If file is video
-            if (_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension))
-            {
-                // Check if it has ratio is 16:9
-                if (fileMetadataDTO.Width / fileMetadataDTO.Height != 16 / 9)
-                {
-                    throw new Exception("Video ratio is not 16:9");
-                }
-
-                // Check if video duration is less than 2 minutes
-                if (fileMetadataDTO.VideoDuration > TimeSpan.FromMinutes(2))
-                {
-                    throw new Exception("Video duration is too long");
-                }
-
-                if (fileMetadataDTO.FileSize > _videoSizeLimit)
-                {
-                    throw new Exception("Video size is too large");
-                }
-            }
-            return Task.CompletedTask;
-        }
-
-        public async Task UploadRecipe(Recipe recipe)
-        {
-            try
-            {
-                _mongoService.Recipes.InsertOne(recipe);
-            }
-            catch (System.Exception)
-            {
-
-                throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
-            }
-        }
-
-        public List<PostDTO> GetPosts()
-        {
-            List<PostDTO> posts = new List<PostDTO>();
-            var recipes = _mongoService.Recipes.Find(r => r.Status == Status.Approved).ToList();
-            var culinaryTips = _mongoService.CulinaryTips.Find(c => c.Status == Status.Approved).ToList();
-            posts.Add(new PostDTO
-            {
-                RecipeList = recipes,
-                CulinaryTipList = culinaryTips
-            });
-            return posts;
+            return mediaType.Encoding;
         }
     }
 }
