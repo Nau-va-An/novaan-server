@@ -52,7 +52,7 @@ namespace NovaanServer.Auth
                 throw new BadHttpRequestException(ExceptionMessage.USERNAME_TAKEN);
             }
 
-            // Add account to database
+            // Add account + user to database
             try
             {
                 var password = CustomHash.GetHashString(signUpDTO.Password);
@@ -158,7 +158,7 @@ namespace NovaanServer.Auth
                 Email = email,
                 Verified = true,
                 GoogleId = googleId,
-                // This can be changed later if user want to
+                // Generate random password when people sign up with Google account
                 Password = password ?? Guid.NewGuid().ToString(),
             };
             await _mongoService.Accounts.InsertOneAsync(newAccount);

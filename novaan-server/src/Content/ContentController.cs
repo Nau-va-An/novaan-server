@@ -22,7 +22,7 @@ namespace NovaanServer.src.Content
         /// </summary>
         /// <returns></returns>
         [HttpGet("posts")]
-        public List<PostDTO> GetPosts()
+        public PostDTO GetPosts()
         {
             return _contentService.GetPosts();
         }
@@ -32,16 +32,19 @@ namespace NovaanServer.src.Content
         public async Task<IActionResult> UploadCulinaryTips()
         {
             var culinaryTips = await _contentService.ProcessMultipartRequest<CulinaryTip>(Request);
-            // Add to database
             await _contentService.AddCulinaryTips(culinaryTips);
             return Ok();
         }
 
         // Validate file metadata
         [HttpPost("validate")]
-        public async Task<IActionResult> ValidateFileMetadata([FromBody] FileInformationDTO fileMetadataDTO)
+        public IActionResult ValidateFileMetadata([FromBody] FileInformationDTO fileMetadataDTO)
         {
-            await _contentService.ValidateFileMetadata(fileMetadataDTO);
+            var isFileValid = _contentService.ValidateFileMetadata(fileMetadataDTO);
+            if(!isFileValid)
+            {
+                return BadRequest();
+            }
             return Ok();
         }
 

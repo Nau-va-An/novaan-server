@@ -5,6 +5,7 @@ using MongoConnector.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using NovaanServer.src.Admin.DTOs;
+using NovaanServer.src.ExceptionLayer.CustomExceptions;
 
 namespace NovaanServer.src.Admin
 {
@@ -16,28 +17,43 @@ namespace NovaanServer.src.Admin
             _mongoService = mongoService;
         }
 
-        public List<SubmissionsDTO> GetSubmissions(Status status)
+        public SubmissionsDTO GetSubmissions(Status status)
         {
-            var submissions = new List<SubmissionsDTO>();
-            var foundRecipes = _mongoService.Recipes.Find(x => x.Status == status).ToList();
-            var foundTips = _mongoService.CulinaryTips.Find(x => x.Status == status).ToList();
-            submissions.Add(new SubmissionsDTO { Recipes = foundRecipes, CulinaryTips = foundTips });
-            return submissions;
+            try
+            {
+                var foundRecipes = _mongoService.Recipes.Find(x => x.Status == status).ToList();
+                var foundTips = _mongoService.CulinaryTips.Find(x => x.Status == status).ToList();
+
+                return new SubmissionsDTO { Recipes = foundRecipes, CulinaryTips = foundTips };
+            }
+            catch
+            {
+                throw new Exception(ExceptionMessage.DATABASE_UNAVAILABLE);
+            }
         }
 
-        public void UpdateStatus<T>(StatusDTO statusDTO)
+        public void UpdateStatus<T>(StatusDTO statusDTO, string collectionName)
         {
-            var statusEnum = (Status)statusDTO.Status;
-            var submissionType = statusDTO.SubmissionType.ToString().ToLower();
-            var collection = _mongoService.GetCollection<T>(submissionType);
-            var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(statusDTO.PostID));
-            var list = collection.Find(_ => true).ToList();
-            if (list.Count == 0 || collection.Find(filter).FirstOrDefault() == null)
+            var collection = _mongoService.GetCollection<T>(collectionName);
+            var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(statusDTO.PostId));
+
+            // Check if the submission is available
+            var foundSubmission = collection.Find(filter).FirstOrDefault() ??
+                throw new NotFoundException($"Submission with id: {statusDTO.PostId} not found");
+
+            // Try to update the submission with inputted status
+            var update = Builders<T>.Update.Set("Status", statusDTO.Status);
+            try
             {
-                throw new Exception("Post not found");
+                var result = collection.UpdateOne(filter, update);
+                if(!result.IsAcknowledged)
+                {
+                    throw new Exception();
+                }
+            }catch
+            {
+                throw new Exception(ExceptionMessage.DATABASE_UNAVAILABLE);
             }
-            var update = Builders<T>.Update.Set("Status", statusEnum);
-            collection.UpdateOne(filter, update);
         }
     }
 }

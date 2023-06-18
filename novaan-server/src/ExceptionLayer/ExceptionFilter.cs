@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using NovaanServer.ExceptionLayer.CustomExceptions;
+using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using Utils.Json;
 
 namespace NovaanServer.ExceptionLayer
@@ -38,6 +39,7 @@ namespace NovaanServer.ExceptionLayer
             {
                 BadHttpRequestException => (int)HttpStatusCode.BadRequest,
                 UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
+                NotFoundException => (int) HttpStatusCode.NotFound,
                 _ => (int)HttpStatusCode.InternalServerError,
             };
 
