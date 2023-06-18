@@ -20,7 +20,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int RT_JWT_UNAUTHORIZED = 1008;
 
         // Admin
-        public const int ADMIN_NO_SUBMISSION_WITH_ID = 1009;
+        public const int ADMIN_SUBMISSION_NOT_FOUND = 1009;
 
         // Content
         public const int CONTENT_CONTENT_TYPE_INVALID = 1010;

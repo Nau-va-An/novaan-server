@@ -41,7 +41,7 @@ namespace NovaanServer.src.Admin
 
             // Check if the submission is available
             var foundSubmission = collection.Find(filter).FirstOrDefault() ??
-                throw new NovaanException(ErrorCodes.ADMIN_NO_SUBMISSION_WITH_ID, HttpStatusCode.NotFound);
+                throw new NovaanException(ErrorCodes.ADMIN_SUBMISSION_NOT_FOUND, HttpStatusCode.NotFound);
 
             // Try to update the submission with inputted status
             var update = Builders<T>.Update.Set("Status", statusDTO.Status);
