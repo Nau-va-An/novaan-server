@@ -136,7 +136,8 @@ namespace NovaanServer.src.Auth.Jwt
             try
             {
                 _mongoDBService.RefreshTokens.UpdateOne(filter, update);
-            } catch
+            }
+            catch
             {
                 throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
             }

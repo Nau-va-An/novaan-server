@@ -48,11 +48,12 @@ namespace NovaanServer.src.Admin
             try
             {
                 var result = collection.UpdateOne(filter, update);
-                if(!result.IsAcknowledged)
+                if (!result.IsAcknowledged)
                 {
                     throw new Exception();
                 }
-            }catch
+            }
+            catch
             {
                 throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
             }
