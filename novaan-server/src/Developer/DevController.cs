@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using NovaanServer.src.Common.Attributes;
 using NovaanServer.src.Developer.DTOs;
 using System.Net;
+using NovaanServer.src.ExceptionLayer.CustomExceptions;
 
 namespace NovaanServer.Developer
 {
@@ -88,7 +89,7 @@ namespace NovaanServer.Developer
         [HttpGet("exec")]
         public async Task<IActionResult> Execute()
         {
-            return Ok();
+            throw new NovaanException(ErrorCodes.RT_JWT_UNAUTHORIZED);
         }
     }
 }

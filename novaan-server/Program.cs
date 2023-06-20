@@ -1,5 +1,4 @@
-﻿using FileServer;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.IdentityModel.Tokens;
 using MongoConnector;
 using NovaanServer.Auth;
 using NovaanServer.Developer;
@@ -31,7 +30,6 @@ builder.Services.AddSwaggerGen();
 // Config MongoDB + AWS S3 Service
 builder.Services.AddSingleton<MongoDBService>();
 builder.Services.AddSingleton<S3Service>();
-builder.Services.AddSingleton<FileService>();
 
 // Server services register
 builder.Services.AddScoped<IDevService, DevService>();
