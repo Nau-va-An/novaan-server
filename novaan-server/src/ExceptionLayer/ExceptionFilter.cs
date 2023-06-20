@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq.Expressions;
 using System.Net;
 using NovaanServer.ExceptionLayer.CustomExceptions;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
@@ -66,6 +67,16 @@ namespace NovaanServer.ExceptionLayer
             );
 
             await context.Response.WriteAsync(responseMessage);
+        }
+
+        private static string GetPropertyName<T>(Expression<Func<T>> propertyLamba)
+        {
+            var memberExpress = propertyLamba.Body as MemberExpression;
+            if(memberExpress == null)
+            {
+                throw new ArgumentException("Must pass a lambda");
+            }
+            return memberExpress.Member.Name;
         }
     }
 }

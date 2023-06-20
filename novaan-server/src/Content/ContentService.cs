@@ -1,8 +1,10 @@
 ﻿using System.Collections;
 using System.Net;
+using System.Net.Mime;
 using System.Reflection;
 using System.Text;
 using FileServer;
+using FileSignatures;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using MongoConnector;
@@ -11,6 +13,7 @@ using MongoConnector.Models;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using NovaanServer.src.Content.DTOs;
+using NovaanServer.src.Content.FormHandler;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using S3Connector;
 using Utils.Json;
@@ -22,11 +25,11 @@ namespace NovaanServer.src.Content
     {
         private const int MULTIPART_BOUNDARY_LENGTH_LIMIT = 128;
 
-        private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20mb
-        private readonly long _imageSizeLimit = 5L * 1024L * 1024L; // 5mb
+        private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20MB
+        private readonly long _imageSizeLimit = 5L * 1024L * 1024L; // 5MB
 
-        private readonly string[] _permittedVideoExtensions = { "mp4" };
-        private readonly string[] _permittedImageExtensions = { "jpg", "jpeg", "png", "webp" };
+        private readonly string[] _permittedVideoExtensions = { ".mp4" };
+        private readonly string[] _permittedImageExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
 
         private readonly MongoDBService _mongoService;
         private readonly FileService _fileService;
@@ -39,122 +42,129 @@ namespace NovaanServer.src.Content
             _s3Service = s3Service;
         }
 
-        public async Task AddCulinaryTips(CulinaryTip culinaryTips)
-        {
-            try
-            {
-                await _mongoService.CulinaryTips.InsertOneAsync(culinaryTips);
-            }
-            catch
-            {
-                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
-            }
-        }
-
         // Process multipart request
         public async Task<T> ProcessMultipartRequest<T>(HttpRequest request)
         {
-            if (!IsMultipartContentType(request.ContentType))
-            {
-                throw new NovaanException(ErrorCodes.CONTENT_CONTENT_TYPE_INVALID, HttpStatusCode.BadRequest);
-            }
-
             var boundary = GetBoundary(MediaTypeHeaderValue.Parse(request.ContentType));
             var reader = new MultipartReader(boundary, request.Body);
             var section = await reader.ReadNextSectionAsync();
 
-            var obj = Activator.CreateInstance<T>();
+            var obj = Activator.CreateInstance<T>() ??
+                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
             var properties = typeof(T).GetProperties();
 
             while (section != null)
             {
-                var contentDisposition = ContentDispositionHeaderValue.Parse(section.ContentDisposition);
-                if (contentDisposition == null || contentDisposition.Name == null)
+                var disposition = section.GetContentDispositionHeader();
+                if (disposition == null || disposition.Name == null)
                 {
-                    throw new NovaanException(ErrorCodes.CONTENT_DISPOSITION_INVALID, HttpStatusCode.BadRequest);
+                    throw new NovaanException(
+                        ErrorCodes.CONTENT_DISPOSITION_INVALID,
+                        HttpStatusCode.BadRequest
+                    );
                 }
-                var fieldName = HeaderUtilities.RemoveQuotes(contentDisposition.Name).Value.ToLowerInvariant();
-                var property = properties.FirstOrDefault(p => p.Name.ToLowerInvariant() == fieldName);
 
-                if (HasFileContentDisposition(contentDisposition))
+                Console.WriteLine(disposition.Name);
+
+                if (MultipartHandler.HasFormDataContentDisposition(disposition))
                 {
-                    if (contentDisposition.FileName.Value == null)
+                    // Handle form data
+                    var formSection = section.AsFormDataSection() ??
+                        throw new NovaanException(
+                            ErrorCodes.CONTENT_DISPOSITION_INVALID,
+                            HttpStatusCode.BadRequest
+                        );
+
+                    var fieldName = formSection.Name;
+                    var value = await formSection.GetValueAsync();
+                    var property = properties.FirstOrDefault(p => p.Name == fieldName);
+
+                    /*
+                     * Indicate that this is an Instruction-related value with following signature:
+                     * Instruction_X_Step
+                     * Instruction_X_Description
+                    */
+                    if (property == null)
                     {
-                        throw new NovaanException(ErrorCodes.CONTENT_FILENAME_INVALID, HttpStatusCode.BadRequest);
+                        HandleInstructionSection(obj, fieldName, value);
                     }
-                    var isImage = fieldName.Contains("image");
-                    var permittedExtensions = isImage ? _permittedImageExtensions : _permittedVideoExtensions;
-                    var sizeLimit = isImage ? _imageSizeLimit : _videoSizeLimit;
-
-                    using (var streamedFileContent = await ProcessStreamedFile(section, contentDisposition, permittedExtensions, sizeLimit))
+                    else
                     {
-                        var fileID = await _s3Service.UploadFileAsync(streamedFileContent, section);
+                        // Normal signature
+                        MappingObjectData(obj, property, value);
+                    }
+                }
 
-                        if (property != null)
+                if (MultipartHandler.HasFileContentDisposition(disposition))
+                {
+                    // Handle file data
+                    var fileSection = section.AsFileSection() ??
+                        throw new NovaanException(
+                            ErrorCodes.CONTENT_DISPOSITION_INVALID,
+                            HttpStatusCode.BadRequest
+                        );
+
+                    using (var fileStream = await ProcessStreamContent(fileSection))
+                    {
+                        var fileId = await _s3Service.UploadFileAsync(
+                            fileStream,
+                            Path.GetExtension(fileSection.FileName)
+                        );
+
+                        var fieldName = fileSection.Name;
+                        var property = properties.FirstOrDefault(p => p.Name == fieldName);
+
+                        /*
+                         * Indicate that this is an Instruction-related value with following signature:
+                         * Instruction_X_Image
+                        */
+                        if (property == null)
                         {
-                            MappingObjectData(obj, property, fileID);
+                            HandleInstructionSection(obj, fieldName, fileId);
                         }
                         else
                         {
-                            // For example, object T have a property named "Instruction" with data type is List<Instruction>
-                            // Instruction object have a property named "Image" with data type is string
-                            // The fieldName that front-end passed to back-end will be "Instruction_Image_1"
-                            var splitValues = fieldName.Split('_');
-                            if (splitValues.Length != 3)
-                            {
-                                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
-                            }
-
-                            var fieldNameSplit = splitValues[0];
-                            var subFieldName = splitValues[1];
-                            var key = splitValues[2];
-
-                            property = properties.FirstOrDefault(p => p.Name.ToLowerInvariant() == fieldNameSplit);
-                            if (property == null)
-                            {
-                                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
-                            }
-
-                            MappingObjectData(obj, property, fileID, subFieldName, int.Parse(key));
+                            // Normal signature for Video
+                            MappingObjectData(obj, property, fileId);
                         }
                     }
-                }
-                else if (HasFormDataContentDisposition(contentDisposition))
-                {
-                    var encoding = GetEncoding(section);
-                    using (var streamReader = new StreamReader(section.Body, encoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
-                    {
-                        var value = await streamReader.ReadToEndAsync();
-                        if (string.Equals(value, "undefined", StringComparison.OrdinalIgnoreCase))
-                        {
-                            value = string.Empty;
-                        }
-
-                        if (property != null)
-                        {
-                            MappingObjectData(obj, property, value);
-                        }
-                    }
-                }
-                else
-                {
-                    throw new NovaanException(ErrorCodes.CONTENT_DISPOSITION_INVALID, HttpStatusCode.BadRequest);
                 }
 
                 section = await reader.ReadNextSectionAsync();
             }
-
             return obj;
         }
 
-
-        private static void MappingObjectData<T>(T? obj, PropertyInfo? property, string value, string subFieldName = "", int key = 0)
+        private static void HandleInstructionSection<T>(T? obj, string fieldName, string value)
         {
-            if (property == null)
+            var splitValues = fieldName.Split("_");
+            if (splitValues.Length != 3)
             {
-                throw new Exception("Unknown Property");
+                throw new NovaanException(
+                    ErrorCodes.CONTENT_FIELD_INVALID,
+                    HttpStatusCode.BadRequest
+                );
             }
 
+            // splitValues[0] should always be "Instruction"
+            var properties = typeof(T).GetProperties();
+            var property = properties.FirstOrDefault(p => p.Name == splitValues[0]) ??
+                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
+
+
+            bool canParse = int.TryParse(splitValues[1], out var nestedFieldKey);
+            if (!canParse)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
+            }
+            var nestedFieldName = splitValues[2];
+
+            MappingObjectData(obj, property, value, nestedFieldName, nestedFieldKey);
+        }
+
+        // Handle mapping a value into a property in the result object
+        private static void MappingObjectData<T>(T? obj, PropertyInfo property, string value)
+        {
             Type propertyType = property.PropertyType;
 
             // Handle special cases for enums
@@ -172,32 +182,7 @@ namespace NovaanServer.src.Content
                     property.SetValue(obj, timeSpan);
                 }
             }
-
-            // Handle special cases for lists of objects
-            else if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
-            {
-                var listItemType = propertyType.GetGenericArguments()[0];
-                var list = property.GetValue(obj) as IList;
-                var listItemProperties = listItemType.GetProperties();
-
-                if (key != 0 && key <= list.Count)
-                {
-                    var listItem = list[key - 1];
-                    var subProperty = listItemProperties.FirstOrDefault(p => p.Name.ToLower() == subFieldName.ToLower());
-
-                    if (subProperty != null)
-                    {
-                        var convertedValue = Convert.ChangeType(value, subProperty.PropertyType);
-                        subProperty.SetValue(listItem, convertedValue);
-                    }
-                }
-                else
-                {
-                    var listValue = JsonConvert.DeserializeObject(value, propertyType);
-                    property.SetValue(obj, listValue);
-                }
-            }
-            // Default case: convert value to the property type
+            // Handle default case
             else
             {
                 var convertedValue = value as IConvertible;
@@ -208,6 +193,72 @@ namespace NovaanServer.src.Content
                     property.SetValue(obj, convertedObject);
                 }
             }
+        }
+
+        // This specially handle situation where user need to upload a list of Instruction
+        private static void MappingObjectData<T>(
+            T? obj,
+            PropertyInfo property,
+            string value,
+            string nestedField = "",
+            int key = 0
+        )
+        {
+            Type propertyType = property.PropertyType;
+
+            // Handle special cases for lists of objects
+            if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
+            {
+                var listItemType = propertyType.GetGenericArguments()[0];
+                var list = property.GetValue(obj) as IList ??
+                    throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
+                var listItemProperties = listItemType.GetProperties();
+
+                if (key < list.Count)
+                {
+                    var listItem = list[key];
+                    var subProperty = listItemProperties
+                        .FirstOrDefault(p => p.Name == nestedField);
+
+                    if (subProperty == null)
+                    {
+                        throw new NovaanException(
+                            ErrorCodes.CONTENT_FIELD_INVALID,
+                            HttpStatusCode.BadRequest
+                        );
+                    }
+
+                    var convertedValue = Convert.ChangeType(value, subProperty.PropertyType);
+                    subProperty.SetValue(listItem, convertedValue);
+                    return;
+                }
+
+                // When encounter new list item
+                if(key == list.Count)
+                {
+                    var listItem = Activator.CreateInstance(listItemType);
+                    var nestedProp = listItemProperties
+                        .FirstOrDefault(p => p.Name == nestedField);
+
+                    if (nestedProp == null)
+                    {
+                        throw new NovaanException(
+                            ErrorCodes.CONTENT_FIELD_INVALID,
+                            HttpStatusCode.BadRequest
+                        );
+                    }
+
+                    var convertedValue = Convert.ChangeType(value, nestedProp.PropertyType);
+                    nestedProp.SetValue(listItem, convertedValue);
+                    list.Add(listItem);
+                    return;
+                }
+            }
+
+            throw new NovaanException(
+                ErrorCodes.CONTENT_FIELD_INVALID,
+                HttpStatusCode.BadRequest
+            );
         }
 
         public bool ValidateFileMetadata(FileInformationDTO fileMetadataDTO)
@@ -263,7 +314,18 @@ namespace NovaanServer.src.Content
             }
             catch
             {
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
+            }
+        }
 
+        public async Task UploadTips(CulinaryTip culinaryTips)
+        {
+            try
+            {
+                await _mongoService.CulinaryTips.InsertOneAsync(culinaryTips);
+            }
+            catch
+            {
                 throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
             }
         }
@@ -286,28 +348,6 @@ namespace NovaanServer.src.Content
             }
         }
 
-        private static bool HasFormDataContentDisposition(ContentDispositionHeaderValue contentDisposition)
-        {
-            //  For exmaple, Content-Disposition: form-data; name="subdirectory";
-            return contentDisposition.DispositionType.Equals("form-data")
-                && string.IsNullOrEmpty(contentDisposition.FileName.Value)
-                && string.IsNullOrEmpty(contentDisposition.FileNameStar.Value);
-        }
-
-        private static bool HasFileContentDisposition(ContentDispositionHeaderValue contentDisposition)
-        {
-            // For example, Content-Disposition: form-data; name="files"; filename="OnScreenControl_7.58.zip"
-            return contentDisposition.DispositionType.Equals("form-data")
-                && (!string.IsNullOrEmpty(contentDisposition.FileName.Value)
-                    || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value));
-        }
-
-        private static bool IsMultipartContentType(string? contentType)
-        {
-            return !string.IsNullOrEmpty(contentType)
-                  && contentType.Contains("multipart/", StringComparison.OrdinalIgnoreCase);
-        }
-
         private static string GetBoundary(MediaTypeHeaderValue contentType)
         {
             var boundary = HeaderUtilities.RemoveQuotes(contentType.Boundary).Value;
@@ -326,34 +366,50 @@ namespace NovaanServer.src.Content
             return boundary;
         }
 
-        private async Task<MemoryStream> ProcessStreamedFile(
-            MultipartSection section,
-            ContentDispositionHeaderValue contentDisposition,
-            string[] permittedExtensions,
-            long sizeLimit
-        )
+        private async Task<MemoryStream> ProcessStreamContent(FileMultipartSection section)
         {
-            var memoryStream = new MemoryStream();
-            await section.Body.CopyToAsync(memoryStream);
+            var fileStream = section.FileStream;
+            var memStream = new MemoryStream();
+            await fileStream.CopyToAsync(memStream);
 
-            // Check if the file is empty or exceeds the size limit.
-            if (memoryStream.Length == 0)
+            // Check if the file is empty
+            if (fileStream == null || memStream == null || memStream.Length == 0)
             {
                 throw new Exception("File is empty");
             }
 
-            if (memoryStream.Length > sizeLimit)
+            var extension = Path.GetExtension(section.FileName);
+            if (extension == null)
             {
-                var megabyteSizeLimit = sizeLimit / 1024 / 1024;
-                throw new Exception($"The file exceeds {megabyteSizeLimit:N1} MB.");
+                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
             }
 
-            var fileName = contentDisposition.FileName.ToString();
+            var isImage = _permittedImageExtensions.Contains(extension);
+            var isVideo = isImage ? false : _permittedVideoExtensions.Contains(extension);
+            if (!isImage && !isVideo)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
+            }
 
-            // Validate file extension and signature
-            _fileService.ValidateFileExtensionAndSignature(fileName, memoryStream, permittedExtensions);
+            if (isImage)
+            {
+                if (fileStream.Length > _imageSizeLimit)
+                {
+                    throw new NovaanException(ErrorCodes.CONTENT_IMG_SIZE_INVALID, HttpStatusCode.BadRequest);
+                }
+                ValidateFileExtensionAndSignature(extension, memStream, _permittedImageExtensions);
+            }
 
-            return memoryStream;
+            if (isVideo)
+            {
+                if (fileStream.Length > _videoSizeLimit)
+                {
+                    throw new NovaanException(ErrorCodes.CONTENT_VID_SIZE_INVALID, HttpStatusCode.BadRequest);
+                }
+                ValidateFileExtensionAndSignature(extension, memStream, _permittedVideoExtensions);
+            }
+
+            return memStream;
         }
 
         private static Encoding GetEncoding(MultipartSection section)
@@ -369,6 +425,32 @@ namespace NovaanServer.src.Content
             }
 
             return mediaType.Encoding;
+        }
+
+        private static void ValidateFileExtensionAndSignature(
+            string extension,
+            MemoryStream data,
+            string[] permittedExtensions
+        )
+        {
+            var inspector = new FileFormatInspector();
+            var fileFormat = inspector.DetermineFileFormat(data);
+
+            // JPG and JPEG is the same
+            var contentExt = "." + fileFormat?.Extension;
+            if(contentExt == ".jpg")
+            {
+                contentExt = ".jpeg";
+            }
+
+            if (
+                fileFormat == null ||
+                !permittedExtensions.Contains(contentExt) ||
+                extension != contentExt
+            )
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Amazon.S3.Model;
 using System.Net;
 using Microsoft.AspNetCore.WebUtilities;
+using Amazon.S3.Transfer;
 
 namespace S3Connector
 {
@@ -58,19 +59,19 @@ namespace S3Connector
             return request.Key;
         }
 
-        public async Task<string> UploadFileAsync(MemoryStream fileStream, MultipartSection section)
+        public async Task<string> UploadFileAsync(Stream fileStream, string extension)
         {
-            var request = new PutObjectRequest()
+            var fileTransferUtils = new TransferUtility(_s3Client);
+            var fileTransferReq = new TransferUtilityUploadRequest
             {
                 BucketName = _bucketName,
-                Key = System.Guid.NewGuid().ToString() + Path.GetExtension(section.AsFileSection().FileName),
-                // make fileStream open to read
-                InputStream = fileStream
+                Key = System.Guid.NewGuid().ToString() + extension,
+                InputStream = fileStream,
             };
-            request.Metadata.Add("Content-Type", section.ContentType);
-            var response = await _s3Client.PutObjectAsync(request);
-            return request.Key;
+            await fileTransferUtils.UploadAsync(fileTransferReq);
+            return fileTransferReq.Key;
         }
+
         // Return a limited time download link
         public string DownloadFileAsync(string keyId)
         {

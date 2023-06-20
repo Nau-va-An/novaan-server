@@ -9,7 +9,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
 
         public int ErrCode { get; }
 
-        public NovaanException(int errCode, HttpStatusCode statusCode = HttpStatusCode.InternalServerError) : base()
+        public NovaanException(int errCode, HttpStatusCode statusCode = HttpStatusCode.InternalServerError) : base(string.Empty)
         {
             StatusCode = statusCode;
             ErrCode = errCode;

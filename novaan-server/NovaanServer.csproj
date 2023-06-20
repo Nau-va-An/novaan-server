@@ -30,6 +30,7 @@
     <None Remove="src\Admin\" />
     <None Remove="src\Admin\DTOs\" />
     <None Remove="src\Common\Filter\" />
+    <None Remove="src\Content\FormHandler\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\" />
@@ -44,6 +45,7 @@
     <Folder Include="src\Admin\" />
     <Folder Include="src\Admin\DTOs\" />
     <Folder Include="src\Common\Filter\" />
+    <Folder Include="src\Content\FormHandler\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">

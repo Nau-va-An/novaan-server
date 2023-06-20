@@ -1,14 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoConnector.Models;
+using NovaanServer.src.Common.Attributes;
 using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.Filter;
+using Utils.Json;
 
 namespace NovaanServer.src.Content
 {
     [Route("api/content")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class ContentController : ControllerBase
     {
         private readonly IContentService _contentService;
@@ -27,12 +29,25 @@ namespace NovaanServer.src.Content
             return _contentService.GetPosts();
         }
 
-        [HttpPost("upload/culinary-tips")]
+        [HttpPost("upload/tips")]
+        [MultipartFormData]
         [DisableFormValueModelBinding]
         public async Task<IActionResult> UploadCulinaryTips()
         {
             var culinaryTips = await _contentService.ProcessMultipartRequest<CulinaryTip>(Request);
-            await _contentService.AddCulinaryTips(culinaryTips);
+            Console.WriteLine(CustomJson.Stringify(culinaryTips));
+            await _contentService.UploadTips(culinaryTips);
+            return Ok();
+        }
+
+        [HttpPost("upload/recipe")]
+        [MultipartFormData]
+        [DisableFormValueModelBinding]
+        public async Task<IActionResult> UploadRecipe()
+        {
+            var recipe = await _contentService.ProcessMultipartRequest<Recipe>(Request);
+            Console.WriteLine(CustomJson.Stringify(recipe));
+            await _contentService.UploadRecipe(recipe);
             return Ok();
         }
 
@@ -48,14 +63,7 @@ namespace NovaanServer.src.Content
             return Ok();
         }
 
-        [HttpPost("upload/recipe")]
-        [DisableFormValueModelBinding]
-        public async Task<IActionResult> UploadRecipe()
-        {
-            var recipe = await _contentService.ProcessMultipartRequest<Recipe>(Request);
-            await _contentService.UploadRecipe(recipe);
-            return Ok();
-        }
+        
     }
 }
 
