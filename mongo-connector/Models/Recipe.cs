@@ -1,4 +1,5 @@
-﻿using MongoConnector.Enums;
+﻿using System.ComponentModel.DataAnnotations;
+using MongoConnector.Enums;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -10,30 +11,42 @@ namespace MongoConnector.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string CreatorId { get; set; }
+
+        [Required]
+        [MinLength(1)]
+        [MaxLength(55)]
         public string Title { get; set; } = string.Empty;
 
+        [Required]
+        [MinLength(30)]
+        [MaxLength(500)]
         public string Description { get; set; } = string.Empty;
 
+        [Required]
         public string Video { get; set; } = string.Empty;
 
+        [Required]
         public Difficulty Difficulty { get; set; } = Difficulty.Easy;
 
+        [Required]
         public int PortionQuantity { get; set; }
 
+        [Required]
         public PortionType PortionType { get; set; } = PortionType.Servings;
 
         public TimeSpan PrepTime { get; set; }
 
         public TimeSpan CookTime { get; set; }
 
+        [Required]
         public List<Instruction> Instructions { get; set; } = new List<Instruction>();
 
-
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string CreatorId { get; set; }
-
+        [Required]
         public List<Ingredient> Ingredients { get; set; } = new List<Ingredient>();
 
+        [Required]
         public Status Status { get; set; } = Status.Pending;
     }
 }

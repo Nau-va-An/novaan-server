@@ -1,8 +1,6 @@
-﻿using System.Collections;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Net;
-using System.Net.Mime;
-using System.Reflection;
-using System.Text;
+using Amazon.S3;
 using FileSignatures;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
@@ -10,17 +8,28 @@ using MongoConnector;
 using MongoConnector.Enums;
 using MongoConnector.Models;
 using MongoDB.Driver;
-using Newtonsoft.Json;
 using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.Content.FormHandler;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using S3Connector;
-using Utils.Json;
+using Utils.UtilClass;
 
 namespace NovaanServer.src.Content
 {
     public class ContentService : IContentService
     {
+        private const int TITLE_MIN = 1;
+        private const int TITLE_MAX = 55;
+        private const int DESC_MIN = 30;
+        private const int DESC_MAX = 500;
+
+        private const int STEP_MAX = 20;
+        private const int INGR_MAX = 9999;
+        private const int INGR_NAME_MAX = 50;
+
+        private TimeSpan COOK_MAX = TimeSpan.Parse("0.72:59:00");
+        private TimeSpan PREP_MAX = TimeSpan.Parse("0.72:59:00");
+
         private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20MB
         private readonly long _imageSizeLimit = 5L * 1024L * 1024L; // 5MB
 
@@ -29,6 +38,14 @@ namespace NovaanServer.src.Content
 
         private readonly MongoDBService _mongoService;
         private readonly S3Service _s3Service;
+
+        private readonly DelayExecutioner _delayExecutioner = new();
+
+        /// <summary>
+        // ContentService marked as Scoped
+        // => Each request have their own ContentServive, we don't have to worry about race condition
+        /// </summary>
+        private List<MemoryStream> uploadFiles = new List<MemoryStream>();
 
         public ContentService(MongoDBService mongoDBService, S3Service s3Service)
         {
@@ -98,9 +115,10 @@ namespace NovaanServer.src.Content
 
                     using (var fileStream = await ProcessStreamContent(fileSection))
                     {
-                        var fileId = await _s3Service.UploadFileAsync(
-                            fileStream,
-                            Path.GetExtension(fileSection.FileName)
+                        var fileId = System.Guid.NewGuid().ToString() +
+                            Path.GetExtension(fileSection.FileName);
+                        _delayExecutioner.AppendAction(
+                            async () => await _s3Service.UploadFileAsync(fileStream, fileId)
                         );
 
                         var fieldName = fileSection.Name;
@@ -172,9 +190,55 @@ namespace NovaanServer.src.Content
             return true;
         }
 
-        public async Task UploadRecipe(Recipe recipe)
+        public async Task UploadRecipe(Recipe recipe, string creatorId)
         {
-            // Validate recipe fields here
+            // Validate recipe object against its model annotation
+            var context = new ValidationContext(recipe, serviceProvider: null, items: null);
+            var validationResults = new List<ValidationResult>();
+            bool isValid = Validator.TryValidateObject(recipe, context, validationResults, true);
+            if (!isValid)
+            {
+                throw new NovaanException(
+                    ErrorCodes.CONTENT_FIELD_INVALID,
+                    HttpStatusCode.BadRequest,
+                    validationResults.FirstOrDefault().ErrorMessage ?? string.Empty
+                );
+            }
+            if (recipe.Ingredients.Count == 0)
+            {
+                throw new NovaanException(ErrorCodes.FIELD_REQUIRED, HttpStatusCode.BadRequest);
+            }
+            if (recipe.Instructions.Count == 0)
+            {
+                throw new NovaanException(ErrorCodes.FIELD_REQUIRED, HttpStatusCode.BadRequest);
+            }
+            if (recipe.CookTime.CompareTo(COOK_MAX) > 0)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_COOK_TIME_TOO_LONG, HttpStatusCode.BadRequest);
+            }
+            if (recipe.PrepTime.CompareTo(PREP_MAX) > 0)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_PREP_TIME_TOO_LONG, HttpStatusCode.BadRequest);
+            }
+
+            // Try to push to S3 here
+            try
+            {
+                await _delayExecutioner.Execute();
+            }
+            catch (AmazonS3Exception e)
+            {
+                throw new NovaanException(
+                    ErrorCodes.S3_UNAVAILABLE,
+                    HttpStatusCode.InternalServerError,
+                    e.Message
+                );
+            }
+            _delayExecutioner.Cleanup();
+
+            // Set remaining missing fields
+            recipe.CreatorId = creatorId;
+            recipe.Status = Status.Pending;
             try
             {
                 await _mongoService.Recipes.InsertOneAsync(recipe);
@@ -185,9 +249,24 @@ namespace NovaanServer.src.Content
             }
         }
 
-        public async Task UploadTips(CulinaryTip culinaryTips)
+        public async Task UploadTips(CulinaryTip culinaryTips, string creatorId)
         {
             // Validate tips and tricks field here
+            var context = new ValidationContext(culinaryTips, serviceProvider: null, items: null);
+            var validationResults = new List<ValidationResult>();
+            bool isValid = Validator.TryValidateObject(culinaryTips, context, validationResults, true);
+            if (!isValid)
+            {
+                throw new NovaanException(
+                    ErrorCodes.CONTENT_FIELD_INVALID,
+                    HttpStatusCode.BadRequest,
+                    validationResults.FirstOrDefault().ErrorMessage ?? string.Empty
+                );
+            }
+
+            // Set remaning missing field
+            culinaryTips.CreatorId = creatorId;
+            culinaryTips.Status = Status.Pending;
             try
             {
                 await _mongoService.CulinaryTips.InsertOneAsync(culinaryTips);
@@ -290,7 +369,7 @@ namespace NovaanServer.src.Content
             return memStream;
         }
 
-        
+
 
         private static void ValidateFileExtensionAndSignature(
             string extension,

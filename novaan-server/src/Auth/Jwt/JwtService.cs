@@ -32,7 +32,7 @@ namespace NovaanServer.src.Auth.Jwt
             var jwtTokenHanler = new JwtSecurityTokenHandler();
 
             var jwtId = Guid.NewGuid().ToString();
-            var tokenDescriptor = getTokenDescriptor(jwtId, userToken.UserId, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
+            var tokenDescriptor = GetTokenDescriptor(jwtId, userToken.UserId, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
             var jwtToken = jwtTokenHanler.CreateEncodedJwt(tokenDescriptor);
             if (jwtToken == null)
             {
@@ -61,7 +61,7 @@ namespace NovaanServer.src.Auth.Jwt
             else
             {
                 // Next device onward
-                await appendValidAccessToken(foundRefreshToken, jwtToken);
+                await AppendValidAccessToken(foundRefreshToken, jwtToken);
             }
 
             return jwtToken;
@@ -95,23 +95,23 @@ namespace NovaanServer.src.Auth.Jwt
             if (refreshToken.RevokeTokenFamily.Contains(accessToken) ||
                 refreshToken.ExpiryDate.CompareTo(DateTime.UtcNow) < 0)
             {
-                revokeRefreshToken(refreshToken);
+                RevokeRefreshToken(refreshToken);
                 throw new NovaanException(ErrorCodes.RT_JWT_UNAUTHORIZED, HttpStatusCode.Unauthorized);
             }
 
             var jwtId = Guid.NewGuid().ToString();
-            var tokenDescriptor = getTokenDescriptor(jwtId, userId.Value, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
+            var tokenDescriptor = GetTokenDescriptor(jwtId, userId.Value, Encoding.UTF8.GetBytes(_jwtConfig.Secret));
             var newAccessToken = jwtTokenHanler.CreateEncodedJwt(tokenDescriptor);
             if (newAccessToken == null)
             {
                 throw new Exception("Unable to generate new access token");
             }
 
-            await refreshAccessToken(refreshToken, accessToken);
+            await RefreshAccessToken(refreshToken, accessToken);
             return newAccessToken;
         }
 
-        private SecurityTokenDescriptor getTokenDescriptor(string jwtId, string userId, byte[] key)
+        private SecurityTokenDescriptor GetTokenDescriptor(string jwtId, string userId, byte[] key)
         {
             var expires = DateTime.UtcNow.Add(_jwtConfig.JwtExp);
             return new SecurityTokenDescriptor()
@@ -127,7 +127,7 @@ namespace NovaanServer.src.Auth.Jwt
             };
         }
 
-        private void revokeRefreshToken(RefreshToken refreshToken)
+        private void RevokeRefreshToken(RefreshToken refreshToken)
         {
             var filter = Builders<RefreshToken>.Filter
                         .Eq(rt => rt.Id, refreshToken.Id);
@@ -143,7 +143,7 @@ namespace NovaanServer.src.Auth.Jwt
             }
         }
 
-        private async Task refreshAccessToken(RefreshToken refreshToken, string oldToken)
+        private async Task RefreshAccessToken(RefreshToken refreshToken, string oldToken)
         {
             var filter = Builders<RefreshToken>.Filter
                 .Eq(rt => rt.Id, refreshToken.Id);
@@ -159,7 +159,7 @@ namespace NovaanServer.src.Auth.Jwt
             }
         }
 
-        private async Task appendValidAccessToken(RefreshToken refreshToken, string newToken)
+        private async Task AppendValidAccessToken(RefreshToken refreshToken, string newToken)
         {
             var filter = Builders<RefreshToken>.Filter
                 .Eq(rt => rt.Id, refreshToken.Id);

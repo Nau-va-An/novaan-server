@@ -9,9 +9,11 @@
   <ItemGroup>
     <None Remove="Json\" />
     <None Remove="Hash\" />
+    <None Remove="UtilClass\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Json\" />
     <Folder Include="Hash\" />
+    <Folder Include="UtilClass\" />
   </ItemGroup>
 </Project>
