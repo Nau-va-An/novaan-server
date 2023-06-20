@@ -50,7 +50,7 @@ namespace NovaanServer.ExceptionLayer
                     {
                         Success = false,
                         ErrCode = ex.ErrCode,
-                        Message = ex.Message
+                        Message = ErrorCodes.ErrorNameDictionary.GetValueOrDefault(ex.ErrCode)
                     },
                     Exception ex => new BaseErrResponse
                     {
@@ -72,7 +72,7 @@ namespace NovaanServer.ExceptionLayer
         private static string GetPropertyName<T>(Expression<Func<T>> propertyLamba)
         {
             var memberExpress = propertyLamba.Body as MemberExpression;
-            if(memberExpress == null)
+            if (memberExpress == null)
             {
                 throw new ArgumentException("Must pass a lambda");
             }

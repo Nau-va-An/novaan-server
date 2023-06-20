@@ -76,9 +76,8 @@ namespace NovaanServer.src.Content
                     var property = properties.FirstOrDefault(p => p.Name == fieldName);
 
                     /*
-                     * Indicate that this is an Instruction-related value with following signature:
-                     * Instruction_X_Step
-                     * Instruction_X_Description
+                     * Indicate that this is an list-related value with following signature:
+                     * PropertyName_Index_NestedProperty
                     */
                     if (property == null)
                     {
@@ -87,7 +86,7 @@ namespace NovaanServer.src.Content
                     else
                     {
                         // Normal signature
-                        MappingObjectData(obj, property, value);
+                        CustomMapper.MappingObjectData(obj, property, value);
                     }
                 }
 
@@ -111,8 +110,8 @@ namespace NovaanServer.src.Content
                         var property = properties.FirstOrDefault(p => p.Name == fieldName);
 
                         /*
-                         * Indicate that this is an Instruction-related value with following signature:
-                         * Instruction_X_Image
+                         * Indicate that this is an list-related value with following signature:
+                         * PropertyName_Index_NestedProperty
                         */
                         if (property == null)
                         {
@@ -121,7 +120,7 @@ namespace NovaanServer.src.Content
                         else
                         {
                             // Normal signature for Video
-                            MappingObjectData(obj, property, fileId);
+                            CustomMapper.MappingObjectData(obj, property, fileId);
                         }
                     }
                 }
@@ -129,132 +128,6 @@ namespace NovaanServer.src.Content
                 section = await reader.ReadNextSectionAsync();
             }
             return obj;
-        }
-
-        private static void HandleListSection<T>(T? obj, string fieldName, string value)
-        {
-            var splitValues = fieldName.Split("_");
-            if (splitValues.Length != 3)
-            {
-                throw new NovaanException(
-                    ErrorCodes.CONTENT_FIELD_INVALID,
-                    HttpStatusCode.BadRequest
-                );
-            }
-
-            // splitValues[0] should always be "Instruction"
-            var properties = typeof(T).GetProperties();
-            var property = properties.FirstOrDefault(p => p.Name == splitValues[0]) ??
-                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
-
-
-            bool canParse = int.TryParse(splitValues[1], out var nestedFieldKey);
-            if (!canParse)
-            {
-                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
-            }
-            var nestedFieldName = splitValues[2];
-
-            MappingObjectData(obj, property, value, nestedFieldName, nestedFieldKey);
-        }
-
-        // Handle mapping a value into a property in the result object
-        private static void MappingObjectData<T>(T? obj, PropertyInfo property, string value)
-        {
-            Type propertyType = property.PropertyType;
-
-            // Handle special cases for enums
-            if (propertyType.IsEnum)
-            {
-                var enumValue = Enum.Parse(propertyType, value);
-                property.SetValue(obj, enumValue);
-            }
-
-            // Handle special cases for TimeSpan
-            else if (propertyType == typeof(TimeSpan))
-            {
-                if (TimeSpan.TryParse(value, out var timeSpan))
-                {
-                    property.SetValue(obj, timeSpan);
-                }
-            }
-            // Handle default case
-            else
-            {
-                var convertedValue = value as IConvertible;
-                if (convertedValue != null)
-                {
-                    var targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-                    var convertedObject = convertedValue.ToType(targetType, null);
-                    property.SetValue(obj, convertedObject);
-                }
-            }
-        }
-
-        // This specially handle situation where user need to upload a list of Instruction
-        private static void MappingObjectData<T>(
-            T? obj,
-            PropertyInfo property,
-            string value,
-            string nestedField = "",
-            int key = 0
-        )
-        {
-            Type propertyType = property.PropertyType;
-
-            // Handle special cases for lists of objects
-            if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
-            {
-                var listItemType = propertyType.GetGenericArguments()[0];
-                var list = property.GetValue(obj) as IList ??
-                    throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
-                var listItemProperties = listItemType.GetProperties();
-
-                if (key < list.Count)
-                {
-                    var listItem = list[key];
-                    var subProperty = listItemProperties
-                        .FirstOrDefault(p => p.Name == nestedField);
-
-                    if (subProperty == null)
-                    {
-                        throw new NovaanException(
-                            ErrorCodes.CONTENT_FIELD_INVALID,
-                            HttpStatusCode.BadRequest
-                        );
-                    }
-
-                    var convertedValue = Convert.ChangeType(value, subProperty.PropertyType);
-                    subProperty.SetValue(listItem, convertedValue);
-                    return;
-                }
-
-                // When encounter new list item
-                if(key == list.Count)
-                {
-                    var listItem = Activator.CreateInstance(listItemType);
-                    var nestedProp = listItemProperties
-                        .FirstOrDefault(p => p.Name == nestedField);
-
-                    if (nestedProp == null)
-                    {
-                        throw new NovaanException(
-                            ErrorCodes.CONTENT_FIELD_INVALID,
-                            HttpStatusCode.BadRequest
-                        );
-                    }
-
-                    var convertedValue = Convert.ChangeType(value, nestedProp.PropertyType);
-                    nestedProp.SetValue(listItem, convertedValue);
-                    list.Add(listItem);
-                    return;
-                }
-            }
-
-            throw new NovaanException(
-                ErrorCodes.CONTENT_FIELD_INVALID,
-                HttpStatusCode.BadRequest
-            );
         }
 
         public bool ValidateFileMetadata(FileInformationDTO fileMetadataDTO)
@@ -344,11 +217,37 @@ namespace NovaanServer.src.Content
             }
         }
 
-        
+        private static void HandleListSection<T>(T? obj, string fieldName, string value)
+        {
+            var splitValues = fieldName.Split("_");
+            if (splitValues.Length != 3)
+            {
+                throw new NovaanException(
+                    ErrorCodes.CONTENT_FIELD_INVALID,
+                    HttpStatusCode.BadRequest
+                );
+            }
+
+            // splitValues[0] should always be "Instruction"
+            var properties = typeof(T).GetProperties();
+            var property = properties.FirstOrDefault(p => p.Name == splitValues[0]) ??
+                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
+
+
+            bool canParse = int.TryParse(splitValues[1], out var nestedFieldKey);
+            if (!canParse)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
+            }
+            var nestedFieldName = splitValues[2];
+
+            CustomMapper.MappingObjectData(obj, property, value, nestedFieldName, nestedFieldKey);
+        }
 
         private async Task<MemoryStream> ProcessStreamContent(FileMultipartSection section)
         {
-            var fileStream = section.FileStream;
+            var fileStream = section.FileStream ??
+                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
             var memStream = new MemoryStream();
             await fileStream.CopyToAsync(memStream);
 
@@ -392,20 +291,7 @@ namespace NovaanServer.src.Content
             return memStream;
         }
 
-        private static Encoding GetEncoding(MultipartSection section)
-        {
-            var hasMediaTypeHeader =
-                MediaTypeHeaderValue.TryParse(section.ContentType, out var mediaType);
-
-            if (!hasMediaTypeHeader ||
-                mediaType == null ||
-                mediaType.Encoding == null)
-            {
-                return Encoding.UTF8;
-            }
-
-            return mediaType.Encoding;
-        }
+        
 
         private static void ValidateFileExtensionAndSignature(
             string extension,
@@ -418,7 +304,7 @@ namespace NovaanServer.src.Content
 
             // JPG and JPEG is the same
             var contentExt = "." + fileFormat?.Extension;
-            if(contentExt == ".jpg")
+            if (contentExt == ".jpg")
             {
                 contentExt = ".jpeg";
             }

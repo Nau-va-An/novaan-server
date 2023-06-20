@@ -13,7 +13,7 @@ namespace NovaanServer.src.Common.Attributes
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             var request = context.HttpContext.Request;
-            if(request.HasFormContentType &&
+            if (request.HasFormContentType &&
                 request.ContentType != null &&
                 request.ContentType.StartsWith(
                     "multipart/form-data",

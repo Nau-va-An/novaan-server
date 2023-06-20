@@ -33,6 +33,10 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int CONTENT_VID_SIZE_INVALID = 1017;
         public const int CONTENT_VID_RESO_INVALID = 1018;
         public const int CONTENT_VID_LEN_INVALID = 1019;
+
+        public static Dictionary<int, string> ErrorNameDictionary = typeof(ErrorCodes).GetFields()
+                .Where(f => f.FieldType == typeof(int))
+                .ToDictionary(f => (int)f.GetValue(null), f => f.Name);
     }
 }
 

@@ -1,10 +1,12 @@
 ﻿using System;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Text;
 using Microsoft.Net.Http.Headers;
 
 namespace NovaanServer.src.Content.FormHandler
 {
-	public class MultipartHandler
-	{
+    public class MultipartHandler
+    {
         private const int MULTIPART_BOUNDARY_LENGTH_LIMIT = 128;
 
         public static bool HasFormDataContentDisposition(ContentDispositionHeaderValue contentDisposition)
