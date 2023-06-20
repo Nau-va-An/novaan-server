@@ -22,6 +22,11 @@ namespace MongoConnector.Models
         [Required]
         [MinLength(30)]
         [MaxLength(500)]
+        public string Description { get; set; } = string.Empty;
+
+        [Required]
+        [MinLength(30)]
+        [MaxLength(500)]
         public string Video { get; set; } = string.Empty;
 
         public Status Status { get; set; } = Status.Pending;

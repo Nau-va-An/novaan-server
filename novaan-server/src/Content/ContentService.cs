@@ -27,8 +27,8 @@ namespace NovaanServer.src.Content
         private const int INGR_MAX = 9999;
         private const int INGR_NAME_MAX = 50;
 
-        private TimeSpan COOK_MAX = TimeSpan.Parse("0.72:59:00");
-        private TimeSpan PREP_MAX = TimeSpan.Parse("0.72:59:00");
+        private TimeSpan COOK_MAX = TimeSpan.Parse("3.00:59:00"); // 72 hours + 59 minutes
+        private TimeSpan PREP_MAX = TimeSpan.Parse("3.00:59:00"); // 72 hours + 50 minutes
 
         private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20MB
         private readonly long _imageSizeLimit = 5L * 1024L * 1024L; // 5MB
@@ -113,31 +113,31 @@ namespace NovaanServer.src.Content
                             HttpStatusCode.BadRequest
                         );
 
-                    using (var fileStream = await ProcessStreamContent(fileSection))
-                    {
-                        var fileId = System.Guid.NewGuid().ToString() +
+                    var fileStream = await ProcessStreamContent(fileSection);
+
+                    var fileId = System.Guid.NewGuid().ToString() +
                             Path.GetExtension(fileSection.FileName);
-                        _delayExecutioner.AppendAction(
-                            async () => await _s3Service.UploadFileAsync(fileStream, fileId)
-                        );
+                    _delayExecutioner.AppendAction(
+                        async () => await _s3Service.UploadFileAsync(fileStream, fileId)
+                    );
 
-                        var fieldName = fileSection.Name;
-                        var property = properties.FirstOrDefault(p => p.Name == fieldName);
+                    var fieldName = fileSection.Name;
+                    var property = properties.FirstOrDefault(p => p.Name == fieldName);
 
-                        /*
-                         * Indicate that this is an list-related value with following signature:
-                         * PropertyName_Index_NestedProperty
-                        */
-                        if (property == null)
-                        {
-                            HandleListSection(obj, fieldName, fileId);
-                        }
-                        else
-                        {
-                            // Normal signature for Video
-                            CustomMapper.MappingObjectData(obj, property, fileId);
-                        }
+                    /*
+                     * Indicate that this is an list-related value with following signature:
+                     * PropertyName_Index_NestedProperty
+                    */
+                    if (property == null)
+                    {
+                        HandleListSection(obj, fieldName, fileId);
                     }
+                    else
+                    {
+                        // Normal signature for Video
+                        CustomMapper.MappingObjectData(obj, property, fileId);
+                    }
+                    // Will close stream when S3 finish uploading
                 }
 
                 section = await reader.ReadNextSectionAsync();
@@ -368,8 +368,6 @@ namespace NovaanServer.src.Content
 
             return memStream;
         }
-
-
 
         private static void ValidateFileExtensionAndSignature(
             string extension,

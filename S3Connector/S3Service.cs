@@ -61,15 +61,28 @@ namespace S3Connector
 
         public async Task<string> UploadFileAsync(Stream fileStream, string fileName)
         {
-            var fileTransferUtils = new TransferUtility(_s3Client);
-            var fileTransferReq = new TransferUtilityUploadRequest
+            try
             {
-                BucketName = _bucketName,
-                Key = fileName,
-                InputStream = fileStream,
-            };
-            await fileTransferUtils.UploadAsync(fileTransferReq);
-            return fileTransferReq.Key;
+                var fileTransferUtils = new TransferUtility(_s3Client);
+                var fileTransferReq = new TransferUtilityUploadRequest
+                {
+                    BucketName = _bucketName,
+                    Key = fileName,
+                    InputStream = fileStream,
+                };
+                await fileTransferUtils.UploadAsync(fileTransferReq);
+                return fileTransferReq.Key;
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                // Always close the stream for safety
+                fileStream.Close();
+            }
+
         }
 
         // Return a limited time download link
