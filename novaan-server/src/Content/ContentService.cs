@@ -20,11 +20,8 @@ using Utils.Json;
 
 namespace NovaanServer.src.Content
 {
-    // TODO: WARNING: Need to do a full refactor on this service
     public class ContentService : IContentService
     {
-        private const int MULTIPART_BOUNDARY_LENGTH_LIMIT = 128;
-
         private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20MB
         private readonly long _imageSizeLimit = 5L * 1024L * 1024L; // 5MB
 
@@ -45,7 +42,8 @@ namespace NovaanServer.src.Content
         // Process multipart request
         public async Task<T> ProcessMultipartRequest<T>(HttpRequest request)
         {
-            var boundary = GetBoundary(MediaTypeHeaderValue.Parse(request.ContentType));
+            var boundary = MultipartHandler
+                .GetBoundary(MediaTypeHeaderValue.Parse(request.ContentType));
             var reader = new MultipartReader(boundary, request.Body);
             var section = await reader.ReadNextSectionAsync();
 
@@ -63,8 +61,6 @@ namespace NovaanServer.src.Content
                         HttpStatusCode.BadRequest
                     );
                 }
-
-                Console.WriteLine(disposition.Name);
 
                 if (MultipartHandler.HasFormDataContentDisposition(disposition))
                 {
@@ -86,7 +82,7 @@ namespace NovaanServer.src.Content
                     */
                     if (property == null)
                     {
-                        HandleInstructionSection(obj, fieldName, value);
+                        HandleListSection(obj, fieldName, value);
                     }
                     else
                     {
@@ -120,7 +116,7 @@ namespace NovaanServer.src.Content
                         */
                         if (property == null)
                         {
-                            HandleInstructionSection(obj, fieldName, fileId);
+                            HandleListSection(obj, fieldName, fileId);
                         }
                         else
                         {
@@ -135,7 +131,7 @@ namespace NovaanServer.src.Content
             return obj;
         }
 
-        private static void HandleInstructionSection<T>(T? obj, string fieldName, string value)
+        private static void HandleListSection<T>(T? obj, string fieldName, string value)
         {
             var splitValues = fieldName.Split("_");
             if (splitValues.Length != 3)
@@ -348,23 +344,7 @@ namespace NovaanServer.src.Content
             }
         }
 
-        private static string GetBoundary(MediaTypeHeaderValue contentType)
-        {
-            var boundary = HeaderUtilities.RemoveQuotes(contentType.Boundary).Value;
-
-            if (string.IsNullOrWhiteSpace(boundary))
-            {
-                throw new InvalidDataException("Missing content-type boundary.");
-            }
-
-            if (boundary.Length > MULTIPART_BOUNDARY_LENGTH_LIMIT)
-            {
-                throw new InvalidDataException(
-                    $"Multipart boundary length limit {MULTIPART_BOUNDARY_LENGTH_LIMIT} exceeded.");
-            }
-
-            return boundary;
-        }
+        
 
         private async Task<MemoryStream> ProcessStreamContent(FileMultipartSection section)
         {

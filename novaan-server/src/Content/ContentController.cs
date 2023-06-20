@@ -35,7 +35,6 @@ namespace NovaanServer.src.Content
         public async Task<IActionResult> UploadCulinaryTips()
         {
             var culinaryTips = await _contentService.ProcessMultipartRequest<CulinaryTip>(Request);
-            Console.WriteLine(CustomJson.Stringify(culinaryTips));
             await _contentService.UploadTips(culinaryTips);
             return Ok();
         }
@@ -46,7 +45,6 @@ namespace NovaanServer.src.Content
         public async Task<IActionResult> UploadRecipe()
         {
             var recipe = await _contentService.ProcessMultipartRequest<Recipe>(Request);
-            Console.WriteLine(CustomJson.Stringify(recipe));
             await _contentService.UploadRecipe(recipe);
             return Ok();
         }
