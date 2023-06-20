@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Mime;
 using System.Reflection;
 using System.Text;
-using FileServer;
 using FileSignatures;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
@@ -29,13 +28,11 @@ namespace NovaanServer.src.Content
         private readonly string[] _permittedImageExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
 
         private readonly MongoDBService _mongoService;
-        private readonly FileService _fileService;
         private readonly S3Service _s3Service;
 
-        public ContentService(MongoDBService mongoDBService, FileService fileService, S3Service s3Service)
+        public ContentService(MongoDBService mongoDBService, S3Service s3Service)
         {
             _mongoService = mongoDBService;
-            _fileService = fileService;
             _s3Service = s3Service;
         }
 
@@ -177,6 +174,7 @@ namespace NovaanServer.src.Content
 
         public async Task UploadRecipe(Recipe recipe)
         {
+            // Validate recipe fields here
             try
             {
                 await _mongoService.Recipes.InsertOneAsync(recipe);
@@ -189,6 +187,7 @@ namespace NovaanServer.src.Content
 
         public async Task UploadTips(CulinaryTip culinaryTips)
         {
+            // Validate tips and tricks field here
             try
             {
                 await _mongoService.CulinaryTips.InsertOneAsync(culinaryTips);

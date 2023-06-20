@@ -12,6 +12,8 @@ namespace MongoConnector.Models
 
         public string Title { get; set; } = string.Empty;
 
+        public string Description { get; set; } = string.Empty;
+
         public string Video { get; set; } = string.Empty;
 
         public Difficulty Difficulty { get; set; } = Difficulty.Easy;

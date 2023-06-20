@@ -4,13 +4,15 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
     public static class ErrorCodes
     {
         // TODO: Please update latest error code to avoid duplicate value
-        // Latest error code: 1019
+        // Latest error code: 1029
 
         // Common
         public const int SERVER_UNAVAILABLE = 1000;
         public const int DATABASE_UNAVAILABLE = 1001;
         public const int S3_UNAVAILABLE = 1002;
         public const int GG_UNAVAILABLE = 1003;
+
+        public const int FIELD_REQUIRED = 1024;
 
         // Authentication
         public const int EMAIL_TAKEN_BASIC = 1004;
@@ -33,6 +35,15 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int CONTENT_VID_SIZE_INVALID = 1017;
         public const int CONTENT_VID_RESO_INVALID = 1018;
         public const int CONTENT_VID_LEN_INVALID = 1019;
+        public const int CONTENT_TITLE_TOO_SHORT = 1020;
+        public const int CONTENT_TITLE_TOO_LONG = 1021;
+        public const int CONTENT_DESC_TOO_SHORT = 1022;
+        public const int CONTENT_DESC_TOO_LONG = 1023;
+        public const int CONTENT_STEP_TOO_MANY = 1025;
+        public const int CONTENT_PREP_TIME_TOO_LONG = 1026;
+        public const int CONTENT_COOK_TIME_TOO_LONG = 1027;
+        public const int CONTENT_INGR_TOO_MANY = 1028;
+        public const int CONTENT_INGR_NAME_TOO_LONG = 1029;
 
         public static Dictionary<int, string> ErrorNameDictionary = typeof(ErrorCodes).GetFields()
                 .Where(f => f.FieldType == typeof(int))
