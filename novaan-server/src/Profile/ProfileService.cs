@@ -26,13 +26,13 @@ namespace NovaanServer.src.Profile
             User user = (await _mongoDBService.Users.FindAsync(u => u.Id == userID)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.PROFILE_USER_NOT_FOUND, HttpStatusCode.NotFound);
             // check if current user is following the user
             bool isFollowing = (await _mongoDBService.Followerships.FindAsync(f => f.FollowerId == currentUser.Id && f.FollowingId == userID)).Any();
-            var recipeList = (await _mongoDBService.Recipes.FindAsync(r => r.CreatorId == user.AccountID)).ToList().Take(10);
+            var recipeList = await GetRecipes(currentUserId, userID, new Pagination{Start = 0, Limit = 10});
             var profile = new ProfileRESDTO
             {
                 UserName = user.DisplayName,
                 UserID = user.Id,
                 Avatar = user.ProfilePicture,
-                RecipeList = recipeList.ToList(),
+                RecipeList = recipeList,
                 FollowersCount = user.FollowerCount,
                 FollowingCount = user.FollowingCount,
                 IsFollowing = isFollowing,
