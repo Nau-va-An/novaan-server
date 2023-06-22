@@ -4,7 +4,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
     public static class ErrorCodes
     {
         // TODO: Please update latest error code to avoid duplicate value
-        // Latest error code: 1029
+        // Latest error code: 1030
 
         // Common
         public const int SERVER_UNAVAILABLE = 1000;
@@ -46,6 +46,8 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public static int FOLLOWERSHIP_NOT_CREATED = 1027;
         public static int USER_NOT_FOLLOWING = 1028;
         public static int FOLLOWERSHIP_NOT_DELETED = 1029;
+        public static int USER_FOLLOWING_ITSELF = 1030;
+
 
         public static Dictionary<int, string> ErrorNameDictionary = typeof(ErrorCodes).GetFields()
                 .Where(f => f.FieldType == typeof(int))
