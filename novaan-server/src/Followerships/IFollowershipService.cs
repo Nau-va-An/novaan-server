@@ -7,8 +7,8 @@ namespace NovaanServer.src.Followerships
     public interface IFollowershipService
     {
         public Task FollowUser(string currentUserID, string followingUserId);
-        List<FollowershipDTO> GetFollowers(string userId, Pagination pagination);
-        List<FollowershipDTO> GetFollowing(string userId, Pagination pagination);
+        public Task<List<FollowershipDTO>> GetFollowers(string currentUserID,string userId, Pagination pagination);
+        public Task<List<FollowershipDTO>> GetFollowing(string currentUserID,string userId, Pagination pagination);
         public Task UnfollowUser(string currentUserID, string followingUserId);
     }
 }

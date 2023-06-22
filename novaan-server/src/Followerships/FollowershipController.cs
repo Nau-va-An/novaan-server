@@ -38,15 +38,17 @@ namespace NovaanServer.src.Followerships
         }
 
         [HttpGet("api/followers/{userId}")]
-        public List<FollowershipDTO> GetFollowers(string userId, [FromQuery] Pagination pagination)
+        public async Task<List<FollowershipDTO>> GetFollowers(string userId, [FromQuery] Pagination pagination)
         {
-            return _followershipService.GetFollowers(userId, pagination);
+            var currentUserID = Request.GetUserId() ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            return await _followershipService.GetFollowers(currentUserID,userId, pagination);
         }
 
         [HttpGet("api/following/{userId}")]
-        public List<FollowershipDTO> GetFollowing(string userId, [FromQuery] Pagination pagination)
+        public async Task<List<FollowershipDTO>> GetFollowing(string userId, [FromQuery] Pagination pagination)
         {
-            return _followershipService.GetFollowing(userId, pagination);
+            var currentUserID = Request.GetUserId() ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            return await _followershipService.GetFollowing(currentUserID,userId, pagination);
         }
 
     }

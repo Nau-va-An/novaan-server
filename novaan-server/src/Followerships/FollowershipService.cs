@@ -104,8 +104,10 @@ namespace NovaanServer.src.Followerships
             }
         }
 
-        public List<FollowershipDTO> GetFollowers(string userId, Pagination pagination)
+        public async Task<List<FollowershipDTO>> GetFollowers(string currentUserID, string userId, Pagination pagination)
         {
+            var currentUser = (await _mongodbService.Users.FindAsync(u => u.AccountID == currentUserID)).FirstOrDefault();
+            
             //Get all followers of user that has id is userId
             List<Followership> followers = _mongodbService.Followerships.Find(f => f.FollowingId == userId).ToList();
             List<string> followerIds = followers.Select(f => f.FollowerId).ToList();
@@ -119,14 +121,16 @@ namespace NovaanServer.src.Followerships
                 UserId = u.Id,
                 UserName = u.DisplayName,
                 Avatar = u.ProfilePicture,
-                IsFollowed = followers.Any(f => f.FollowerId == userId && f.FollowingId == u.Id)
+                IsFollowed = followers.Any(f => f.FollowerId == currentUser.Id && f.FollowingId == u.Id)
             }).ToList();
 
             return followerUsersDTO;
         }
 
-        public List<FollowershipDTO> GetFollowing(string userId, Pagination pagination)
+        public async Task<List<FollowershipDTO>> GetFollowing(string currentUserID, string userId, Pagination pagination)
         {
+            var currentUser = (await _mongodbService.Users.FindAsync(u => u.AccountID == currentUserID)).FirstOrDefault();
+            
             List<Followership> following = _mongodbService.Followerships.Find(f => f.FollowerId == userId).ToList();
             List<string> followingIds = following.Select(f => f.FollowingId).ToList();
             List<User> followingUsers = _mongodbService.Users.Find(u => followingIds.Contains(u.Id)).ToList();
@@ -139,7 +143,7 @@ namespace NovaanServer.src.Followerships
                 UserId = u.Id,
                 UserName = u.DisplayName,
                 Avatar = u.ProfilePicture,
-                IsFollowed = following.Any(f => f.FollowerId == userId && f.FollowingId == u.Id)
+                IsFollowed = following.Any(f => f.FollowerId == currentUser.Id && f.FollowingId == u.Id)
             }).ToList();
             return followingUsersDTO;
         }
