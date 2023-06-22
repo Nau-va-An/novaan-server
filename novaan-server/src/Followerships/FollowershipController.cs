@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoConnector;
 using MongoConnector.Models;
+using NovaanServer.src.Common.DTOs;
 using NovaanServer.src.Common.Utils;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using NovaanServer.src.Followerships.DTOs;
@@ -37,15 +38,15 @@ namespace NovaanServer.src.Followerships
         }
 
         [HttpGet("api/followers/{userId}")]
-        public List<User> GetFollowers(string userId)
+        public List<FollowershipDTO> GetFollowers(string userId, [FromQuery] Pagination pagination)
         {
-            return _followershipService.GetFollowers(userId);
+            return _followershipService.GetFollowers(userId, pagination);
         }
 
         [HttpGet("api/following/{userId}")]
-        public List<User> GetFollowing(string userId)
+        public List<FollowershipDTO> GetFollowing(string userId, [FromQuery] Pagination pagination)
         {
-            return _followershipService.GetFollowing(userId);
+            return _followershipService.GetFollowing(userId, pagination);
         }
 
     }

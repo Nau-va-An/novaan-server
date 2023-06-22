@@ -2,6 +2,7 @@ using System.Net;
 using MongoConnector;
 using MongoConnector.Models;
 using MongoDB.Driver;
+using NovaanServer.src.Common.DTOs;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using NovaanServer.src.Followerships.DTOs;
 
@@ -91,15 +92,28 @@ namespace NovaanServer.src.Followerships
             }
         }
 
-        public List<User> GetFollowers(string userId)
+        public List<FollowershipDTO> GetFollowers(string userId, Pagination pagination)
         {
+            //Get all followers of user that has id is userId
             var followers = _mongodbService.Followerships.Find(f => f.FollowingId == userId).ToList();
             var followerIds = followers.Select(f => f.FollowerId).ToList();
             var followerUsers = _mongodbService.Users.Find(u => followerIds.Contains(u.Id)).ToList();
-            return followerUsers;
+
+            // Get all user from pagination.Start to pagination.Start + pagination.Limit
+            var start = pagination.Start;
+            var limit = pagination.Limit;
+            var followerUsersDTO = followerUsers.Skip(start).Take(limit).Select(u => new FollowershipDTO
+            {
+                UserId = u.Id,
+                UserName = u.DisplayName,
+                Avatar = u.ProfilePicture,
+                IsFollowed = followers.Any(f => f.FollowerId == userId && f.FollowingId == u.Id)
+            }).ToList();
+
+            return followerUsersDTO;
         }
 
-        public List<User> GetFollowing(string userId)
+        public List<FollowershipDTO> GetFollowing(string userId, Pagination pagination)
         {
             var following = _mongodbService.Followerships.Find(f => f.FollowerId == userId).ToList();
             var followingIds = following.Select(f => f.FollowingId).ToList();
