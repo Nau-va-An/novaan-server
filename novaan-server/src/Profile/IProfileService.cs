@@ -6,8 +6,7 @@ namespace NovaanServer.src.Profile
 {
     public interface IProfileService
     {
-        Task<ProfileRESDTO> GetMyProfile(string currentUser);
-        ProfileRESDTO GetProfile(string userID, string userID1);
+       public Task<ProfileRESDTO> GetProfile(string currentUserId, string userID);
     }
 }
 
