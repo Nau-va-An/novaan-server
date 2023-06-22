@@ -157,7 +157,7 @@ namespace NovaanServer.Auth
             var newUser = new User
             {
                 DisplayName = displayName,
-                AccountID = accountId
+                AccountId = accountId
             };
 
             await _mongoService.Users.InsertOneAsync(newUser);
