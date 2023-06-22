@@ -10,6 +10,9 @@ namespace MongoConnector.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string AccountID { get; set; }
+
         public string DisplayName { get; set; } = string.Empty;
 
         [BsonRepresentation(BsonType.ObjectId)]
