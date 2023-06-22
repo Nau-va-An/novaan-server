@@ -54,8 +54,8 @@ namespace NovaanServer.Auth
             try
             {
                 var password = CustomHash.GetHashString(signUpDTO.Password);
-                await CreateNewAccount(signUpDTO.Email, password, null);
-                await CreateNewUser(signUpDTO.DisplayName);
+                var id = await CreateNewAccount(signUpDTO.Email, password, null);
+                await CreateNewUser(signUpDTO.DisplayName, id);
             }
             catch
             {
@@ -90,7 +90,7 @@ namespace NovaanServer.Auth
                 try
                 {
                     var accountId = await CreateNewAccount(ggAcountInfo.Email, null, ggAcountInfo.GoogleId);
-                    await CreateNewUser(ggAcountInfo.Name);
+                    await CreateNewUser(ggAcountInfo.Name, accountId);
 
                     return accountId;
                 }
@@ -152,11 +152,12 @@ namespace NovaanServer.Auth
             return newAccount.Id;
         }
 
-        private async Task<string> CreateNewUser(string displayName)
+        private async Task<string> CreateNewUser(string displayName, string accountId)
         {
             var newUser = new User
             {
-                DisplayName = displayName
+                DisplayName = displayName,
+                AccountID = accountId
             };
 
             await _mongoService.Users.InsertOneAsync(newUser);
