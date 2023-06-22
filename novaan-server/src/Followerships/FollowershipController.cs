@@ -20,6 +20,18 @@ namespace NovaanServer.src.Followerships
             await _followershipService.FollowUser(followUserDTO);
             return Ok();
         }
+
+        /// <summary>
+        /// Unfollow a user
+        /// </summary>
+        /// <param name="followUserDTO"></param>
+        /// <returns></returns>
+        [HttpPost("api/unfollow")]
+        public async Task<IActionResult> UnfollowUser([FromBody] FollowUserDTO followUserDTO)
+        {
+            await _followershipService.UnfollowUser(followUserDTO);
+            return Ok();
+        }
     }
 }
 
