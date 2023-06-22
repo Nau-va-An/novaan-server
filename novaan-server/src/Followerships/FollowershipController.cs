@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MongoConnector;
 using MongoConnector.Models;
@@ -9,6 +10,7 @@ using NovaanServer.src.Followerships.DTOs;
 
 namespace NovaanServer.src.Followerships
 {
+    [Authorize]
     [ApiController]
     public class FollowershipController : ControllerBase
     {
