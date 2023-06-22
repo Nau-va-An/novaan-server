@@ -54,8 +54,8 @@ namespace NovaanServer.Auth
             try
             {
                 var password = CustomHash.GetHashString(signUpDTO.Password);
-                var id = await CreateNewAccount(signUpDTO.Email, password, null);
-                await CreateNewUser(signUpDTO.DisplayName, id);
+                var accountID = await CreateNewAccount(signUpDTO.Email, password, null);
+                await CreateNewUser(signUpDTO.DisplayName, accountID);
             }
             catch
             {
