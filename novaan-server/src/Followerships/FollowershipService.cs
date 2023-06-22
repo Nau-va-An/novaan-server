@@ -56,17 +56,17 @@ namespace NovaanServer.src.Followerships
             }
         }
 
-        public async Task UnfollowUser(FollowershipDTO followUserDTO)
+        public async Task UnfollowUser(string currentUserID, string followingUserId)
         {
-            var user = (await _mongodbService.Users.FindAsync(u => u.Id == followUserDTO.UserID)).FirstOrDefault();
-            var followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followUserDTO.FollowedUserId)).FirstOrDefault();
+            var user = (await _mongodbService.Users.FindAsync(u => u.Id == currentUserID)).FirstOrDefault();
+            var followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followingUserId)).FirstOrDefault();
             if (user == null || followedUser == null)
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
             // Check if user is already following the followed user
-            var isFollowing = (await _mongodbService.Followerships.FindAsync(f => f.FollowerId == followUserDTO.UserID && f.FollowingId == followUserDTO.FollowedUserId)).FirstOrDefault();
+            var isFollowing = (await _mongodbService.Followerships.FindAsync(f => f.FollowerId == currentUserID && f.FollowingId == followingUserId)).FirstOrDefault();
             if (isFollowing == null)
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOLLOWING, HttpStatusCode.BadRequest);
@@ -75,15 +75,15 @@ namespace NovaanServer.src.Followerships
             try
             {
                 // Delete followership
-                await _mongodbService.Followerships.DeleteOneAsync(f => f.FollowerId == followUserDTO.UserID && f.FollowingId == followUserDTO.FollowedUserId);
+                await _mongodbService.Followerships.DeleteOneAsync(f => f.FollowerId == currentUserID && f.FollowingId == followingUserId);
 
                 // Decrease following count of user that has id is userId
                 var update = Builders<User>.Update.Inc(u => u.FollowingCount, -1);
-                await _mongodbService.Users.UpdateOneAsync(u => u.Id == followUserDTO.UserID, update);
+                await _mongodbService.Users.UpdateOneAsync(u => u.Id == currentUserID, update);
 
                 // Decrease follower count of user that has id is followedId
                 update = Builders<User>.Update.Inc(u => u.FollowerCount, -1);
-                await _mongodbService.Users.UpdateOneAsync(u => u.Id == followUserDTO.FollowedUserId, update);
+                await _mongodbService.Users.UpdateOneAsync(u => u.Id == followingUserId, update);
             }
             catch (System.Exception)
             {
