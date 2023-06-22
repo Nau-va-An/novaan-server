@@ -15,7 +15,7 @@ namespace NovaanServer.src.Followerships
         }
 
         [HttpPost("api/follow")]
-        public async Task<IActionResult> FollowUser([FromBody] FollowUserDTO followUserDTO)
+        public async Task<IActionResult> FollowUser([FromBody] FollowershipDTO followUserDTO)
         {
             await _followershipService.FollowUser(followUserDTO);
             return Ok();
@@ -27,7 +27,7 @@ namespace NovaanServer.src.Followerships
         /// <param name="followUserDTO"></param>
         /// <returns></returns>
         [HttpPost("api/unfollow")]
-        public async Task<IActionResult> UnfollowUser([FromBody] FollowUserDTO followUserDTO)
+        public async Task<IActionResult> UnfollowUser([FromBody] FollowershipDTO followUserDTO)
         {
             await _followershipService.UnfollowUser(followUserDTO);
             return Ok();

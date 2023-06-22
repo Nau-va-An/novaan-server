@@ -5,7 +5,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace NovaanServer.src.Followerships.DTOs
 {
-    public class FollowUserDTO
+    public class FollowershipDTO
     {
         [BsonRepresentation(BsonType.ObjectId)]
         [Required]

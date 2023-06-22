@@ -15,7 +15,7 @@ namespace NovaanServer.src.Followerships
         {
             _mongodbService = mongoDBService;
         }
-        public async Task FollowUser(FollowUserDTO followUserDTO)
+        public async Task FollowUser(FollowershipDTO followUserDTO)
         {
             var user = (await _mongodbService.Users.FindAsync(u => u.Id == followUserDTO.UserID)).FirstOrDefault();
             var followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followUserDTO.FollowedUserId)).FirstOrDefault();
@@ -56,7 +56,7 @@ namespace NovaanServer.src.Followerships
             }
         }
 
-        public async Task UnfollowUser(FollowUserDTO followUserDTO)
+        public async Task UnfollowUser(FollowershipDTO followUserDTO)
         {
             var user = (await _mongodbService.Users.FindAsync(u => u.Id == followUserDTO.UserID)).FirstOrDefault();
             var followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followUserDTO.FollowedUserId)).FirstOrDefault();
