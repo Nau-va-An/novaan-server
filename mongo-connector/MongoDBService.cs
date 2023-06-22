@@ -167,6 +167,14 @@ namespace MongoConnector
                 return MongoDatabase.GetCollection<Allergen>(MongoCollections.Allergens);
             }
         }
+
+        public IMongoCollection<Followership> Followerships
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Followership>(MongoCollections.Followerships);
+            }
+        }
     }
 }
 
