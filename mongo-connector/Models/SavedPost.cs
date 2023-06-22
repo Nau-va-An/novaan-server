@@ -9,7 +9,7 @@ namespace MongoConnector.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string PostID { get; set; }
 
-        public string PostType { get; set; }
+        public string PostType { get; set; } = string.Empty;
     }
 }
 
