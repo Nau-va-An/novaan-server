@@ -15,40 +15,40 @@ namespace NovaanServer.src.Followerships
         {
             _mongodbService = mongoDBService;
         }
-        public async Task FollowUser(FollowershipDTO followUserDTO)
+        public async Task FollowUser(string currentUserID, string followingUserId)
         {
-            var user = (await _mongodbService.Users.FindAsync(u => u.Id == followUserDTO.UserID)).FirstOrDefault();
-            var followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followUserDTO.FollowedUserId)).FirstOrDefault();
-            if (user == null || followedUser == null)
+            var currentUser = (await _mongodbService.Users.FindAsync(u => u.Id == currentUserID)).FirstOrDefault();
+            var followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followingUserId)).FirstOrDefault();
+            if (currentUser == null || followedUser == null)
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
             // Check if user is already following the followed user
-            var isFollowing = (await _mongodbService.Followerships.FindAsync(f => f.FollowerId == followUserDTO.UserID && f.FollowingId == followUserDTO.FollowedUserId)).FirstOrDefault();
+            var isFollowing = (await _mongodbService.Followerships.FindAsync(f => f.FollowerId == currentUserID && f.FollowingId == followingUserId)).FirstOrDefault();
             if (isFollowing != null)
             {
                 throw new NovaanException(ErrorCodes.USER_ALREADY_FOLLOWING, HttpStatusCode.BadRequest);
             }
 
-            // Mapping from DTO to Model
+            // Mapping to Model
             var followership = new Followership
             {
-                FollowerId = followUserDTO.UserID,
-                FollowingId = followUserDTO.FollowedUserId
+                FollowerId = currentUserID,
+                FollowingId = followingUserId
             };
 
             try
             {
                 await _mongodbService.Followerships.InsertOneAsync(followership);
 
-                // Increase following count of user that has id is userId
+                // Increase following count of user that has id is currentUserID
                 var update = Builders<User>.Update.Inc(u => u.FollowingCount, 1);
-                await _mongodbService.Users.UpdateOneAsync(u => u.Id == followUserDTO.UserID, update);
+                await _mongodbService.Users.UpdateOneAsync(u => u.Id == currentUserID, update);
 
-                // Increase follower count of user that has id is followedId
+                // Increase follower count of user that has id is followingId
                 update = Builders<User>.Update.Inc(u => u.FollowerCount, 1);
-                await _mongodbService.Users.UpdateOneAsync(u => u.Id == followUserDTO.FollowedUserId, update);
+                await _mongodbService.Users.UpdateOneAsync(u => u.Id == followingUserId, update);
             }
             catch (System.Exception)
             {
