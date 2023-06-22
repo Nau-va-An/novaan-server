@@ -8,6 +8,6 @@ namespace NovaanServer.src.Followerships
         public Task FollowUser(string currentUserID, string followingUserId);
         List<User> GetFollowers(string userId);
         List<User> GetFollowing(string userId);
-        public Task UnfollowUser(FollowershipDTO followUserDTO);
+        public Task UnfollowUser(string currentUserID, string followingUserId);
     }
 }
