@@ -12,6 +12,8 @@ namespace MongoConnector.Models
 
         public string DisplayName { get; set; } = string.Empty;
 
+        public string ProfilePicture { get; set; } = string.Empty;
+
         [BsonRepresentation(BsonType.ObjectId)]
         public List<string> Diet { get; set; } = new List<string>();
 
@@ -20,6 +22,10 @@ namespace MongoConnector.Models
 
         [BsonRepresentation(BsonType.ObjectId)]
         public List<string> Allergen { get; set; } = new List<string>();
+
+        public int FollowerCount { get; set; }
+
+        public int FollowingCount { get; set; }
 
     }
 }
