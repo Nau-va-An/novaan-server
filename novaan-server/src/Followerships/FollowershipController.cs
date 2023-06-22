@@ -15,14 +15,14 @@ namespace NovaanServer.src.Followerships
             _followershipService = followershipService;
         }
 
-        [HttpPost("api/follow")]
+        [HttpPost("api/follow/{userId}")]
         public async Task<IActionResult> FollowUser([FromBody] FollowershipDTO followUserDTO)
         {
             await _followershipService.FollowUser(followUserDTO);
             return Ok();
         }
 
-        [HttpPost("api/unfollow")]
+        [HttpPost("api/unfollow/{userId}")]
         public async Task<IActionResult> UnfollowUser([FromBody] FollowershipDTO followUserDTO)
         {
             await _followershipService.UnfollowUser(followUserDTO);
