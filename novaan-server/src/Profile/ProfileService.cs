@@ -22,7 +22,7 @@ namespace NovaanServer.src.Profile
 
         public async Task<ProfileRESDTO> GetProfile(string currentUserId, string userID)
         {
-            User currentUser = (await _mongoDBService.Users.FindAsync(u => u.Id == currentUserId)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            User currentUser = (await _mongoDBService.Users.FindAsync(u => u.AccountID == currentUserId)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             User user = (await _mongoDBService.Users.FindAsync(u => u.Id == userID)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.PROFILE_USER_NOT_FOUND, HttpStatusCode.NotFound);
             // check if current user is following the user
             bool isFollowing = (await _mongoDBService.Followerships.FindAsync(f => f.FollowerId == currentUserId && f.FollowingId == userID)).Any();
