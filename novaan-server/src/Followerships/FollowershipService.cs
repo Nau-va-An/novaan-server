@@ -16,6 +16,7 @@ namespace NovaanServer.src.Followerships
         {
             _mongodbService = mongoDBService;
         }
+        
         public async Task FollowUser(string currentUserID, string followingUserId)
         {
             var currentUser = (await _mongodbService.Users.FindAsync(u => u.Id == currentUserID)).FirstOrDefault();
@@ -118,7 +119,18 @@ namespace NovaanServer.src.Followerships
             var following = _mongodbService.Followerships.Find(f => f.FollowerId == userId).ToList();
             var followingIds = following.Select(f => f.FollowingId).ToList();
             var followingUsers = _mongodbService.Users.Find(u => followingIds.Contains(u.Id)).ToList();
-            return followingUsers;
+
+            // Get all user from pagination.Start to pagination.Start + pagination.Limit
+            var start = pagination.Start;
+            var limit = pagination.Limit;
+            var followingUsersDTO = followingUsers.Skip(start).Take(limit).Select(u => new FollowershipDTO
+            {
+                UserId = u.Id,
+                UserName = u.DisplayName,
+                Avatar = u.ProfilePicture,
+                IsFollowed = following.Any(f => f.FollowerId == userId && f.FollowingId == u.Id)
+            }).ToList();
+            return followingUsersDTO;
         }
     }
 }
