@@ -58,6 +58,20 @@ namespace NovaanServer.src.Profile
             return recipes.Skip(pagination.Start).Take(pagination.Limit).ToList();
         }
 
+        public async Task<List<SavedPost>> GetSavedPosts(string currentUserId, string userID,Pagination pagination)
+        {
+            var currentUser = (await _mongoDBService.Users.FindAsync(u => u.AccountID == currentUserId)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            var user = (await _mongoDBService.Users.FindAsync(u => u.Id == userID)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.PROFILE_USER_NOT_FOUND, HttpStatusCode.NotFound);
+             // Only current user can see his/her saved posts
+            if (currentUser.Id != user.Id)
+            {
+                // forbidden content
+                throw new NovaanException(ErrorCodes.FORBIDDEN_PROFILE_CONTENT, HttpStatusCode.Forbidden);
+            }
+            var savedPost = user.SavedPost.Skip(pagination.Start).Take(pagination.Limit).ToList();
+            return savedPost;
+        }
+
         public async Task<List<CulinaryTip>> GetTips(string currentUserId, string userID, Pagination pagination)
         {
             var currentUser = (await _mongoDBService.Users.FindAsync(u => u.AccountID == currentUserId)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);

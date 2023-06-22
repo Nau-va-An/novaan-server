@@ -37,21 +37,21 @@ namespace NovaanServer.src.Profile
         }
 
         // Get tips of a user
-        [HttpGet("/profile/{userID}/tips")]
+        [HttpGet("api/profile/{userID}/tips")]
         public async Task<List<CulinaryTip>> GetTips(string userID, [FromQuery] Pagination pagination)
         {
             var currentUserId = Request.GetUserId() ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             return await _profileService.GetTips(currentUserId, userID, pagination);
         }
 
-        // // Get saved post of a user
-        // [HttpGet("/profile/{userID}/saved")]
-        // public async Task<List<SavedPost>> GetSavedPosts(string userID)
-        // {
-        //     // only current user can see his/her saved posts
-        //     var currentUserId = Request.GetUserId()?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-        //     return await _profileService.GetSavedPosts(currentUserId,userID);
-        // }
+        // Get saved post of a user
+        [HttpGet("api/profile/{userID}/saved")]
+        public async Task<List<SavedPost>> GetSavedPosts(string userID, [FromQuery] Pagination pagination)
+        {
+            // only current user can see his/her saved posts
+            var currentUserId = Request.GetUserId() ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            return await _profileService.GetSavedPosts(currentUserId, userID, pagination);
+        }
 
     }
 }

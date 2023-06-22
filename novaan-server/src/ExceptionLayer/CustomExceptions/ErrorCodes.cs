@@ -4,7 +4,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
     public static class ErrorCodes
     {
         // TODO: Please update latest error code to avoid duplicate value
-        // Latest error code: 1030
+        // Latest error code: 1031
 
         // Common
         public const int SERVER_UNAVAILABLE = 1000;
@@ -49,8 +49,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
 
         // Profile
         public const int PROFILE_USER_NOT_FOUND = 1030;
-
-    
+        public static int FORBIDDEN_PROFILE_CONTENT = 1031;
 
         public static Dictionary<int, string> ErrorNameDictionary = typeof(ErrorCodes).GetFields()
                 .Where(f => f.FieldType == typeof(int))
