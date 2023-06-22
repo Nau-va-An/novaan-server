@@ -20,7 +20,7 @@ namespace NovaanServer.src.Profile
 
         public async Task<ProfileRESDTO> GetMyProfile(string currentUser)
         {
-			User user = (await _mongoDBService.Users.FindAsync(u => u.AccountId == currentUser)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.PROFILE_USER_NOT_FOUND, HttpStatusCode.NotFound);
+			User user = (await _mongoDBService.Users.FindAsync(u => u.AccountID == currentUser)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.PROFILE_USER_NOT_FOUND, HttpStatusCode.NotFound);
 			List<Recipe> recipeList = (await _mongoDBService.Recipes.FindAsync(r => r.CreatorId == currentUser)).ToList();
 			var profile = new ProfileRESDTO
 			{
