@@ -11,6 +11,7 @@ using NovaanServer.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using NovaanServer.src.Admin;
 using Newtonsoft.Json.Converters;
+using NovaanServer.src.Followerships;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IFollowershipService, FollowershipService>();
 
 builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection("JwTConfig"));
 
@@ -106,6 +108,7 @@ static async Task SeedData(WebApplication app)
         await mongoDBService.SeedCuisineData();
         await mongoDBService.SeedMealTypeData();
         await mongoDBService.SeedAllergenData();
+        await mongoDBService.SeedUserData();
     }
 }
 

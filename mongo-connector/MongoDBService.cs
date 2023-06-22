@@ -93,6 +93,49 @@ namespace MongoConnector
             }
         }
 
+        // Seed data user
+        public async Task SeedUserData()
+        {
+            var accountCollection = MongoDatabase.GetCollection<Account>(MongoCollections.Accounts);
+
+            var accountList = accountCollection.Find(_ => true).ToList().Take(10);
+            var random = new Random();
+            var userCollection = MongoDatabase.GetCollection<User>(MongoCollections.Users);
+            var userData = await userCollection.Find(_ => true).ToListAsync();
+            if (userData.Count == 0)
+            {
+                var userList = new List<User>();
+                foreach (var account in accountList)
+                {
+                    var user = new User
+                    {
+                        DisplayName = account.Username,
+                    };
+                    // seed random diet from diet collection
+                    var dietCollection = MongoDatabase.GetCollection<Diet>(MongoCollections.Diets);
+                    var dietData = await dietCollection.Find(_ => true).ToListAsync();
+                    var randomDietIndex = random.Next(0, dietData.Count);
+                    user.Diet.Add(dietData[randomDietIndex].Id);
+
+                    // seed random cuisine from cuisine collection
+                    var cuisineCollection = MongoDatabase.GetCollection<Cuisine>(MongoCollections.Cuisines);
+                    var cuisineData = await cuisineCollection.Find(_ => true).ToListAsync();
+                    var randomCuisineIndex = random.Next(0, cuisineData.Count);
+                    user.Cuisine.Add(cuisineData[randomCuisineIndex].Id);
+
+                    // seed random allergen from allergen collection
+                    var allergenCollection = MongoDatabase.GetCollection<Allergen>(MongoCollections.Allergens);
+                    var allergenData = await allergenCollection.Find(_ => true).ToListAsync();
+                    var randomAllergenIndex = random.Next(0, allergenData.Count);
+                    user.Allergen.Add(allergenData[randomAllergenIndex].Id);
+
+                    userList.Add(user);
+                }
+                await userCollection.InsertManyAsync(userList);
+            }
+
+        }
+
         public IMongoCollection<T> GetCollection<T>(string collectionName)
         {
             return MongoDatabase.GetCollection<T>(collectionName);
@@ -174,7 +217,14 @@ namespace MongoConnector
             {
                 return MongoDatabase.GetCollection<Followership>(MongoCollections.Followerships);
             }
+            set
+            {
+                var indexKeysDefinition = Builders<Followership>.IndexKeys.Ascending(f => f.FollowerId).Ascending(f => f.FollowingId); // Create index on follower_id and following_id fields
+                var indexModel = new CreateIndexModel<Followership>(indexKeysDefinition); // Create index model
+                value.Indexes.CreateOne(indexModel);    // Create index
+            }
         }
+
     }
 }
 
