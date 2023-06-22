@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using MongoConnector;
+using MongoConnector.Models;
 using MongoDB.Driver;
 using NovaanServer.src.Common.Utils;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
@@ -19,8 +20,8 @@ namespace NovaanServer.src.Profile
 
         public async Task<ProfileRESDTO> GetMyProfile(string currentUser)
         {
-			var user = (await _mongoDBService.Users.FindAsync(u => u.Id == currentUser)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.PROFILE_USER_NOT_FOUND, HttpStatusCode.NotFound);
-			var recipeList = (await _mongoDBService.Recipes.FindAsync(r => r.CreatorId == currentUser)).ToList();
+			User user = (await _mongoDBService.Users.FindAsync(u => u.AccountId == currentUser)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.PROFILE_USER_NOT_FOUND, HttpStatusCode.NotFound);
+			List<Recipe> recipeList = (await _mongoDBService.Recipes.FindAsync(r => r.CreatorId == currentUser)).ToList();
 			var profile = new ProfileRESDTO
 			{
 				UserName = user.DisplayName,
