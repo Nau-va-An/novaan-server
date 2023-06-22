@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
+using MongoConnector.Enums;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -13,38 +10,43 @@ namespace MongoConnector.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
-        public string Title { get; set; }
-        public string Video { get; set; }
-        public Difficulty Difficulty { get; set; } = Difficulty.Easy;
-        public int PortionQuantity { get; set; }
-        public PortionType PortionType { get; set; } = PortionType.Serving;
-        public TimeSpan PrepTime { get; set; }
-        public TimeSpan CookTime { get; set; }
-        public List<Instruction> Instructions { get; set; }
 
         [BsonRepresentation(BsonType.ObjectId)]
         public string CreatorId { get; set; }
-        public List<Ingredient> Ingredients { get; set; }
-        public Status Status { get; set; } = Status.Draft;
-    }
-    public enum Difficulty
-    {
-        Easy,
-        Medium,
-        Hard
-    }
 
-    // PortionType
-    public enum PortionType
-    {
-        Serving,
-        Unit
-    }
-    public enum Status
-    {
-        Draft,
-        Pending,
-        Approved,
-        Rejected
+        [Required]
+        [MinLength(1)]
+        [MaxLength(55)]
+        public string Title { get; set; } = string.Empty;
+
+        [Required]
+        [MinLength(30)]
+        [MaxLength(500)]
+        public string Description { get; set; } = string.Empty;
+
+        [Required]
+        public string Video { get; set; } = string.Empty;
+
+        [Required]
+        public Difficulty Difficulty { get; set; } = Difficulty.Easy;
+
+        [Required]
+        public int PortionQuantity { get; set; }
+
+        [Required]
+        public PortionType PortionType { get; set; } = PortionType.Servings;
+
+        public TimeSpan PrepTime { get; set; }
+
+        public TimeSpan CookTime { get; set; }
+
+        [Required]
+        public List<Instruction> Instructions { get; set; } = new List<Instruction>();
+
+        [Required]
+        public List<Ingredient> Ingredients { get; set; } = new List<Ingredient>();
+
+        [Required]
+        public Status Status { get; set; } = Status.Pending;
     }
 }

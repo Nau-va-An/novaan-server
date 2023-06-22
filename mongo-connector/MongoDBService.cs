@@ -93,6 +93,11 @@ namespace MongoConnector
             }
         }
 
+        public IMongoCollection<T> GetCollection<T>(string collectionName)
+        {
+            return MongoDatabase.GetCollection<T>(collectionName);
+        }
+
         public IMongoCollection<Account> Accounts
         {
             get
@@ -107,11 +112,11 @@ namespace MongoConnector
                 return MongoDatabase.GetCollection<Recipe>(MongoCollections.Recipes);
             }
         }
-        public IMongoCollection<CulinaryTips> CulinaryTips
+        public IMongoCollection<CulinaryTip> CulinaryTips
         {
             get
             {
-                return MongoDatabase.GetCollection<CulinaryTips>(MongoCollections.CulinaryTips);
+                return MongoDatabase.GetCollection<CulinaryTip>(MongoCollections.CulinaryTips);
             }
         }
 

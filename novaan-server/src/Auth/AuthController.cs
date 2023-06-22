@@ -7,6 +7,7 @@ using NovaanServer.src.Auth.Jwt;
 
 namespace NovaanServer.Auth
 {
+    [AllowAnonymous]
     [Route("api/auth")]
     [ApiController]
     public class AuthController : Controller
@@ -20,7 +21,6 @@ namespace NovaanServer.Auth
             _jwtService = jwtService;
         }
 
-        [AllowAnonymous]
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] SignUpDTO signUpDTO)
         {
@@ -28,7 +28,6 @@ namespace NovaanServer.Auth
             return Ok();
         }
 
-        [AllowAnonymous]
         [HttpPost("signin")]
         public async Task<SignInResDTO> SignIn([FromBody] SignInDTOs signInDTO)
         {
@@ -37,31 +36,32 @@ namespace NovaanServer.Auth
 
             return new SignInResDTO
             {
-                Success = true,
                 Token = token
             };
         }
 
-        [Authorize]
         [HttpPost("refreshtoken")]
         public async Task<RefreshTokenResDTO> RefreshToken()
         {
             Request.Headers.TryGetValue(HeaderNames.Authorization, out var authorizationHeader);
-            var accessToken = authorizationHeader.ToString().Substring("Bearer ".Length);
+            var accessToken = authorizationHeader.ToString()["Bearer ".Length..];
             var newToken = await _jwtService.RefreshToken(accessToken);
-
             return new RefreshTokenResDTO
             {
-                Success = true,
                 Token = newToken
             };
         }
-        	[HttpPost("oauth/google")]
-		public async Task<IActionResult> GoogleAuthentication([FromBody] GoogleOauthDTO googleAuthDTO)
-		{
-			await _authService.GoogleAuthentication(googleAuthDTO);
-			return Ok();
-		}
+
+        [HttpPost("google")]
+        public async Task<SignInResDTO> GoogleAuthentication([FromBody] GoogleOAuthDTO googleOAuthDTO)
+        {
+            var userId = await _authService.GoogleAuthentication(googleOAuthDTO);
+            var token = await _jwtService.GenerateJwtToken(new UserJwt { UserId = userId });
+            return new SignInResDTO
+            {
+                Token = token
+            };
+        }
     }
 }
 

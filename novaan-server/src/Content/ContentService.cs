@@ -1,351 +1,397 @@
-﻿﻿using System.Collections;
-using System.Reflection;
-using System.Text;
-using FileServer;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Net;
+using Amazon.S3;
+using FileSignatures;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Net.Http.Headers;
 using MongoConnector;
+using MongoConnector.Enums;
 using MongoConnector.Models;
-using Newtonsoft.Json;
+using MongoDB.Driver;
 using NovaanServer.src.Content.DTOs;
+using NovaanServer.src.Content.FormHandler;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using S3Connector;
-using Utils.Json;
+using Utils.UtilClass;
 
 namespace NovaanServer.src.Content
 {
     public class ContentService : IContentService
     {
-        private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20mb
-        // _imageSizeLimit is 5,242,880 bytes.
-        private readonly long _imageSizeLimit = 5L * 1024L * 1024L; // 5mb
-        private const int MULTIPART_BOUNDARY_LENGTH_LIMIT = 128;
-        private readonly string[] _permittedVideoExtensions = { "mp4" };
-        private readonly string[] _permittedImageExtensions = { "jpg", "jpeg", "png", "webp" };
+        private const int TITLE_MIN = 1;
+        private const int TITLE_MAX = 55;
+        private const int DESC_MIN = 30;
+        private const int DESC_MAX = 500;
+
+        private const int STEP_MAX = 20;
+        private const int INGR_MAX = 9999;
+        private const int INGR_NAME_MAX = 50;
+
+        private TimeSpan COOK_MAX = TimeSpan.Parse("3.00:59:00"); // 72 hours + 59 minutes
+        private TimeSpan PREP_MAX = TimeSpan.Parse("3.00:59:00"); // 72 hours + 50 minutes
+
+        private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20MB
+        private readonly long _imageSizeLimit = 5L * 1024L * 1024L; // 5MB
+
+        private readonly string[] _permittedVideoExtensions = { ".mp4" };
+        private readonly string[] _permittedImageExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
+
         private readonly MongoDBService _mongoService;
-        private readonly FileService _fileService;
         private readonly S3Service _s3Service;
-        public ContentService(MongoDBService mongoDBService, FileService fileService, S3Service s3Service)
+
+        private readonly DelayExecutioner _delayExecutioner = new();
+
+        /// <summary>
+        // ContentService marked as Scoped
+        // => Each request have their own ContentServive, we don't have to worry about race condition
+        /// </summary>
+        private List<MemoryStream> uploadFiles = new List<MemoryStream>();
+
+        public ContentService(MongoDBService mongoDBService, S3Service s3Service)
         {
             _mongoService = mongoDBService;
-            _fileService = fileService;
             _s3Service = s3Service;
-        }
-        public async Task AddCulinaryTips(CulinaryTips culinaryTips)
-        {
-            try
-            {
-                await _mongoService.CulinaryTips.InsertOneAsync(culinaryTips);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
-            }
         }
 
         // Process multipart request
         public async Task<T> ProcessMultipartRequest<T>(HttpRequest request)
         {
-            if (!IsMultipartContentType(request.ContentType))
-            {
-                throw new Exception($"Expected a multipart request, but got {request.ContentType}");
-            }
-
-            var boundary = GetBoundary(MediaTypeHeaderValue.Parse(request.ContentType));
+            var boundary = MultipartHandler
+                .GetBoundary(MediaTypeHeaderValue.Parse(request.ContentType));
             var reader = new MultipartReader(boundary, request.Body);
             var section = await reader.ReadNextSectionAsync();
 
-            var obj = Activator.CreateInstance<T>();
+            var obj = Activator.CreateInstance<T>() ??
+                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
             var properties = typeof(T).GetProperties();
 
             while (section != null)
             {
-                var contentDisposition = ContentDispositionHeaderValue.Parse(section.ContentDisposition);
-                if (contentDisposition == null || contentDisposition.Name == null)
+                var disposition = section.GetContentDispositionHeader();
+                if (disposition == null || disposition.Name == null)
                 {
-                    throw new Exception("Invalid Content Disposition");
+                    throw new NovaanException(
+                        ErrorCodes.CONTENT_DISPOSITION_INVALID,
+                        HttpStatusCode.BadRequest
+                    );
                 }
-                var fieldName = HeaderUtilities.RemoveQuotes(contentDisposition.Name).Value.ToLowerInvariant();
-                var property = properties.FirstOrDefault(p => p.Name.ToLowerInvariant() == fieldName);
 
-                if (HasFileContentDisposition(contentDisposition))
+                if (MultipartHandler.HasFormDataContentDisposition(disposition))
                 {
-                    if (contentDisposition.FileName.Value == null)
+                    // Handle form data
+                    var formSection = section.AsFormDataSection() ??
+                        throw new NovaanException(
+                            ErrorCodes.CONTENT_DISPOSITION_INVALID,
+                            HttpStatusCode.BadRequest
+                        );
+
+                    var fieldName = formSection.Name;
+                    var value = await formSection.GetValueAsync();
+                    var property = properties.FirstOrDefault(p => p.Name == fieldName);
+
+                    /*
+                     * Indicate that this is an list-related value with following signature:
+                     * PropertyName_Index_NestedProperty
+                    */
+                    if (property == null)
                     {
-                        throw new Exception("Invalid File Name");
+                        HandleListSection(obj, fieldName, value);
                     }
-                    var isImage = fieldName.Contains("image");
-                    var permittedExtensions = isImage ? _permittedImageExtensions : _permittedVideoExtensions;
-                    var sizeLimit = isImage ? _imageSizeLimit : _videoSizeLimit;
-
-                    using (var streamedFileContent = await ProcessStreamedFile(section, contentDisposition, permittedExtensions, sizeLimit))
+                    else
                     {
-                        var fileID = await _s3Service.UploadFileAsync(streamedFileContent, section);
-
-                        if (property != null)
-                        {
-                            MappingObjectData(obj, property, fileID);
-                        }
-                        else
-                        {
-                            // For example, object T have a property named "Instruction" with data type is List<Instruction>
-                            // Instruction object have a property named "Image" with data type is string
-                            // The fieldName that front-end passed to back-end will be "Instruction_Image_1"
-                            var splitValues = fieldName.Split('_');
-                            if (splitValues.Length != 3)
-                            {
-                                throw new Exception("Invalid Field Name");
-                            }
-
-                            var fieldNameSplit = splitValues[0];
-                            var subFieldName = splitValues[1];
-                            var key = splitValues[2];
-
-                            property = properties.FirstOrDefault(p => p.Name.ToLowerInvariant() == fieldNameSplit);
-                            if (property == null)
-                            {
-                                throw new Exception("Unknown Field Name");
-                            }
-
-                            MappingObjectData(obj, property, fileID, subFieldName, int.Parse(key));
-                        }
+                        // Normal signature
+                        CustomMapper.MappingObjectData(obj, property, value);
                     }
                 }
-                else if (HasFormDataContentDisposition(contentDisposition))
-                {
-                    var encoding = GetEncoding(section);
-                    using (var streamReader = new StreamReader(section.Body, encoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
-                    {
-                        var value = await streamReader.ReadToEndAsync();
-                        if (string.Equals(value, "undefined", StringComparison.OrdinalIgnoreCase))
-                        {
-                            value = string.Empty;
-                        }
 
-                        if (property != null)
-                        {
-                            MappingObjectData(obj, property, value);
-                        }
-                    }
-                }
-                else
+                if (MultipartHandler.HasFileContentDisposition(disposition))
                 {
-                    throw new Exception("Unknown Content Disposition");
+                    // Handle file data
+                    var fileSection = section.AsFileSection() ??
+                        throw new NovaanException(
+                            ErrorCodes.CONTENT_DISPOSITION_INVALID,
+                            HttpStatusCode.BadRequest
+                        );
+
+                    var fileStream = await ProcessStreamContent(fileSection);
+
+                    var fileId = System.Guid.NewGuid().ToString() +
+                            Path.GetExtension(fileSection.FileName);
+                    _delayExecutioner.AppendAction(
+                        async () => await _s3Service.UploadFileAsync(fileStream, fileId)
+                    );
+
+                    var fieldName = fileSection.Name;
+                    var property = properties.FirstOrDefault(p => p.Name == fieldName);
+
+                    /*
+                     * Indicate that this is an list-related value with following signature:
+                     * PropertyName_Index_NestedProperty
+                    */
+                    if (property == null)
+                    {
+                        HandleListSection(obj, fieldName, fileId);
+                    }
+                    else
+                    {
+                        // Normal signature for Video
+                        CustomMapper.MappingObjectData(obj, property, fileId);
+                    }
+                    // Will close stream when S3 finish uploading
                 }
 
                 section = await reader.ReadNextSectionAsync();
             }
-
             return obj;
         }
 
-
-        private static void MappingObjectData<T>(T? obj, PropertyInfo? property, string value, string subFieldName = "", int key = 0)
-        {
-            if (property == null)
-            {
-                throw new Exception("Unknown Property");
-            }
-
-            Type propertyType = property.PropertyType;
-
-            // Handle special cases for enums
-            if (propertyType.IsEnum)
-            {
-                var enumValue = Enum.Parse(propertyType, value);
-                property.SetValue(obj, enumValue);
-            }
-
-            // Handle special cases for TimeSpan
-            else if (propertyType == typeof(TimeSpan))
-            {
-                if (TimeSpan.TryParse(value, out var timeSpan))
-                {
-                    property.SetValue(obj, timeSpan);
-                }
-            }
-
-            // Handle special cases for lists of objects
-            else if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
-            {
-                var listItemType = propertyType.GetGenericArguments()[0];
-                var list = property.GetValue(obj) as IList;
-                var listItemProperties = listItemType.GetProperties();
-
-                if (key != 0 && key <= list.Count)
-                {
-                    var listItem = list[key - 1];
-                    var subProperty = listItemProperties.FirstOrDefault(p => p.Name.ToLower() == subFieldName.ToLower());
-
-                    if (subProperty != null)
-                    {
-                        var convertedValue = Convert.ChangeType(value, subProperty.PropertyType);
-                        subProperty.SetValue(listItem, convertedValue);
-                    }
-                }
-                else
-                {
-                    var listValue = JsonConvert.DeserializeObject(value, propertyType);
-                    property.SetValue(obj, listValue);
-                }
-            }
-            // Default case: convert value to the property type
-            else
-            {
-                var convertedValue = value as IConvertible;
-                if (convertedValue != null)
-                {
-                    var targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-                    var convertedObject = convertedValue.ToType(targetType, null);
-                    property.SetValue(obj, convertedObject);
-                }
-            }
-        }
-
-        private Encoding GetEncoding(MultipartSection section)
-        {
-            var hasMediaTypeHeader =
-                MediaTypeHeaderValue.TryParse(section.ContentType, out var mediaType);
-
-            if (!hasMediaTypeHeader || Encoding.UTF8.Equals(mediaType.Encoding))
-            {
-                return Encoding.UTF8;
-            }
-
-            return mediaType.Encoding;
-        }
-
-        private async Task<MemoryStream> ProcessStreamedFile(MultipartSection section, ContentDispositionHeaderValue contentDisposition,
-    string[] permittedExtensions, long sizeLimit)
-        {
-            var memoryStream = new MemoryStream();
-            await section.Body.CopyToAsync(memoryStream);
-
-            // Check if the file is empty or exceeds the size limit.
-            if (memoryStream.Length == 0)
-            {
-                throw new Exception("File is empty");
-            }
-
-            if (memoryStream.Length > sizeLimit)
-            {
-                var megabyteSizeLimit = sizeLimit / 1024 / 1024;
-                throw new Exception($"The file exceeds {megabyteSizeLimit:N1} MB.");
-            }
-
-            var fileName = contentDisposition.FileName.ToString();
-
-            //validate file extension and signature
-            _fileService.ValidateFileExtensionAndSignature(fileName, memoryStream, permittedExtensions);
-
-            return memoryStream;
-        }
-
-
-        private bool HasFormDataContentDisposition(ContentDispositionHeaderValue contentDisposition)
-        {
-            //  For exmaple, Content-Disposition: form-data; name="subdirectory";
-            return contentDisposition.DispositionType.Equals("form-data")
-                && string.IsNullOrEmpty(contentDisposition.FileName.Value)
-                && string.IsNullOrEmpty(contentDisposition.FileNameStar.Value);
-        }
-
-        private bool HasFileContentDisposition(ContentDispositionHeaderValue contentDisposition)
-        {
-            // For example, Content-Disposition: form-data; name="files"; filename="OnScreenControl_7.58.zip"
-            return contentDisposition.DispositionType.Equals("form-data")
-                && (!string.IsNullOrEmpty(contentDisposition.FileName.Value)
-                    || !string.IsNullOrEmpty(contentDisposition.FileNameStar.Value));
-        }
-
-        private static string GetBoundary(MediaTypeHeaderValue contentType)
-        {
-            var boundary = HeaderUtilities.RemoveQuotes(contentType.Boundary).Value;
-
-            if (string.IsNullOrWhiteSpace(boundary))
-            {
-                throw new InvalidDataException("Missing content-type boundary.");
-            }
-
-            if (boundary.Length > MULTIPART_BOUNDARY_LENGTH_LIMIT)
-            {
-                throw new InvalidDataException(
-                    $"Multipart boundary length limit {MULTIPART_BOUNDARY_LENGTH_LIMIT} exceeded.");
-            }
-
-            return boundary;
-        }
-
-
-        private bool IsMultipartContentType(string? contentType)
-        {
-            return !string.IsNullOrEmpty(contentType)
-                  && contentType.IndexOf("multipart/", StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        public Task ValidateFileMetadata(FileInformationDTO fileMetadataDTO)
+        public bool ValidateFileMetadata(FileInformationDTO fileMetadataDTO)
         {
             // Check if file extension is in permitted extensions
-            if (!_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension) || !_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
+            if (!_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension) &&
+                !_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
             {
-                throw new Exception("Invalid file extension");
+                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
             }
 
-            // Check if file size is null
-            if (fileMetadataDTO.FileSize == null)
-            {
-                throw new Exception("File size is null");
-            }
-
-            // If file is image
+            // Image requirements check
             if (_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
             {
-                // Check if size is at least 640 x 480
                 if (fileMetadataDTO.Width < 640 || fileMetadataDTO.Height < 480)
                 {
-                    throw new Exception("Image size is too small");
+                    throw new NovaanException(ErrorCodes.CONTENT_IMG_RESO_INVALID, HttpStatusCode.BadRequest);
                 }
 
                 if (fileMetadataDTO.FileSize > _imageSizeLimit)
                 {
-                    throw new Exception("File is too large");
+                    throw new NovaanException(ErrorCodes.CONTENT_IMG_SIZE_INVALID, HttpStatusCode.BadRequest);
                 }
-
             }
 
-            // If file is video
+            // Video requirements check
             if (_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension))
             {
-                // Check if it has ratio is 16:9
                 if (fileMetadataDTO.Width / fileMetadataDTO.Height != 16 / 9)
                 {
-                    throw new Exception("Video ratio is not 16:9");
+                    throw new NovaanException(ErrorCodes.CONTENT_VID_RESO_INVALID, HttpStatusCode.BadRequest);
                 }
 
-                // Check if video duration is less than 2 minutes
                 if (fileMetadataDTO.VideoDuration > TimeSpan.FromMinutes(2))
                 {
-                    throw new Exception("Video duration is too long");
+                    throw new NovaanException(ErrorCodes.CONTENT_VID_LEN_INVALID, HttpStatusCode.BadRequest);
                 }
 
                 if (fileMetadataDTO.FileSize > _videoSizeLimit)
                 {
-                    throw new Exception("Video size is too large");
+                    throw new NovaanException(ErrorCodes.CONTENT_VID_SIZE_INVALID, HttpStatusCode.BadRequest);
                 }
             }
-            return Task.CompletedTask;
+
+            return true;
         }
 
-        public async Task UploadRecipe(Recipe recipe)
+        public async Task UploadRecipe(Recipe recipe, string creatorId)
+        {
+            // Validate recipe object against its model annotation
+            var context = new ValidationContext(recipe, serviceProvider: null, items: null);
+            var validationResults = new List<ValidationResult>();
+            bool isValid = Validator.TryValidateObject(recipe, context, validationResults, true);
+            if (!isValid)
+            {
+                throw new NovaanException(
+                    ErrorCodes.CONTENT_FIELD_INVALID,
+                    HttpStatusCode.BadRequest,
+                    validationResults.FirstOrDefault().ErrorMessage ?? string.Empty
+                );
+            }
+            if (recipe.Ingredients.Count == 0)
+            {
+                throw new NovaanException(ErrorCodes.FIELD_REQUIRED, HttpStatusCode.BadRequest);
+            }
+            if (recipe.Instructions.Count == 0)
+            {
+                throw new NovaanException(ErrorCodes.FIELD_REQUIRED, HttpStatusCode.BadRequest);
+            }
+            if (recipe.CookTime.CompareTo(COOK_MAX) > 0)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_COOK_TIME_TOO_LONG, HttpStatusCode.BadRequest);
+            }
+            if (recipe.PrepTime.CompareTo(PREP_MAX) > 0)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_PREP_TIME_TOO_LONG, HttpStatusCode.BadRequest);
+            }
+
+            // Try to push to S3 here
+            try
+            {
+                await _delayExecutioner.Execute();
+            }
+            catch (AmazonS3Exception e)
+            {
+                throw new NovaanException(
+                    ErrorCodes.S3_UNAVAILABLE,
+                    HttpStatusCode.InternalServerError,
+                    e.Message
+                );
+            }
+            _delayExecutioner.Cleanup();
+
+            // Set remaining missing fields
+            recipe.CreatorId = creatorId;
+            recipe.Status = Status.Pending;
+            try
+            {
+                await _mongoService.Recipes.InsertOneAsync(recipe);
+            }
+            catch
+            {
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
+            }
+        }
+
+        public async Task UploadTips(CulinaryTip culinaryTips, string creatorId)
+        {
+            // Validate tips and tricks field here
+            var context = new ValidationContext(culinaryTips, serviceProvider: null, items: null);
+            var validationResults = new List<ValidationResult>();
+            bool isValid = Validator.TryValidateObject(culinaryTips, context, validationResults, true);
+            if (!isValid)
+            {
+                throw new NovaanException(
+                    ErrorCodes.CONTENT_FIELD_INVALID,
+                    HttpStatusCode.BadRequest,
+                    validationResults.FirstOrDefault().ErrorMessage ?? string.Empty
+                );
+            }
+
+            // Set remaning missing field
+            culinaryTips.CreatorId = creatorId;
+            culinaryTips.Status = Status.Pending;
+            try
+            {
+                await _mongoService.CulinaryTips.InsertOneAsync(culinaryTips);
+            }
+            catch
+            {
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
+            }
+        }
+
+        public PostDTO GetPosts()
         {
             try
             {
-                _mongoService.Recipes.InsertOne(recipe);
+                var recipes = _mongoService.Recipes.Find(r => r.Status == Status.Approved).ToList();
+                var culinaryTips = _mongoService.CulinaryTips.Find(c => c.Status == Status.Approved).ToList();
+                return new PostDTO
+                {
+                    RecipeList = recipes,
+                    CulinaryTips = culinaryTips
+                };
             }
-            catch (System.Exception)
+            catch
             {
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
+            }
+        }
 
-                throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
+        private static void HandleListSection<T>(T? obj, string fieldName, string value)
+        {
+            var splitValues = fieldName.Split("_");
+            if (splitValues.Length != 3)
+            {
+                throw new NovaanException(
+                    ErrorCodes.CONTENT_FIELD_INVALID,
+                    HttpStatusCode.BadRequest
+                );
+            }
+
+            // splitValues[0] should always be "Instruction"
+            var properties = typeof(T).GetProperties();
+            var property = properties.FirstOrDefault(p => p.Name == splitValues[0]) ??
+                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
+
+
+            bool canParse = int.TryParse(splitValues[1], out var nestedFieldKey);
+            if (!canParse)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
+            }
+            var nestedFieldName = splitValues[2];
+
+            CustomMapper.MappingObjectData(obj, property, value, nestedFieldName, nestedFieldKey);
+        }
+
+        private async Task<MemoryStream> ProcessStreamContent(FileMultipartSection section)
+        {
+            var fileStream = section.FileStream ??
+                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
+            var memStream = new MemoryStream();
+            await fileStream.CopyToAsync(memStream);
+
+            // Check if the file is empty
+            if (fileStream == null || memStream == null || memStream.Length == 0)
+            {
+                throw new Exception("File is empty");
+            }
+
+            var extension = Path.GetExtension(section.FileName);
+            if (extension == null)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
+            }
+
+            var isImage = _permittedImageExtensions.Contains(extension);
+            var isVideo = isImage ? false : _permittedVideoExtensions.Contains(extension);
+            if (!isImage && !isVideo)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
+            }
+
+            if (isImage)
+            {
+                if (fileStream.Length > _imageSizeLimit)
+                {
+                    throw new NovaanException(ErrorCodes.CONTENT_IMG_SIZE_INVALID, HttpStatusCode.BadRequest);
+                }
+                ValidateFileExtensionAndSignature(extension, memStream, _permittedImageExtensions);
+            }
+
+            if (isVideo)
+            {
+                if (fileStream.Length > _videoSizeLimit)
+                {
+                    throw new NovaanException(ErrorCodes.CONTENT_VID_SIZE_INVALID, HttpStatusCode.BadRequest);
+                }
+                ValidateFileExtensionAndSignature(extension, memStream, _permittedVideoExtensions);
+            }
+
+            return memStream;
+        }
+
+        private static void ValidateFileExtensionAndSignature(
+            string extension,
+            MemoryStream data,
+            string[] permittedExtensions
+        )
+        {
+            var inspector = new FileFormatInspector();
+            var fileFormat = inspector.DetermineFileFormat(data);
+
+            // JPG and JPEG is the same
+            var contentExt = "." + fileFormat?.Extension;
+            if (contentExt == ".jpg")
+            {
+                contentExt = ".jpeg";
+            }
+
+            if (
+                fileFormat == null ||
+                !permittedExtensions.Contains(contentExt) ||
+                extension != contentExt
+            )
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
             }
         }
     }

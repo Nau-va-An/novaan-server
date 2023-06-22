@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Linq.Expressions;
 using System.Net;
 using NovaanServer.ExceptionLayer.CustomExceptions;
+using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using Utils.Json;
 
 namespace NovaanServer.ExceptionLayer
@@ -33,38 +35,48 @@ namespace NovaanServer.ExceptionLayer
         {
             // Filter exceptions to derive status code
             var response = context.Response;
-            response.ContentType = "application/json";
-            switch (exception)
-            {
-                case BadHttpRequestException ex:
-                    response.StatusCode = (int)HttpStatusCode.BadRequest;
-                    break;
-                case UnauthorizedAccessException ex:
-                    response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                    break;
-                default:
-                    response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    break;
-            }
 
-            // Create custom response based on pre-defined format
-            var customResponse = new BaseErrResponse()
+            response.ContentType = "application/json";
+            response.StatusCode = exception switch
             {
-                Success = false,
-                Body = new
-                {
-                    Message = exception.Message
-                }
+                NovaanException ex => (int)ex.StatusCode,
+                _ => (int)HttpStatusCode.InternalServerError,
             };
 
+            var responseMessage = CustomJson.Stringify<BaseErrResponse>(
+                exception switch
+                {
+                    NovaanException ex => new BaseErrResponse
+                    {
+                        Success = false,
+                        ErrCode = ex.ErrCode,
+                        Message = ErrorCodes.ErrorNameDictionary.GetValueOrDefault(ex.ErrCode)
+                    },
+                    Exception ex => new BaseErrResponse
+                    {
+                        Success = false,
+                        ErrCode = ErrorCodes.SERVER_UNAVAILABLE,
+                        Message = ex.Message
+                    }
+                });
+
             // Log the error for later debugging and inspection
-            _logger.LogError("Error occured at {endpoint} with message: {message}",
+            _logger.LogError("Error occured at {endpoint} with stack trade: {message}",
                 context.GetEndpoint(),
                 exception.StackTrace
             );
 
-            var result = CustomJson.Stringify<BaseErrResponse>(customResponse);
-            await context.Response.WriteAsync(result);
+            await context.Response.WriteAsync(responseMessage);
+        }
+
+        private static string GetPropertyName<T>(Expression<Func<T>> propertyLamba)
+        {
+            var memberExpress = propertyLamba.Body as MemberExpression;
+            if (memberExpress == null)
+            {
+                throw new ArgumentException("Must pass a lambda");
+            }
+            return memberExpress.Member.Name;
         }
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Amazon.S3.Model;
 using System.Net;
 using Microsoft.AspNetCore.WebUtilities;
+using Amazon.S3.Transfer;
 
 namespace S3Connector
 {
@@ -58,19 +59,32 @@ namespace S3Connector
             return request.Key;
         }
 
-        public async Task<string> UploadFileAsync(MemoryStream fileStream, MultipartSection section)
+        public async Task<string> UploadFileAsync(Stream fileStream, string fileName)
         {
-            var request = new PutObjectRequest()
+            try
             {
-                BucketName = _bucketName,
-                Key = System.Guid.NewGuid().ToString() + Path.GetExtension(section.AsFileSection().FileName),
-                // make fileStream open to read
-                InputStream = fileStream
-            };
-            request.Metadata.Add("Content-Type", section.ContentType);
-            var response = await _s3Client.PutObjectAsync(request);
-            return request.Key;
+                var fileTransferUtils = new TransferUtility(_s3Client);
+                var fileTransferReq = new TransferUtilityUploadRequest
+                {
+                    BucketName = _bucketName,
+                    Key = fileName,
+                    InputStream = fileStream,
+                };
+                await fileTransferUtils.UploadAsync(fileTransferReq);
+                return fileTransferReq.Key;
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                // Always close the stream for safety
+                fileStream.Close();
+            }
+
         }
+
         // Return a limited time download link
         public string DownloadFileAsync(string keyId)
         {
@@ -85,7 +99,8 @@ namespace S3Connector
             try
             {
                 return _s3Client.GetPreSignedURL(downloadReq);
-            } catch
+            }
+            catch
             {
                 // Throw custom error here
                 return "";

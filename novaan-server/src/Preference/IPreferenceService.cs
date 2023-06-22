@@ -4,8 +4,8 @@ namespace NovaanServer.src.Preference
 {
     public interface IPreferenceService
     {
-        PreferenceDTO GetAllPreferences();
-        UserPreferenceDTO GetPreference(string userId);
-        Task UpdatePreference(UserPreferenceDTO userPreferenceDTO);
+        AllPreferencesDTO GetAllPreferences();
+        Task<UserPreferenceDTO> GetUserPreferences(string userId);
+        Task UpdateUserPreferences(string userId, UserPreferenceDTO userPreferenceDTO);
     }
 }

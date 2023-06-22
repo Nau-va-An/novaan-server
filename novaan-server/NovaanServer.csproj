@@ -11,6 +11,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.16" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.5.0" />
+    <PackageReference Include="FileSignatures" Version="4.4.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,11 +24,15 @@
     <None Remove="src\ExceptionLayer\CustomExceptions\" />
     <None Remove="src\Content\" />
     <None Remove="src\Content\DTOs\" />
-    <None Remove="src\Filter\" />
     <None Remove="src\Common\" />
     <None Remove="src\Common\DTOs\" />
     <None Remove="src\Common\Attributes\" />
     <None Remove="src\Developer\DTOs\" />
+    <None Remove="src\Admin\" />
+    <None Remove="src\Admin\DTOs\" />
+    <None Remove="src\Common\Filter\" />
+    <None Remove="src\Content\FormHandler\" />
+    <None Remove="src\Common\Utils\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\" />
@@ -34,20 +40,21 @@
     <Folder Include="src\ExceptionLayer\CustomExceptions\" />
     <Folder Include="src\Content\" />
     <Folder Include="src\Content\DTOs\" />
-    <Folder Include="src\Filter\" />
     <Folder Include="src\Common\" />
     <Folder Include="src\Common\DTOs\" />
     <Folder Include="src\Common\Attributes\" />
     <Folder Include="src\Developer\DTOs\" />
+    <Folder Include="src\Admin\" />
+    <Folder Include="src\Admin\DTOs\" />
+    <Folder Include="src\Common\Filter\" />
+    <Folder Include="src\Content\FormHandler\" />
+    <Folder Include="src\Common\Utils\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">
       <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
     </ProjectReference>
     <ProjectReference Include="..\S3Connector\S3Connector.csproj">
-      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
-    </ProjectReference>
-    <ProjectReference Include="..\FileServer\FileServer.csproj">
       <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
     </ProjectReference>
   </ItemGroup>

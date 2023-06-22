@@ -4,12 +4,12 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace MongoConnector.Models
 {
     public class Account
-	{
-		[BsonId]
-		[BsonRepresentation(BsonType.ObjectId)]
-		public string Id { get; set; }
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
 
-		public string Username { get; set; }
+        public string Username { get; set; }
 
         public string Email { get; set; }
 
@@ -19,17 +19,17 @@ namespace MongoConnector.Models
 
         public bool Verified { get; set; } = false;
 
-		public bool EmailSent { get; set; } = false;
+        public bool EmailSent { get; set; } = false;
 
-		// Google ID
-		public string? GoogleId { get; set; }
+        // Google ID
+        public string? GoogleId { get; set; }
 
-	}
+    }
 
-	public enum Role
-	{
-		User,
-		Admin
-	}
+    public enum Role
+    {
+        User,
+        Admin
+    }
 }
 

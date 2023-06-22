@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using NovaanServer.src.Common.Attributes;
 using NovaanServer.src.Developer.DTOs;
 using System.Net;
+using NovaanServer.src.ExceptionLayer.CustomExceptions;
 
 namespace NovaanServer.Developer
 {
@@ -25,9 +26,9 @@ namespace NovaanServer.Developer
         [HttpGet("health")]
         public HealthCheckRes GetHealthCheck()
         {
-            if(_devService.IsServerHealthy())
+            if (_devService.IsServerHealthy())
             {
-                Response.StatusCode = (int) HttpStatusCode.OK;
+                Response.StatusCode = (int)HttpStatusCode.OK;
                 return new HealthCheckRes
                 {
                     Message = "Server is up running"
@@ -88,7 +89,7 @@ namespace NovaanServer.Developer
         [HttpGet("exec")]
         public async Task<IActionResult> Execute()
         {
-            return Ok();
+            throw new NovaanException(ErrorCodes.RT_JWT_UNAUTHORIZED);
         }
     }
 }

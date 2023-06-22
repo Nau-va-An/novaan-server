@@ -1,10 +1,7 @@
-﻿using System;
-using System.Security.Cryptography;
-using System.Text;
-using Microsoft.AspNetCore.Mvc;
+using System.Net;
+using System.Net.Http.Headers;
 using MongoConnector;
 using MongoConnector.Models;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using NovaanServer.Auth.DTOs;
 using NovaanServer.src.Auth.DTOs;
@@ -28,50 +25,42 @@ namespace NovaanServer.Auth
             var foundUser = (await _mongoService.Accounts
                  .FindAsync(
                     acc => acc.Email == signInDTO.UsernameOrEmail ||
-                     acc.Username == signInDTO.UsernameOrEmail
+                     acc.Username == ExtractUsernameFromEmail(signInDTO.UsernameOrEmail)
                  ))
-                 .FirstOrDefault();
-            if (foundUser == null)
-            {
-                throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
-            }
+                 .FirstOrDefault()
+                 ?? throw new NovaanException(ErrorCodes.EMAIL_OR_PASSWORD_NOT_FOUND, HttpStatusCode.BadRequest);
 
             var hashPassword = CustomHash.GetHashString(signInDTO.Password);
             if (foundUser.Password != hashPassword)
             {
-                throw new BadHttpRequestException(ExceptionMessage.EMAIL_OR_PASSWORD_NOT_FOUND);
+                throw new NovaanException(
+                    ErrorCodes.EMAIL_OR_PASSWORD_NOT_FOUND,
+                    HttpStatusCode.BadRequest
+                );
             }
 
             return foundUser.Id;
         }
 
-        public Task<bool> SignInGoogle()
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task<bool> SignUpWithCredentials(SignUpDTO signUpDTO)
         {
-            var emailExisted = await checkEmailExist(signUpDTO.Email);
+            var emailExisted = await CheckEmailExist(signUpDTO.Email);
             if (emailExisted)
             {
-                throw new BadHttpRequestException(ExceptionMessage.EMAIL_TAKEN);
+                throw new NovaanException(ErrorCodes.EMAIL_TAKEN_BASIC, HttpStatusCode.BadRequest);
             }
 
-            var usernameExisted = await checkUsernameExist(signUpDTO.Username);
-            if (usernameExisted)
+            // Add account + user to database
+            try
             {
-                throw new BadHttpRequestException(ExceptionMessage.USERNAME_TAKEN);
+                var password = CustomHash.GetHashString(signUpDTO.Password);
+                await CreateNewAccount(signUpDTO.Email, password, null);
+                await CreateNewUser(signUpDTO.DisplayName);
             }
-
-            // Add account to database
-            var newAccount = new Account
+            catch
             {
-                Username = signUpDTO.Username,
-                Email = signUpDTO.Email,
-                Password = CustomHash.GetHashString(signUpDTO.Password),
-            };
-            await _mongoService.Accounts.InsertOneAsync(newAccount);
+                throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
+            }
 
             // TODO: Send confirmation email
             // This should be push into a message queue to be processed by background job
@@ -79,49 +68,43 @@ namespace NovaanServer.Auth
             return true;
         }
 
-        public async Task<bool> GoogleAuthentication(GoogleOauthDTO googleOAuthDTO)
+        public async Task<string> GoogleAuthentication(GoogleOAuthDTO googleOAuthDTO)
         {
-            // Check if google id exists
-            var userGoogleId = await checkGoogleIdExist(googleOAuthDTO.Sub);
-            if (!userGoogleId)
+            var ggAcountInfo = await GetGoogleAccountInfo(googleOAuthDTO);
+
+            // Find existing account associated with fetched account's googleId
+            var foundAccount = _mongoService.Accounts
+                .Find(acc => acc.GoogleId == ggAcountInfo.GoogleId)
+                .FirstOrDefault();
+
+            // Create new account if none found
+            if (foundAccount == null)
             {
-                // Add account to database
-                var newAccount = new Account
+                // Reject request if email existed
+                var emailExisted = await CheckEmailExist(ggAcountInfo.Email);
+                if (emailExisted)
                 {
-                    Username = googleOAuthDTO.Name,
-                    Email = googleOAuthDTO.Email??"",
-                    Verified = true,
-                    GoogleId = googleOAuthDTO.Sub,
-                };
+                    throw new NovaanException(ErrorCodes.EMAIL_TAKEN_BASIC, HttpStatusCode.BadRequest);
+                }
+
                 try
                 {
-                    await _mongoService.Accounts.InsertOneAsync(newAccount);
+                    var accountId = await CreateNewAccount(ggAcountInfo.Email, null, ggAcountInfo.GoogleId);
+                    await CreateNewUser(ggAcountInfo.Name);
+
+                    return accountId;
                 }
                 catch
                 {
-                    throw new Exception(ExceptionMessage.SERVER_UNAVAILABLE);
+                    throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
                 }
             }
-            return true;
-        }
 
-        // Check if google id exists
-        private async Task<bool> checkGoogleIdExist(string? googleId)
-        {
-            if (string.IsNullOrEmpty(googleId))
-            {
-                return false;
-            }
-            var foundAccount = await _mongoService.Accounts
-                .Find(
-                    acc => acc.GoogleId == googleId
-                )
-                .FirstOrDefaultAsync();
-            return foundAccount != null;
+            return foundAccount.Id;
         }
 
         // Check if email exists
-        private async Task<bool> checkEmailExist(string email)
+        private async Task<bool> CheckEmailExist(string email)
         {
             var foundAccount = await _mongoService.Accounts
                 .Find(
@@ -131,15 +114,59 @@ namespace NovaanServer.Auth
             return foundAccount != null;
         }
 
-        //Check if username exists
-        private async Task<bool> checkUsernameExist(string? username)
+        private static async Task<GoogleAccountInfoDTO> GetGoogleAccountInfo(GoogleOAuthDTO googleOAuthDTO)
         {
-            var foundAccount = await _mongoService.Accounts
-                .Find(
-                    acc => acc.Username == username
-                )
-                .FirstOrDefaultAsync();
-            return foundAccount != null;
+            // Request Google account info from given access token
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders
+                .Accept
+                .Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", googleOAuthDTO.Token);
+
+            var response = await httpClient.GetAsync("https://www.googleapis.com/userinfo/v2/me");
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new NovaanException(ErrorCodes.GG_UNAVAILABLE);
+            }
+
+            var ggAcountInfo = await response.Content.ReadFromJsonAsync<GoogleAccountInfoDTO>()
+                ?? throw new Exception("Cannot parse Google account info with selected format");
+
+            return ggAcountInfo;
+        }
+
+        private async Task<string> CreateNewAccount(string email, string? password = null, string? googleId = null)
+        {
+            var newAccount = new Account
+            {
+                Username = ExtractUsernameFromEmail(email),
+                Email = email,
+                Verified = true,
+                GoogleId = googleId,
+                // Generate random password when people sign up with Google account
+                Password = password ?? Guid.NewGuid().ToString(),
+            };
+            await _mongoService.Accounts.InsertOneAsync(newAccount);
+
+            return newAccount.Id;
+        }
+
+        private async Task<string> CreateNewUser(string displayName)
+        {
+            var newUser = new User
+            {
+                DisplayName = displayName
+            };
+
+            await _mongoService.Users.InsertOneAsync(newUser);
+
+            return newUser.Id;
+        }
+
+        private static string ExtractUsernameFromEmail(string email)
+        {
+            return email[..email.IndexOf("@")];
         }
     }
 }

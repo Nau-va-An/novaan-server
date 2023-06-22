@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace NovaanServer.src.Common.Attributes
 {
     [AttributeUsage(AttributeTargets.Method)]
-    public class DevelopmentOnlyAttribute: Attribute, IResourceFilter
-	{
+    public class DevelopmentOnlyAttribute : Attribute, IResourceFilter
+    {
         public void OnResourceExecuted(ResourceExecutedContext context)
         {
             // Do nothing
@@ -16,7 +16,7 @@ namespace NovaanServer.src.Common.Attributes
         {
             // Only allow access when on development mode
             var env = context.HttpContext.RequestServices.GetService<IWebHostEnvironment>();
-            if(!env.IsDevelopment())
+            if (!env.IsDevelopment())
             {
                 context.Result = new NotFoundResult();
             }
