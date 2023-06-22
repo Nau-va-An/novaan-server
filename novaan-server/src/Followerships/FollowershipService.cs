@@ -90,5 +90,21 @@ namespace NovaanServer.src.Followerships
                 throw new NovaanException(ErrorCodes.FOLLOWERSHIP_NOT_DELETED, HttpStatusCode.InternalServerError);
             }
         }
+
+        public List<User> GetFollowers(string userId)
+        {
+            var followers = _mongodbService.Followerships.Find(f => f.FollowingId == userId).ToList();
+            var followerIds = followers.Select(f => f.FollowerId).ToList();
+            var followerUsers = _mongodbService.Users.Find(u => followerIds.Contains(u.Id)).ToList();
+            return followerUsers;
+        }
+
+        public List<User> GetFollowing(string userId)
+        {
+            var following = _mongodbService.Followerships.Find(f => f.FollowerId == userId).ToList();
+            var followingIds = following.Select(f => f.FollowingId).ToList();
+            var followingUsers = _mongodbService.Users.Find(u => followingIds.Contains(u.Id)).ToList();
+            return followingUsers;
+        }
     }
 }
