@@ -34,6 +34,8 @@
     <None Remove="src\Content\FormHandler\" />
     <None Remove="src\Common\Utils\" />
     <None Remove="src\Followerships\" />
+    <None Remove="src\Profile\" />
+    <None Remove="src\Profile\DTOs\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\" />
@@ -51,6 +53,8 @@
     <Folder Include="src\Content\FormHandler\" />
     <Folder Include="src\Common\Utils\" />
     <Folder Include="src\Followerships\" />
+    <Folder Include="src\Profile\" />
+    <Folder Include="src\Profile\DTOs\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">
