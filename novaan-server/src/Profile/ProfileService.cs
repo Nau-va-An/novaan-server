@@ -5,7 +5,6 @@ using MongoConnector.Enums;
 using MongoConnector.Models;
 using MongoDB.Driver;
 using NovaanServer.src.Common.DTOs;
-using NovaanServer.src.Common.Utils;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using NovaanServer.src.Profile.DTOs;
 
@@ -57,6 +56,24 @@ namespace NovaanServer.src.Profile
             }
 
             return recipes.Skip(pagination.Start).Take(pagination.Limit).ToList();
+        }
+
+        public async Task<List<CulinaryTip>> GetTips(string currentUserId, string userID, Pagination pagination)
+        {
+            var currentUser = (await _mongoDBService.Users.FindAsync(u => u.AccountID == currentUserId)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            var user = (await _mongoDBService.Users.FindAsync(u => u.Id == userID)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.PROFILE_USER_NOT_FOUND, HttpStatusCode.NotFound);
+            var tips = new List<CulinaryTip>();
+            if (currentUser.AccountID == user.AccountID)
+            {
+                // get all tips of the user
+                tips = (await _mongoDBService.CulinaryTips.FindAsync(t => t.CreatorId == user.AccountID)).ToList();
+            }
+            else
+            {
+                // get public tips of the user
+                tips = (await _mongoDBService.CulinaryTips.FindAsync(t => t.CreatorId == user.AccountID && t.Status == Status.Approved)).ToList();
+            }
+            return tips.Skip(pagination.Start).Take(pagination.Limit).ToList();
         }
     }
 }

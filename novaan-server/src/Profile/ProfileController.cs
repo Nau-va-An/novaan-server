@@ -37,12 +37,12 @@ namespace NovaanServer.src.Profile
         }
 
         // Get tips of a user
-        // [HttpGet("/profile/{userID}/tips")]
-        // public async Task<List<CulinaryTip>> GetTips(string userID)
-        // {
-        //     var currentUserId = Request.GetUserId()?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-        //     return await _profileService.GetTips(currentUserId,userID);
-        // }
+        [HttpGet("/profile/{userID}/tips")]
+        public async Task<List<CulinaryTip>> GetTips(string userID, [FromQuery] Pagination pagination)
+        {
+            var currentUserId = Request.GetUserId() ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            return await _profileService.GetTips(currentUserId, userID, pagination);
+        }
 
         // // Get saved post of a user
         // [HttpGet("/profile/{userID}/saved")]
