@@ -26,7 +26,7 @@ namespace NovaanServer.src.Profile
             User user = (await _mongoDBService.Users.FindAsync(u => u.Id == userID)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.PROFILE_USER_NOT_FOUND, HttpStatusCode.NotFound);
             // check if current user is following the user
             bool isFollowing = (await _mongoDBService.Followerships.FindAsync(f => f.FollowerId == currentUser.Id && f.FollowingId == userID)).Any();
-            var recipeList = await GetRecipes(currentUserId, userID, new Pagination{Start = 0, Limit = 10});
+            var recipeList = await GetRecipes(currentUserId, userID, new Pagination { Start = 0, Limit = 10 });
             var profile = new ProfileRESDTO
             {
                 UserName = user.DisplayName,
@@ -43,7 +43,7 @@ namespace NovaanServer.src.Profile
         public async Task<List<Recipe>> GetRecipes(string currentUserId, string userID, Pagination pagination)
         {
             var currentUser = (await _mongoDBService.Users.FindAsync(u => u.AccountID == currentUserId)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            var user = (await _mongoDBService.Users.FindAsync(u => u.AccountID == userID)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.PROFILE_USER_NOT_FOUND, HttpStatusCode.NotFound);
+            var user = (await _mongoDBService.Users.FindAsync(u => u.Id == userID)).FirstOrDefault() ?? throw new NovaanException(ErrorCodes.PROFILE_USER_NOT_FOUND, HttpStatusCode.NotFound);
             var recipes = new List<Recipe>();
             if (currentUser.AccountID == user.AccountID)
             {
