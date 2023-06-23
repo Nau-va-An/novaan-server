@@ -55,7 +55,7 @@ namespace S3Connector
             };
             request.Metadata.Add("Content-Type", file.ContentType);
 
-            var response = await _s3Client.PutObjectAsync(request);
+            await _s3Client.PutObjectAsync(request);
             return request.Key;
         }
 
@@ -70,6 +70,7 @@ namespace S3Connector
                     Key = fileName,
                     InputStream = fileStream,
                 };
+
                 await fileTransferUtils.UploadAsync(fileTransferReq);
                 return fileTransferReq.Key;
             }

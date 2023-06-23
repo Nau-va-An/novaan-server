@@ -10,6 +10,7 @@ using MongoConnector.Models;
 using MongoDB.Driver;
 using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.Content.FormHandler;
+using NovaanServer.src.Content.Settings;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using S3Connector;
 using Utils.UtilClass;
@@ -18,34 +19,10 @@ namespace NovaanServer.src.Content
 {
     public class ContentService : IContentService
     {
-        private const int TITLE_MIN = 1;
-        private const int TITLE_MAX = 55;
-        private const int DESC_MIN = 30;
-        private const int DESC_MAX = 500;
-
-        private const int STEP_MAX = 20;
-        private const int INGR_MAX = 9999;
-        private const int INGR_NAME_MAX = 50;
-
-        private TimeSpan COOK_MAX = TimeSpan.Parse("3.00:59:00"); // 72 hours + 59 minutes
-        private TimeSpan PREP_MAX = TimeSpan.Parse("3.00:59:00"); // 72 hours + 50 minutes
-
-        private readonly long _videoSizeLimit = 20L * 1024L * 1024L; // 20MB
-        private readonly long _imageSizeLimit = 5L * 1024L * 1024L; // 5MB
-
-        private readonly string[] _permittedVideoExtensions = { ".mp4" };
-        private readonly string[] _permittedImageExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
-
         private readonly MongoDBService _mongoService;
         private readonly S3Service _s3Service;
 
         private readonly DelayExecutioner _delayExecutioner = new();
-
-        /// <summary>
-        // ContentService marked as Scoped
-        // => Each request have their own ContentServive, we don't have to worry about race condition
-        /// </summary>
-        private List<MemoryStream> uploadFiles = new List<MemoryStream>();
 
         public ContentService(MongoDBService mongoDBService, S3Service s3Service)
         {
@@ -147,29 +124,24 @@ namespace NovaanServer.src.Content
 
         public bool ValidateFileMetadata(FileInformationDTO fileMetadataDTO)
         {
-            // Check if file extension is in permitted extensions
-            if (!_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension) &&
-                !_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
-            {
-                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
-            }
-
             // Image requirements check
-            if (_permittedImageExtensions.Contains(fileMetadataDTO.FileExtension))
+            if (ContentSettings.PermittedImgExtension.Contains(fileMetadataDTO.FileExtension))
             {
                 if (fileMetadataDTO.Width < 640 || fileMetadataDTO.Height < 480)
                 {
                     throw new NovaanException(ErrorCodes.CONTENT_IMG_RESO_INVALID, HttpStatusCode.BadRequest);
                 }
 
-                if (fileMetadataDTO.FileSize > _imageSizeLimit)
+                if (fileMetadataDTO.FileSize > ContentSettings.ImageSizeLimit)
                 {
                     throw new NovaanException(ErrorCodes.CONTENT_IMG_SIZE_INVALID, HttpStatusCode.BadRequest);
                 }
+
+                return true;
             }
 
             // Video requirements check
-            if (_permittedVideoExtensions.Contains(fileMetadataDTO.FileExtension))
+            if (ContentSettings.PermittedVidExtension.Contains(fileMetadataDTO.FileExtension))
             {
                 if (fileMetadataDTO.Width / fileMetadataDTO.Height != 16 / 9)
                 {
@@ -181,13 +153,15 @@ namespace NovaanServer.src.Content
                     throw new NovaanException(ErrorCodes.CONTENT_VID_LEN_INVALID, HttpStatusCode.BadRequest);
                 }
 
-                if (fileMetadataDTO.FileSize > _videoSizeLimit)
+                if (fileMetadataDTO.FileSize > ContentSettings.VideoSizeLimit)
                 {
                     throw new NovaanException(ErrorCodes.CONTENT_VID_SIZE_INVALID, HttpStatusCode.BadRequest);
                 }
+
+                return true;
             }
 
-            return true;
+            throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
         }
 
         public async Task UploadRecipe(Recipe recipe, string creatorId)
@@ -212,11 +186,11 @@ namespace NovaanServer.src.Content
             {
                 throw new NovaanException(ErrorCodes.FIELD_REQUIRED, HttpStatusCode.BadRequest);
             }
-            if (recipe.CookTime.CompareTo(COOK_MAX) > 0)
+            if (recipe.CookTime.CompareTo(ContentSettings.COOK_MAX) > 0)
             {
                 throw new NovaanException(ErrorCodes.CONTENT_COOK_TIME_TOO_LONG, HttpStatusCode.BadRequest);
             }
-            if (recipe.PrepTime.CompareTo(PREP_MAX) > 0)
+            if (recipe.PrepTime.CompareTo(ContentSettings.PREP_MAX) > 0)
             {
                 throw new NovaanException(ErrorCodes.CONTENT_PREP_TIME_TOO_LONG, HttpStatusCode.BadRequest);
             }
@@ -263,6 +237,21 @@ namespace NovaanServer.src.Content
                     validationResults.FirstOrDefault().ErrorMessage ?? string.Empty
                 );
             }
+
+            // Try to push to S3 here
+            try
+            {
+                await _delayExecutioner.Execute();
+            }
+            catch (AmazonS3Exception e)
+            {
+                throw new NovaanException(
+                    ErrorCodes.S3_UNAVAILABLE,
+                    HttpStatusCode.InternalServerError,
+                    e.Message
+                );
+            }
+            _delayExecutioner.Cleanup();
 
             // Set remaning missing field
             culinaryTips.CreatorId = creatorId;
@@ -341,8 +330,8 @@ namespace NovaanServer.src.Content
                 throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
             }
 
-            var isImage = _permittedImageExtensions.Contains(extension);
-            var isVideo = isImage ? false : _permittedVideoExtensions.Contains(extension);
+            var isImage = ContentSettings.PermittedImgExtension.Contains(extension);
+            var isVideo = !isImage && ContentSettings.PermittedVidExtension.Contains(extension);
             if (!isImage && !isVideo)
             {
                 throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
@@ -350,20 +339,28 @@ namespace NovaanServer.src.Content
 
             if (isImage)
             {
-                if (fileStream.Length > _imageSizeLimit)
+                if (fileStream.Length > ContentSettings.ImageSizeLimit)
                 {
                     throw new NovaanException(ErrorCodes.CONTENT_IMG_SIZE_INVALID, HttpStatusCode.BadRequest);
                 }
-                ValidateFileExtensionAndSignature(extension, memStream, _permittedImageExtensions);
+                ValidateFileExtensionAndSignature(
+                    extension,
+                    memStream,
+                    ContentSettings.PermittedImgExtension
+                );
             }
 
             if (isVideo)
             {
-                if (fileStream.Length > _videoSizeLimit)
+                if (fileStream.Length > ContentSettings.VideoSizeLimit)
                 {
                     throw new NovaanException(ErrorCodes.CONTENT_VID_SIZE_INVALID, HttpStatusCode.BadRequest);
                 }
-                ValidateFileExtensionAndSignature(extension, memStream, _permittedVideoExtensions);
+                ValidateFileExtensionAndSignature(
+                    extension,
+                    memStream,
+                    ContentSettings.PermittedVidExtension
+                );
             }
 
             return memStream;
@@ -387,7 +384,6 @@ namespace NovaanServer.src.Content
 
             if (
                 fileFormat == null ||
-                !permittedExtensions.Contains(contentExt) ||
                 extension != contentExt
             )
             {
