@@ -29,8 +29,6 @@ namespace MongoConnector.Models
         public int FollowerCount { get; set; }
 
         public int FollowingCount { get; set; }
-
-        public List<CulinaryTip> SavedTips { get; set; } = new List<CulinaryTip>();
         public List<SavedPost> SavedPost { get; set; } = new List<SavedPost>();
     }
 }
