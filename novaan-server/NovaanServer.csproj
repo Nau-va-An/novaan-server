@@ -33,6 +33,7 @@
     <None Remove="src\Common\Filter\" />
     <None Remove="src\Content\FormHandler\" />
     <None Remove="src\Common\Utils\" />
+    <None Remove="src\Followerships\" />
     <None Remove="src\Content\Settings\" />
   </ItemGroup>
   <ItemGroup>
@@ -50,6 +51,7 @@
     <Folder Include="src\Common\Filter\" />
     <Folder Include="src\Content\FormHandler\" />
     <Folder Include="src\Common\Utils\" />
+    <Folder Include="src\Followerships\" />
     <Folder Include="src\Content\Settings\" />
   </ItemGroup>
   <ItemGroup>
