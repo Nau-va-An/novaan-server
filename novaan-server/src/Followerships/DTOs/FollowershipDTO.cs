@@ -10,11 +10,11 @@ namespace NovaanServer.src.Followerships.DTOs
         public string UserName { get; set; } = string.Empty;
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public string UserId { get; set; } = string.Empty;
+        public string UserId { get; set; }
 
         public string Avatar { get; set; } = string.Empty;
 
-        public bool IsFollowed { get; set; }
+        // public bool IsFollowed { get; set; }
     }   
 }
 
