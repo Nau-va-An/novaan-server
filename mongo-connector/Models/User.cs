@@ -13,6 +13,9 @@ namespace MongoConnector.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string AccountID { get; set; }
 
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string AccountID { get; set; }
+
         public string DisplayName { get; set; } = string.Empty;
 
         public string ProfilePicture { get; set; } = string.Empty;
@@ -29,6 +32,7 @@ namespace MongoConnector.Models
         public int FollowerCount { get; set; }
 
         public int FollowingCount { get; set; }
+      
         public List<SavedPost> SavedPost { get; set; } = new List<SavedPost>();
     }
 }

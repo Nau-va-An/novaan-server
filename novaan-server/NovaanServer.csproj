@@ -36,6 +36,7 @@
     <None Remove="src\Followerships\" />
     <None Remove="src\Profile\" />
     <None Remove="src\Profile\DTOs\" />
+    <None Remove="src\Content\Settings\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Assets\" />
@@ -55,6 +56,7 @@
     <Folder Include="src\Followerships\" />
     <Folder Include="src\Profile\" />
     <Folder Include="src\Profile\DTOs\" />
+    <Folder Include="src\Content\Settings\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\mongo-connector\MongoConnector.csproj">

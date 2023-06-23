@@ -46,10 +46,11 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public static int FOLLOWERSHIP_NOT_CREATED = 1027;
         public static int USER_NOT_FOLLOWING = 1028;
         public static int FOLLOWERSHIP_NOT_DELETED = 1029;
+        public const int USER_FOLLOWING_ITSELF = 1030;
 
         // Profile
-        public const int PROFILE_USER_NOT_FOUND = 1030;
         public static int FORBIDDEN_PROFILE_CONTENT = 1031;
+
 
         public static Dictionary<int, string> ErrorNameDictionary = typeof(ErrorCodes).GetFields()
                 .Where(f => f.FieldType == typeof(int))
