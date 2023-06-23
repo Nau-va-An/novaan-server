@@ -174,12 +174,12 @@ namespace MongoConnector
             {
                 return MongoDatabase.GetCollection<Followership>(MongoCollections.Followerships);
             }
-            set
-            {
-                var indexKeysDefinition = Builders<Followership>.IndexKeys.Ascending(f => f.FollowerId).Ascending(f => f.FollowingId); // Create index on follower_id and following_id fields
-                var indexModel = new CreateIndexModel<Followership>(indexKeysDefinition); // Create index model
-                value.Indexes.CreateOne(indexModel);    // Create index
-            }
+            // set
+            // {
+            //     var indexKeysDefinition = Builders<Followership>.IndexKeys.Ascending(f => f.FollowerId).Ascending(f => f.FollowingId); // Create index on follower_id and following_id fields
+            //     var indexModel = new CreateIndexModel<Followership>(indexKeysDefinition); // Create index model
+            //     value.Indexes.CreateOne(indexModel);    // Create index
+            // }
         }
 
     }

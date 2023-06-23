@@ -42,11 +42,11 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
 
         // Followership
         public const int USER_NOT_FOUND = 1025;
-        public static int USER_ALREADY_FOLLOWING = 1026;
-        public static int FOLLOWERSHIP_NOT_CREATED = 1027;
-        public static int USER_NOT_FOLLOWING = 1028;
-        public static int FOLLOWERSHIP_NOT_DELETED = 1029;
-        public static int USER_FOLLOWING_ITSELF = 1030;
+        public const int USER_ALREADY_FOLLOWING = 1026;
+        public const int FOLLOWERSHIP_NOT_CREATED = 1027;
+        public const int USER_NOT_FOLLOWING = 1028;
+        public const int FOLLOWERSHIP_NOT_DELETED = 1029;
+        public const int USER_FOLLOWING_ITSELF = 1030;
 
 
         public static Dictionary<int, string> ErrorNameDictionary = typeof(ErrorCodes).GetFields()
