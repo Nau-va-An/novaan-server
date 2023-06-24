@@ -7,7 +7,7 @@ namespace MongoConnector.Models
     public class SavedPost
     {
         [BsonRepresentation(BsonType.ObjectId)]
-        public string PostID { get; set; }
+        public string PostId { get; set; }
 
         public string PostType { get; set; } = string.Empty;
     }

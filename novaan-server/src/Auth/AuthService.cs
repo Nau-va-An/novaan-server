@@ -54,8 +54,8 @@ namespace NovaanServer.Auth
             try
             {
                 var password = CustomHash.GetHashString(signUpDTO.Password);
-                var accountID = await CreateNewAccount(signUpDTO.Email, password, null);
-                await CreateNewUser(signUpDTO.DisplayName, accountID);
+                var accountId = await CreateNewAccount(signUpDTO.Email, password, null);
+                await CreateNewUser(signUpDTO.DisplayName, accountId);
             }
             catch
             {
@@ -157,7 +157,7 @@ namespace NovaanServer.Auth
             var newUser = new User
             {
                 DisplayName = displayName,
-                AccountID = accountId
+                AccountId = accountId
             };
 
             await _mongoService.Users.InsertOneAsync(newUser);

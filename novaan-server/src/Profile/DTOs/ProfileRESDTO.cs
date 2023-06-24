@@ -5,12 +5,12 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace NovaanServer.src.Profile.DTOs
 {
-	public class ProfileRESDTO
+	public class ProfileResDTO
 	{
-		public string UserName { get; set; }
+		public string Username { get; set; }
 
 		[BsonRepresentation(BsonType.ObjectId)]
-		public string UserID { get; set; }
+		public string UserId { get; set; }
 
 		public bool IsFollowing { get; set; }
 

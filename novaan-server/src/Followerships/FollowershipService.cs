@@ -17,9 +17,9 @@ namespace NovaanServer.src.Followerships
             _mongodbService = mongoDBService;
         }
 
-        public async Task FollowUser(string currentUserID, string followingUserId)
+        public async Task FollowUser(string currentUserId, string followingUserId)
         {
-            var currentUser = (await _mongodbService.Users.FindAsync(u => u.AccountID == currentUserID)).FirstOrDefault();
+            var currentUser = (await _mongodbService.Users.FindAsync(u => u.AccountId == currentUserId)).FirstOrDefault();
             var followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followingUserId)).FirstOrDefault();
 
             if (currentUser == null || followedUser == null)
@@ -50,9 +50,9 @@ namespace NovaanServer.src.Followerships
             {
                 await _mongodbService.Followerships.InsertOneAsync(followershipModel);
 
-                // Increase following count of user that has id is currentUserID
+                // Increase following count of user that has id is currentUserId
                 var update = Builders<User>.Update.Inc(u => u.FollowingCount, 1);
-                await _mongodbService.Users.UpdateOneAsync(u => u.AccountID == currentUserID, update);
+                await _mongodbService.Users.UpdateOneAsync(u => u.AccountId == currentUserId, update);
 
                 // Increase follower count of user that has id is followingId
                 update = Builders<User>.Update.Inc(u => u.FollowerCount, 1);
@@ -64,9 +64,9 @@ namespace NovaanServer.src.Followerships
             }
         }
 
-        public async Task UnfollowUser(string currentUserID, string followingUserId)
+        public async Task UnfollowUser(string currentUserId, string followingUserId)
         {
-            User user = (await _mongodbService.Users.FindAsync(u => u.AccountID == currentUserID)).FirstOrDefault();
+            User user = (await _mongodbService.Users.FindAsync(u => u.AccountId == currentUserId)).FirstOrDefault();
             User followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followingUserId)).FirstOrDefault();
             if (user == null || followedUser == null)
             {
@@ -92,7 +92,7 @@ namespace NovaanServer.src.Followerships
 
                 // Decrease following count of user that has id is userId
                 var update = Builders<User>.Update.Inc(u => u.FollowingCount, -1);
-                await _mongodbService.Users.UpdateOneAsync(u => u.AccountID == currentUserID, update);
+                await _mongodbService.Users.UpdateOneAsync(u => u.AccountId == currentUserId, update);
 
                 // Decrease follower count of user that has id is followedId
                 update = Builders<User>.Update.Inc(u => u.FollowerCount, -1);
@@ -104,10 +104,10 @@ namespace NovaanServer.src.Followerships
             }
         }
 
-        public async Task<List<FollowershipDTO>> GetFollowers(string currentUserID, string userId, Pagination pagination)
+        public async Task<List<FollowershipDTO>> GetFollowers(string currentUserId, string userId, Pagination pagination)
         {
             var currentUser = (await _mongodbService.Users
-                .FindAsync(u => u.AccountID == currentUserID))
+                .FindAsync(u => u.AccountId == currentUserId))
                 .FirstOrDefault();
             if (currentUser == null)
             {
@@ -145,10 +145,10 @@ namespace NovaanServer.src.Followerships
             return followerUsersDTO;
         }
 
-        public async Task<List<FollowershipDTO>> GetFollowing(string currentUserID, string userId, Pagination pagination)
+        public async Task<List<FollowershipDTO>> GetFollowing(string currentUserId, string userId, Pagination pagination)
         {
             var currentUser = (await _mongodbService.Users
-                .FindAsync(u => u.AccountID == currentUserID))
+                .FindAsync(u => u.AccountId == currentUserId))
                 .FirstOrDefault();
             if (currentUser == null)
             {
