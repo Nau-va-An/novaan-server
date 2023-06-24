@@ -16,8 +16,7 @@ namespace NovaanServer.src.Content.DTOs
         [Required]
         public string? FileExtension { get; set; }
         
-        [Required]
-        public TimeSpan VideoDuration { get; set; }
+        public TimeSpan? VideoDuration { get; set; }
     }
 
 }
