@@ -29,7 +29,9 @@ namespace MongoConnector.Models
         [MaxLength(500)]
         public string Video { get; set; } = string.Empty;
 
-        public Status Status { get; set; } = Status.Pending;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow; 
     }
 
 }
