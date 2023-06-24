@@ -377,9 +377,9 @@ namespace NovaanServer.src.Content
 
             // JPG and JPEG is the same
             var contentExt = "." + fileFormat?.Extension;
-            if (contentExt == ".jpg")
+            if (contentExt == ".jpeg")
             {
-                contentExt = ".jpeg";
+                contentExt = ".jpg";
             }
 
             if (
