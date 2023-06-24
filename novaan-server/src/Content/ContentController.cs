@@ -62,7 +62,7 @@ namespace NovaanServer.src.Content
 
         // Validate file metadata
         [HttpPost("validate")]
-        public IActionResult ValidateFileMetadata([FromBody] FileInformationDTO fileMetadataDTO)
+        public IActionResult ValidateFileMetadata(FileInformationDTO fileMetadataDTO)
         {
             var isFileValid = _contentService.ValidateFileMetadata(fileMetadataDTO);
             if (!isFileValid)
