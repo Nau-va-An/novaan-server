@@ -36,8 +36,10 @@ namespace MongoConnector.Models
         [Required]
         public PortionType PortionType { get; set; } = PortionType.Servings;
 
+        [Required]
         public TimeSpan PrepTime { get; set; }
 
+        [Required]
         public TimeSpan CookTime { get; set; }
 
         [Required]
@@ -46,7 +48,10 @@ namespace MongoConnector.Models
         [Required]
         public List<Ingredient> Ingredients { get; set; } = new List<Ingredient>();
 
-        [Required]
         public Status Status { get; set; } = Status.Pending;
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }

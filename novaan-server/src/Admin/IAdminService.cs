@@ -6,7 +6,7 @@ namespace NovaanServer.src.Admin
 {
     public interface IAdminService
     {
-        SubmissionsDTO GetSubmissions(Status status);
+        SubmissionsDTO GetSubmissions(List<Status> status);
         void UpdateStatus<T>(StatusDTO statusDTO, string collectionName);
     }
 }
