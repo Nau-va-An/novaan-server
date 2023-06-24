@@ -19,14 +19,24 @@ namespace NovaanServer.src.Admin
             _mongoService = mongoService;
         }
 
-        public SubmissionsDTO GetSubmissions(Status status)
+        public SubmissionsDTO GetSubmissions(List<Status> status)
         {
             try
             {
-                var foundRecipes = _mongoService.Recipes.Find(x => x.Status == status).ToList();
-                var foundTips = _mongoService.CulinaryTips.Find(x => x.Status == status).ToList();
+                var recipes = _mongoService.GetCollection<Recipe>(MongoCollections.Recipes);
+                var culinaryTips = _mongoService.GetCollection<CulinaryTip>(MongoCollections.CulinaryTips);
 
-                return new SubmissionsDTO { Recipes = foundRecipes, CulinaryTips = foundTips };
+                var recipesFilter = Builders<Recipe>.Filter.In("Status", status);
+                var culinaryTipsFilter = Builders<CulinaryTip>.Filter.In("Status", status);
+
+                var recipesResult = recipes.Find(recipesFilter).ToList();
+                var culinaryTipsResult = culinaryTips.Find(culinaryTipsFilter).ToList();
+
+                return new SubmissionsDTO
+                {
+                    Recipes = recipesResult,
+                    CulinaryTips = culinaryTipsResult
+                };
             }
             catch
             {
