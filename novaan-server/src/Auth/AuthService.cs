@@ -23,10 +23,7 @@ namespace NovaanServer.Auth
         public async Task<string> SignInWithCredentials(SignInDTOs signInDTO)
         {
             var foundUser = (await _mongoService.Accounts
-                 .FindAsync(
-                    acc => acc.Email == signInDTO.UsernameOrEmail ||
-                     acc.Username == ExtractUsernameFromEmail(signInDTO.UsernameOrEmail)
-                 ))
+                 .FindAsync(acc => acc.Email == signInDTO.Email))
                  .FirstOrDefault()
                  ?? throw new NovaanException(ErrorCodes.EMAIL_OR_PASSWORD_NOT_FOUND, HttpStatusCode.BadRequest);
 
@@ -54,7 +51,7 @@ namespace NovaanServer.Auth
             try
             {
                 var password = CustomHash.GetHashString(signUpDTO.Password);
-                var accountID = await CreateNewAccount(signUpDTO.Email, password, null);
+                var accountID = await CreateNewAccount(signUpDTO.Email, signUpDTO.DisplayName, signUpDTO.Password, null);
                 await CreateNewUser(signUpDTO.DisplayName, accountID);
             }
             catch
@@ -89,7 +86,7 @@ namespace NovaanServer.Auth
 
                 try
                 {
-                    var accountId = await CreateNewAccount(ggAcountInfo.Email, null, ggAcountInfo.GoogleId);
+                    var accountId = await CreateNewAccount(ggAcountInfo.Email, ggAcountInfo.Name, null, ggAcountInfo.GoogleId);
                     await CreateNewUser(ggAcountInfo.Name, accountId);
 
                     return accountId;
@@ -136,13 +133,14 @@ namespace NovaanServer.Auth
             return ggAcountInfo;
         }
 
-        private async Task<string> CreateNewAccount(string email, string? password = null, string? googleId = null)
+        private async Task<string> CreateNewAccount(string email, string displayName, string? password, string? googleId = null)
         {
+
             var newAccount = new Account
             {
-                Username = ExtractUsernameFromEmail(email),
+                DisplayName = displayName,
                 Email = email,
-                Verified = true,
+                Verified = googleId == null ? true : false,
                 GoogleId = googleId,
                 // Generate random password when people sign up with Google account
                 Password = password ?? Guid.NewGuid().ToString(),
@@ -163,11 +161,6 @@ namespace NovaanServer.Auth
             await _mongoService.Users.InsertOneAsync(newUser);
 
             return newUser.Id;
-        }
-
-        private static string ExtractUsernameFromEmail(string email)
-        {
-            return email[..email.IndexOf("@")];
         }
     }
 }
