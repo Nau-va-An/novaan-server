@@ -1,4 +1,7 @@
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
+using NovaanServer.src.Common.Utils;
+using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using NovaanServer.src.Preference.DTOs;
 
 namespace NovaanServer.src.Preference
@@ -13,6 +16,8 @@ namespace NovaanServer.src.Preference
             _preferenceService = preferenceService;
         }
 
+        public object ErrorCode { get; private set; }
+
         [HttpGet("all")]
         public AllPreferencesDTO GetAllPreferences()
         {
@@ -21,16 +26,18 @@ namespace NovaanServer.src.Preference
         }
 
         [HttpGet("user/{userId}")]
-        public async Task<UserPreferenceDTO> GetUserPreferences(string userId)
+        public async Task<UserPreferenceDTO> GetUserPreferences()
         {
-            var result = await _preferenceService.GetUserPreferences(userId);
+            var currentUserId = Request.GetUserId()?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            var result = await _preferenceService.GetUserPreferences(currentUserId);
             return result;
         }
 
         [HttpPut("user/{userId}")]
-        public async Task<IActionResult> UpdateUserPreferences([FromBody] UserPreferenceDTO userPreferenceDTO, string userId)
+        public async Task<IActionResult> UpdateUserPreferences([FromBody] UserPreferenceDTO userPreferenceDTO)
         {
-            await _preferenceService.UpdateUserPreferences(userId, userPreferenceDTO);
+            var currentUserId = Request.GetUserId()?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            await _preferenceService.UpdateUserPreferences(currentUserId, userPreferenceDTO);
             return Ok();
         }
     }

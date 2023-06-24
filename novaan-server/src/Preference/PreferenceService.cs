@@ -32,7 +32,7 @@ namespace NovaanServer.src.Preference
         public async Task<UserPreferenceDTO> GetUserPreferences(string userId)
         {
             var user = (await _mongoService.Users
-                .FindAsync(user => user.Id == userId))
+                .FindAsync(user => user.AccountID == userId))
                 .FirstOrDefault()
                 ?? throw new BadHttpRequestException("User not found");
 
@@ -47,7 +47,7 @@ namespace NovaanServer.src.Preference
         public async Task UpdateUserPreferences(string userId, UserPreferenceDTO userPreferenceDTO)
         {
             var foundUser = (await _mongoService.Users
-                .FindAsync(user => user.Id == userId))
+                .FindAsync(user => user.AccountID == userId))
                 .FirstOrDefault()
                 ?? throw new BadHttpRequestException("User not found");
 
