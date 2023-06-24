@@ -76,6 +76,14 @@ namespace NovaanServer.src.Content
                     }
                     else
                     {
+                        // Throw error if property contain video or contain image
+                        if (property.Name.ToLower().Contains("video") || property.Name.ToLower().Contains("image"))
+                        {
+                            throw new NovaanException(
+                                ErrorCodes.CONTENT_FIELD_INVALID,
+                                HttpStatusCode.BadRequest
+                            );
+                        }
                         // Normal signature
                         CustomMapper.MappingObjectData(obj, property, value);
                     }
