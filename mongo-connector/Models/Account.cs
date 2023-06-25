@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using System.ComponentModel.DataAnnotations;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoConnector.Models
@@ -11,10 +12,13 @@ namespace MongoConnector.Models
 
         [BsonRepresentation(BsonType.ObjectId)]
         public string UserId { get; set; }
-        
-        public string Email { get; set; }
 
-        public string Password { get; set; }
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
 
         public Role Role { get; set; } = Role.User;
 

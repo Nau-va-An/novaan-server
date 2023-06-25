@@ -36,7 +36,7 @@ namespace NovaanServer.Auth
                 );
             }
 
-            return foundUser.Id;
+            return foundUser.UserId;
         }
 
         public async Task<bool> SignUpWithCredentials(SignUpDTO signUpDTO)
@@ -51,8 +51,8 @@ namespace NovaanServer.Auth
             try
             {
                 var password = CustomHash.GetHashString(signUpDTO.Password);
-                var accountID = await CreateNewAccount(signUpDTO.Email, signUpDTO.DisplayName, signUpDTO.Password, null);
-                await CreateNewUser(signUpDTO.DisplayName, accountID);
+                var userId = await CreateNewUser(signUpDTO.DisplayName);
+                await CreateNewAccount(signUpDTO.Email, userId, password, null);
             }
             catch
             {
@@ -86,10 +86,10 @@ namespace NovaanServer.Auth
 
                 try
                 {
-                    var accountId = await CreateNewAccount(ggAcountInfo.Email, ggAcountInfo.Name, null, ggAcountInfo.GoogleId);
-                    await CreateNewUser(ggAcountInfo.Name, accountId);
+                    var userId = await CreateNewUser(ggAcountInfo.Name);
+                    await CreateNewAccount(ggAcountInfo.Email, userId, null, ggAcountInfo.GoogleId);
 
-                    return accountId;
+                    return userId;
                 }
                 catch
                 {
@@ -133,14 +133,14 @@ namespace NovaanServer.Auth
             return ggAcountInfo;
         }
 
-        private async Task<string> CreateNewAccount(string email, string displayName, string? password, string? googleId = null)
+        private async Task<string> CreateNewAccount(string email, string userId, string? password, string? googleId = null)
         {
 
             var newAccount = new Account
             {
-                DisplayName = displayName,
                 Email = email,
                 Verified = googleId == null ? true : false,
+                UserId = userId,
                 GoogleId = googleId,
                 // Generate random password when people sign up with Google account
                 Password = password ?? Guid.NewGuid().ToString(),
@@ -150,12 +150,11 @@ namespace NovaanServer.Auth
             return newAccount.Id;
         }
 
-        private async Task<string> CreateNewUser(string displayName, string accountId)
+        private async Task<string> CreateNewUser(string displayName)
         {
             var newUser = new User
             {
                 DisplayName = displayName,
-                AccountID = accountId
             };
 
             await _mongoService.Users.InsertOneAsync(newUser);
