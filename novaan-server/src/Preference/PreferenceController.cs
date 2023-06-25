@@ -25,7 +25,7 @@ namespace NovaanServer.src.Preference
             return result;
         }
 
-        [HttpGet("user/{userId}")]
+        [HttpGet("me")]
         public async Task<UserPreferenceDTO> GetUserPreferences()
         {
             var currentUserId = Request.GetUserId()?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
@@ -33,7 +33,7 @@ namespace NovaanServer.src.Preference
             return result;
         }
 
-        [HttpPut("user/{userId}")]
+        [HttpPut("me")]
         public async Task<IActionResult> UpdateUserPreferences([FromBody] UserPreferenceDTO userPreferenceDTO)
         {
             var currentUserId = Request.GetUserId()?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
