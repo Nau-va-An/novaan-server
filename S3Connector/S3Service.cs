@@ -103,10 +103,8 @@ namespace S3Connector
             }
             catch
             {
-                // Throw custom error here
-                return "";
+                throw;
             }
-
         }
     }
 }

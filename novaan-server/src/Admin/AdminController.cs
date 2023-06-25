@@ -20,7 +20,7 @@ namespace NovaanServer.src.Admin
         }
 
         [HttpGet("submissions")]
-        public SubmissionsDTO GetSubmissions([FromQuery] Status status)
+        public SubmissionsDTO GetSubmissions([FromQuery] List<Status> status)
         {
             return _submissionService.GetSubmissions(status);
         }
