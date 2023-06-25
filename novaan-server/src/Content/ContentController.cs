@@ -81,6 +81,16 @@ namespace NovaanServer.src.Content
         {
            return _s3Service.DownloadFileAsync(id);
         }
+
+        // User likes a post
+        [HttpPost("interaction/like/{postId}")]
+        public async Task<IActionResult> LikePost(string postId)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.LikePost(postId, userId);
+            return Ok();
+        }
+
     }
 }
 

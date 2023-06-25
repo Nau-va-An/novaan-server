@@ -48,10 +48,17 @@ namespace MongoConnector.Models
         [Required]
         public List<Ingredient> Ingredients { get; set; } = new List<Ingredient>();
 
+        public double AverageRating { get; set;} = 0;
+
+        public int RatingsCount { get; set; } = 0;
+
+        public int LikesCount { get; set; } = 0;
+
         public Status Status { get; set; } = Status.Pending;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
     }
 }

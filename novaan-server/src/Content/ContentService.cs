@@ -398,6 +398,66 @@ namespace NovaanServer.src.Content
                 throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
             }
         }
+
+        public async Task LikePost(string postId, string? userId)
+        {
+            if (userId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Find recipe or tip that has the postId
+            var recipe = (await _mongoService.Recipes
+                .FindAsync(r => r.Id == postId))
+                .FirstOrDefault();
+            var tip = (await _mongoService.CulinaryTips
+                .FindAsync(t => t.Id == postId))
+                .FirstOrDefault();
+
+            if (recipe == null && tip == null)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Check if user has liked this post before
+            var hasLikedPost = (await _mongoService.Likes
+                .FindAsync(l => l.PostId == postId && l.UserId == userId && l.postType == (recipe != null ? SubmissionType.Recipe : SubmissionType.CulinaryTip)))
+                .FirstOrDefault() != null;
+
+            // Handle like/unlike post
+            if (hasLikedPost)
+            {
+                // Unlike post
+                await _mongoService.Likes
+                    .DeleteOneAsync(l => l.PostId == postId && l.UserId == userId && l.postType == (recipe != null ? SubmissionType.Recipe : SubmissionType.CulinaryTip));
+            }
+            else
+            {
+                // Like post
+                await _mongoService.Likes
+                    .InsertOneAsync(new Likes
+                    {
+                        UserId = userId,
+                        PostId = postId,
+                        postType = recipe != null ? SubmissionType.Recipe : SubmissionType.CulinaryTip
+                    });
+            }
+
+            // Update likeCount
+            if (recipe != null)
+            {
+                await _mongoService.Recipes
+                       .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
+                       .Inc(r => r.LikesCount, hasLikedPost ? -1 : 1));
+            }
+            else
+            {
+                await _mongoService.CulinaryTips
+                    .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
+                    .Inc(t => t.LikesCount, hasLikedPost ? -1 : 1));
+            }
+        }
+
     }
 }
 
