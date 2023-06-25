@@ -574,16 +574,11 @@ namespace NovaanServer.src.Content
             }
         }
 
-        public async Task EditComment(string postId, string? userId, CommentDTO commentDTO)
+        public async Task EditComment(string postId, string commentId, string? userId, CommentDTO commentDTO)
         {
-            if (userId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
-            }
-
             // Get comment of user on this post
             var comment = (await _mongoService.Comments
-                .FindAsync(c => c.PostId == postId && c.UserId == userId))
+                .FindAsync(c => c.Id == commentId && c.UserId == userId && c.PostId == postId))
                 .FirstOrDefault();
 
             if (comment == null)
@@ -611,6 +606,11 @@ namespace NovaanServer.src.Content
                     .FindAsync(t => t.Id == postId))
                     .FirstOrDefault();
 
+                if (recipe == null && tip == null)
+                {
+                    throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+                }
+
                 if (recipe != null)
                 {
                     await _mongoService.Recipes
@@ -627,7 +627,7 @@ namespace NovaanServer.src.Content
 
             // Edit comment
             await _mongoService.Comments
-                .UpdateOneAsync(c => c.PostId == postId && c.UserId == userId, Builders<Comments>.Update
+                .UpdateOneAsync(c => c.Id == commentId, Builders<Comments>.Update
                 .Set(c => c.Comment, commentDTO.Comment)
                 .Set(c => c.Image, imageId)
                 .Set(c => c.Rating, commentDTO.Rating)
@@ -641,6 +641,80 @@ namespace NovaanServer.src.Content
                 return (ratingAverage * ratingCount + newRating) / (ratingCount + 1);
             }
             return (ratingAverage * ratingCount - previousRating + newRating) / ratingCount;
+        }
+
+        public async Task ReportPost(string postId, string? userId, ReportDTO reportDTO)
+        {
+            if(userId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Find recipe or tip that has the postId
+            var recipe = (await _mongoService.Recipes
+                .FindAsync(r => r.Id == postId))
+                .FirstOrDefault();
+
+            var tip = (await _mongoService.CulinaryTips
+                .FindAsync(t => t.Id == postId))
+                .FirstOrDefault();
+
+            if (recipe == null && tip == null){
+                throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Update status of post to Reported
+            if (recipe != null)
+            {
+                await _mongoService.Recipes
+                    .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
+                    .Set(r => r.Status, Status.Reported));
+            }
+            else
+            {
+                await _mongoService.CulinaryTips
+                    .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
+                    .Set(t => t.Status, Status.Reported));
+            }
+
+            // Add report to database
+            await _mongoService.Reports
+                .InsertOneAsync(new Report
+                {
+                    UserId = userId,
+                    PostId = postId,
+                    Reason = reportDTO.Reason
+                });
+        }
+
+        public async Task ReportComment(string commentId, string? userId, ReportDTO reportDTO)
+        {
+            if(userId == null){
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Check if comment exists
+            var comment = (await _mongoService.Comments
+                .FindAsync(c => c.Id == commentId))
+                .FirstOrDefault();
+
+            if (comment == null){
+                throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Update status of comment to Reported
+            await _mongoService.Comments
+                .UpdateOneAsync(c => c.Id == commentId, Builders<Comments>.Update
+                .Set(c => c.Status, Status.Reported));
+
+            // Add report to database
+            await _mongoService.Reports
+                .InsertOneAsync(new Report
+                {
+                    UserId = userId,
+                    CommentId = commentId,
+                    Reason = reportDTO.Reason
+                });
         }
     }
 }

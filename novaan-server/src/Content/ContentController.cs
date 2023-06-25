@@ -53,7 +53,7 @@ namespace NovaanServer.src.Content
         public async Task<IActionResult> UploadRecipe()
         {
             var userId = Request.GetUserId();
-            if(userId == null)
+            if (userId == null)
             {
                 return Unauthorized();
             }
@@ -79,7 +79,7 @@ namespace NovaanServer.src.Content
         [HttpGet("download/{id}")]
         public string DownloadFile(string id)
         {
-           return _s3Service.DownloadFileAsync(id);
+            return _s3Service.DownloadFileAsync(id);
         }
 
         // User likes a post
@@ -110,13 +110,32 @@ namespace NovaanServer.src.Content
         }
 
         // Edit comment on specific post
-        [HttpPut("interaction/comment/{postId}")]
-        public async Task<IActionResult> EditCommentOnPost(string postId, [FromForm] CommentDTO commentDTO)
+        [HttpPut("interaction/comment/{postId}/{commentId}")]
+        public async Task<IActionResult> EditCommentOnPost(string postId, string commentId, [FromForm] CommentDTO commentDTO)
         {
             var userId = Request.GetUserId();
-            await _contentService.EditComment(postId, userId, commentDTO);
+            await _contentService.EditComment(postId,commentId ,userId, commentDTO);
             return Ok();
         }
+
+        // Report a post
+        [HttpPost("interaction/report/{postId}")]
+        public async Task<IActionResult> ReportPost(string postId, [FromBody] ReportDTO reportDTO)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.ReportPost(postId, userId, reportDTO);
+            return Ok();
+        }
+
+        //report a comment
+        [HttpPost("interaction/report/{commentId}")]
+        public async Task<IActionResult> ReportComment(string commentId, [FromBody] ReportDTO reportDTO)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.ReportComment(commentId, userId, reportDTO);
+            return Ok();
+        }
+
     }
 }
 

@@ -198,6 +198,14 @@ namespace MongoConnector
             }
         }
 
+        public IMongoCollection<Report> Reports
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Report>(MongoCollections.Reports);
+            }
+        }
+
     }
 }
 
