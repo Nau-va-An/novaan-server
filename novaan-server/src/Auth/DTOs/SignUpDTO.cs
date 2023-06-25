@@ -10,7 +10,8 @@ namespace NovaanServer.Auth.DTOs
         public string DisplayName { get; set; } = "";
 
         [Required]
-        [MinLength(8)] // Recommended minimum length by NIST
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$",
+        ErrorMessage = "Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, and one number.")]
         public string Password { get; set; } = "";
 
         [Required]

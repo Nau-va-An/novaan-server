@@ -17,23 +17,23 @@ namespace NovaanServer.src.Followerships
             _mongodbService = mongoDBService;
         }
 
-        public async Task FollowUser(string currentUserID, string followingUserId)
+        public async Task FollowUser(string? currentUserId, string followingUserId)
         {
-            var currentUser = (await _mongodbService.Users.FindAsync(u => u.AccountID == currentUserID)).FirstOrDefault();
-            var followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followingUserId)).FirstOrDefault();
-
-            if (currentUser == null || followedUser == null)
+            if (currentUserId == null)
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
-            if (currentUser.Id == followingUserId)
+            var followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followingUserId)).FirstOrDefault() ??
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+
+            if (currentUserId == followingUserId)
             {
                 throw new NovaanException(ErrorCodes.USER_FOLLOWING_ITSELF, HttpStatusCode.BadRequest);
             }
 
             // Check if user is already following the followed user
-            var followership = (await _mongodbService.Followerships.FindAsync(f => f.FollowerId == currentUser.Id && f.FollowingId == followingUserId)).FirstOrDefault();
+            var followership = (await _mongodbService.Followerships.FindAsync(f => f.FollowerId == currentUserId && f.FollowingId == followingUserId)).FirstOrDefault();
             if (followership != null)
             {
                 throw new NovaanException(ErrorCodes.USER_ALREADY_FOLLOWING, HttpStatusCode.BadRequest);
@@ -42,7 +42,7 @@ namespace NovaanServer.src.Followerships
             // Mapping to Model
             var followershipModel = new Followership
             {
-                FollowerId = currentUser.Id,
+                FollowerId = currentUserId,
                 FollowingId = followingUserId
             };
 
@@ -52,7 +52,7 @@ namespace NovaanServer.src.Followerships
 
                 // Increase following count of user that has id is currentUserID
                 var update = Builders<User>.Update.Inc(u => u.FollowingCount, 1);
-                await _mongodbService.Users.UpdateOneAsync(u => u.AccountID == currentUserID, update);
+                await _mongodbService.Users.UpdateOneAsync(u => u.Id == currentUserId, update);
 
                 // Increase follower count of user that has id is followingId
                 update = Builders<User>.Update.Inc(u => u.FollowerCount, 1);
@@ -64,22 +64,26 @@ namespace NovaanServer.src.Followerships
             }
         }
 
-        public async Task UnfollowUser(string currentUserID, string followingUserId)
+        public async Task UnfollowUser(string? currentUserId, string followingUserId)
         {
-            User user = (await _mongodbService.Users.FindAsync(u => u.AccountID == currentUserID)).FirstOrDefault();
-            User followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followingUserId)).FirstOrDefault();
-            if (user == null || followedUser == null)
+            if (currentUserId == null)
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
-            if (user.Id == followingUserId)
+            User followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followingUserId)).FirstOrDefault();
+            if (followedUser == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            }
+
+            if (currentUserId == followingUserId)
             {
                 throw new NovaanException(ErrorCodes.USER_FOLLOWING_ITSELF, HttpStatusCode.BadRequest);
             }
 
             // Check if user is already following the followed user
-            Followership followership = (await _mongodbService.Followerships.FindAsync(f => f.FollowerId == user.Id && f.FollowingId == followingUserId)).FirstOrDefault();
+            Followership followership = (await _mongodbService.Followerships.FindAsync(f => f.FollowerId == currentUserId && f.FollowingId == followingUserId)).FirstOrDefault();
             if (followership == null)
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOLLOWING, HttpStatusCode.BadRequest);
@@ -88,11 +92,11 @@ namespace NovaanServer.src.Followerships
             try
             {
                 // Delete followership
-                await _mongodbService.Followerships.DeleteOneAsync(f => f.FollowerId == user.Id && f.FollowingId == followingUserId);
+                await _mongodbService.Followerships.DeleteOneAsync(f => f.FollowerId == currentUserId && f.FollowingId == followingUserId);
 
                 // Decrease following count of user that has id is userId
                 var update = Builders<User>.Update.Inc(u => u.FollowingCount, -1);
-                await _mongodbService.Users.UpdateOneAsync(u => u.AccountID == currentUserID, update);
+                await _mongodbService.Users.UpdateOneAsync(u => u.Id == currentUserId, update);
 
                 // Decrease follower count of user that has id is followedId
                 update = Builders<User>.Update.Inc(u => u.FollowerCount, -1);
@@ -104,19 +108,16 @@ namespace NovaanServer.src.Followerships
             }
         }
 
-        public async Task<List<FollowershipDTO>> GetFollowers(string currentUserID, string userId, Pagination pagination)
+        public async Task<List<FollowershipDTO>> GetFollowers(string? currentUserId, string targetuserId, Pagination pagination)
         {
-            var currentUser = (await _mongodbService.Users
-                .FindAsync(u => u.AccountID == currentUserID))
-                .FirstOrDefault();
-            if (currentUser == null)
+            if (currentUserId == null)
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
             // Get all followers of user that has id is userId
             List<Followership> followers = (await _mongodbService.Followerships
-                .FindAsync(f => f.FollowingId == userId))
+                .FindAsync(f => f.FollowingId == targetuserId))
                 .ToList();
             List<string> followerIds = followers
                 .Select(f => f.FollowerId)
@@ -144,18 +145,15 @@ namespace NovaanServer.src.Followerships
             return followerUsersDTO;
         }
 
-        public async Task<List<FollowershipDTO>> GetFollowing(string currentUserID, string userId, Pagination pagination)
+        public async Task<List<FollowershipDTO>> GetFollowing(string? currentUserId, string targetUserId, Pagination pagination)
         {
-            var currentUser = (await _mongodbService.Users
-                .FindAsync(u => u.AccountID == currentUserID))
-                .FirstOrDefault();
-            if (currentUser == null)
+            if (currentUserId == null)
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
             List<Followership> following = (await _mongodbService.Followerships
-                .FindAsync(f => f.FollowerId == userId))
+                .FindAsync(f => f.FollowerId == targetUserId))
                 .ToList();
             List<string> followingIds = following.Select(f => f.FollowingId).ToList();
 
