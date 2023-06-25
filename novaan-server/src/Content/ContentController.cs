@@ -91,6 +91,14 @@ namespace NovaanServer.src.Content
             return Ok();
         }
 
+        // Save a post 
+        [HttpPost("interaction/save/{postId}")]
+        public async Task<IActionResult> SavePost(string postId)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.SavePost(postId, userId);
+            return Ok();
+        }
     }
 }
 

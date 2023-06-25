@@ -174,6 +174,11 @@ namespace NovaanServer.src.Content
 
         public async Task UploadRecipe(Recipe recipe, string creatorId)
         {
+            if (creatorId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
             // Validate recipe object against its model annotation
             var context = new ValidationContext(recipe, serviceProvider: null, items: null);
             var validationResults = new List<ValidationResult>();
@@ -458,6 +463,45 @@ namespace NovaanServer.src.Content
             }
         }
 
+        public async Task SavePost(string postId, string? userId)
+        {
+            if (userId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Find recipe or tip that has the postId
+            var recipe = (await _mongoService.Recipes
+                .FindAsync(r => r.Id == postId))
+                .FirstOrDefault();
+            var tip = (await _mongoService.CulinaryTips
+                .FindAsync(t => t.Id == postId))
+                .FirstOrDefault();
+
+            if (recipe == null && tip == null)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Check if user has saved this post before in savedPost list of user collection
+            var hasSavedPost = (await _mongoService.Users
+                .FindAsync(u => u.Id == userId && u.SavedPost.Any(p => p.PostId == postId)))
+                .FirstOrDefault() != null;
+            
+            if(!hasSavedPost){
+                // Save post
+                await _mongoService.Users
+                    .UpdateOneAsync(u => u.Id == userId, Builders<User>.Update
+                    .Push(u => u.SavedPost, new SavedPost
+                    {
+                        PostId = postId,
+                        PostType = recipe != null ? SubmissionType.Recipe : SubmissionType.CulinaryTip
+                    }));
+            }
+            else{
+                throw new NovaanException(ErrorCodes.CONTENT_ALREADY_SAVED, HttpStatusCode.BadRequest);
+            }
+        }
     }
 }
 

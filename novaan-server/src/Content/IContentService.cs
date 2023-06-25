@@ -14,6 +14,7 @@ namespace NovaanServer.src.Content
         bool ValidateFileMetadata(FileInformationDTO fileMetadata);
         PostDTO GetPosts();
         Task LikePost(string postId, string? userId);
+        Task SavePost(string postId, string? userId);
     }
 }
 
