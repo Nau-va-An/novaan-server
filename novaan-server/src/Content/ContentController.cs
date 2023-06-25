@@ -99,6 +99,24 @@ namespace NovaanServer.src.Content
             await _contentService.SavePost(postId, userId);
             return Ok();
         }
+
+        // Comment on a post
+        [HttpPost("interaction/comment/{postId}")]
+        public async Task<IActionResult> CommentOnPost(string postId, [FromForm] CommentDTO commentDTO)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.CommentOnPost(postId, userId, commentDTO);
+            return Ok();
+        }
+
+        // Edit comment on specific post
+        [HttpPut("interaction/comment/{postId}")]
+        public async Task<IActionResult> EditCommentOnPost(string postId, [FromForm] CommentDTO commentDTO)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.EditComment(postId, userId, commentDTO);
+            return Ok();
+        }
     }
 }
 

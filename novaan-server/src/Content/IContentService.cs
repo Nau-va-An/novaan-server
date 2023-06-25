@@ -15,6 +15,8 @@ namespace NovaanServer.src.Content
         PostDTO GetPosts();
         Task LikePost(string postId, string? userId);
         Task SavePost(string postId, string? userId);
+        Task CommentOnPost(string postId, string? userId, CommentDTO commentDTO);
+        Task EditComment(string postId, string? userId, CommentDTO commentDTO);
     }
 }
 

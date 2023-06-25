@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using MongoConnector.Enums;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -21,7 +22,9 @@ namespace MongoConnector.Models
 
         public string? Image { get; set; }
 
-        public int? Rating { get; set; }
+        [Required]
+        [Range(1, 5, ErrorMessage = "Field value must be between 1 and 5.")]
+        public int Rating { get; set; }
 
         public DateTime CreatedAt { get; set; }
 

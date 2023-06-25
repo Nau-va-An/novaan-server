@@ -487,8 +487,9 @@ namespace NovaanServer.src.Content
             var hasSavedPost = (await _mongoService.Users
                 .FindAsync(u => u.Id == userId && u.SavedPost.Any(p => p.PostId == postId)))
                 .FirstOrDefault() != null;
-            
-            if(!hasSavedPost){
+
+            if (!hasSavedPost)
+            {
                 // Save post
                 await _mongoService.Users
                     .UpdateOneAsync(u => u.Id == userId, Builders<User>.Update
@@ -498,9 +499,148 @@ namespace NovaanServer.src.Content
                         PostType = recipe != null ? SubmissionType.Recipe : SubmissionType.CulinaryTip
                     }));
             }
-            else{
+            else
+            {
                 throw new NovaanException(ErrorCodes.CONTENT_ALREADY_SAVED, HttpStatusCode.BadRequest);
             }
+        }
+
+        public async Task CommentOnPost(string postId, string? userId, CommentDTO commentDTO)
+        {
+            if (userId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Find recipe or tip that has the postId
+            var recipe = (await _mongoService.Recipes
+                .FindAsync(r => r.Id == postId))
+                .FirstOrDefault();
+
+            var tip = (await _mongoService.CulinaryTips
+                .FindAsync(t => t.Id == postId))
+                .FirstOrDefault();
+
+            if (recipe == null && tip == null)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Check if user has commented on this post before
+            var hasCommented = (await _mongoService.Comments
+                .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == (recipe != null ? SubmissionType.Recipe : SubmissionType.CulinaryTip)))
+                .FirstOrDefault() != null;
+
+            if (hasCommented)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_ALREADY_COMMENTED, HttpStatusCode.BadRequest);
+            }
+
+            string imageId = "";
+            if (commentDTO.Image != null)
+            { // Upload image to S3
+                imageId = System.Guid.NewGuid().ToString() +
+                               Path.GetExtension(commentDTO.Image.FileName);
+                await _s3Service.UploadFileAsync(commentDTO.Image.OpenReadStream(), imageId);
+            }
+
+            // Comment on post
+            await _mongoService.Comments
+                .InsertOneAsync(new Comments
+                {
+                    UserId = userId,
+                    PostId = postId,
+                    postType = recipe != null ? SubmissionType.Recipe : SubmissionType.CulinaryTip,
+                    Comment = commentDTO.Comment,
+                    CreatedAt = DateTime.Now,
+                    Image = imageId,
+                    Rating = commentDTO.Rating
+                });
+
+            // Update ratingCount and rating average of recipe or tip
+            if (recipe != null)
+            {
+                await _mongoService.Recipes
+                    .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
+                    .Inc(r => r.RatingsCount, 1)
+                    .Set(r => r.AverageRating, CalculateRatingAverage(recipe.RatingsCount, recipe.AverageRating, null, commentDTO.Rating)));
+            }
+            else
+            {
+                await _mongoService.CulinaryTips
+                    .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
+                    .Inc(t => t.RatingsCount, 1)
+                    .Set(t => t.AverageRating, CalculateRatingAverage(tip.RatingsCount, tip.AverageRating, null, commentDTO.Rating)));
+            }
+        }
+
+        public async Task EditComment(string postId, string? userId, CommentDTO commentDTO)
+        {
+            if (userId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Get comment of user on this post
+            var comment = (await _mongoService.Comments
+                .FindAsync(c => c.PostId == postId && c.UserId == userId))
+                .FirstOrDefault();
+
+            if (comment == null)
+            {
+                throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            string imageId = "";
+            if (commentDTO.Image != null)
+            {
+                // upload image to S3
+                imageId = System.Guid.NewGuid().ToString() +
+                                Path.GetExtension(commentDTO.Image.FileName);
+                await _s3Service.UploadFileAsync(commentDTO.Image.OpenReadStream(), imageId);
+            }
+
+            // Update rating average of post with new rating from user and ratingaverage of post before edit
+            if (commentDTO.Rating != comment.Rating)
+            {
+                var recipe = (await _mongoService.Recipes
+                    .FindAsync(r => r.Id == postId))
+                    .FirstOrDefault();
+
+                var tip = (await _mongoService.CulinaryTips
+                    .FindAsync(t => t.Id == postId))
+                    .FirstOrDefault();
+
+                if (recipe != null)
+                {
+                    await _mongoService.Recipes
+                        .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
+                        .Set(r => r.AverageRating, CalculateRatingAverage(recipe.RatingsCount, recipe.AverageRating, comment.Rating, commentDTO.Rating)));
+                }
+                else
+                {
+                    await _mongoService.CulinaryTips
+                        .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
+                        .Set(t => t.AverageRating, CalculateRatingAverage(tip.RatingsCount, tip.AverageRating, comment.Rating, commentDTO.Rating)));
+                }
+            }
+
+            // Edit comment
+            await _mongoService.Comments
+                .UpdateOneAsync(c => c.PostId == postId && c.UserId == userId, Builders<Comments>.Update
+                .Set(c => c.Comment, commentDTO.Comment)
+                .Set(c => c.Image, imageId)
+                .Set(c => c.Rating, commentDTO.Rating)
+                .Set(c => c.UpdatedAt, DateTime.Now));
+        }
+
+        private double? CalculateRatingAverage(int ratingCount, double ratingAverage, int? previousRating, int newRating)
+        {
+            if (previousRating == null)
+            {
+                return (ratingAverage * ratingCount + newRating) / (ratingCount + 1);
+            }
+            return (ratingAverage * ratingCount - previousRating + newRating) / ratingCount;
         }
     }
 }
