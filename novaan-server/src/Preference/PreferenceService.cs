@@ -1,7 +1,9 @@
+using System.Net;
 using MongoConnector;
 using MongoConnector.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using NovaanServer.src.Preference.DTOs;
 
 namespace NovaanServer.src.Preference
@@ -29,8 +31,13 @@ namespace NovaanServer.src.Preference
             };
         }
 
-        public async Task<UserPreferenceDTO> GetUserPreferences(string userId)
+        public async Task<UserPreferenceDTO> GetUserPreferences(string? userId)
         {
+            if (userId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            }
+
             var user = (await _mongoService.Users
                 .FindAsync(user => user.AccountID == userId))
                 .FirstOrDefault()
@@ -44,16 +51,22 @@ namespace NovaanServer.src.Preference
             };
         }
 
-        public async Task UpdateUserPreferences(string userId, UserPreferenceDTO userPreferenceDTO)
+        public async Task UpdateUserPreferences(string? userId, UserPreferenceDTO userPreferenceDTO)
         {
+            if (userId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            }
+
             var foundUser = (await _mongoService.Users
                 .FindAsync(user => user.AccountID == userId))
                 .FirstOrDefault()
                 ?? throw new BadHttpRequestException("User not found");
 
-            var update = Builders<User>.Update.Set("Diet", userPreferenceDTO.Diets)
-                        .Set("Cuisine", userPreferenceDTO.Cuisines)
-                        .Set("Allergen", userPreferenceDTO.Allergens);
+            var update = Builders<User>.Update
+                .Set("Diet", userPreferenceDTO.Diets)
+                .Set("Cuisine", userPreferenceDTO.Cuisines)
+                .Set("Allergen", userPreferenceDTO.Allergens);
             await _mongoService.Users.UpdateOneAsync(user => user.Id == userId, update);
         }
     }
