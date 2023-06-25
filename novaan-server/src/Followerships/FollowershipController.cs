@@ -24,8 +24,7 @@ namespace NovaanServer.src.Followerships
         [HttpPost("api/follow/{userId}")]
         public async Task<IActionResult> FollowUser(string userId)
         {
-            var currentUserID = Request.GetUserId();
-
+            var currentUserId = Request.GetUserId();
             await _followershipService.FollowUser(currentUserId, userId);
             return Ok();
         }
@@ -33,8 +32,7 @@ namespace NovaanServer.src.Followerships
         [HttpPost("api/unfollow/{userId}")]
         public async Task<IActionResult> UnfollowUser(string userId)
         {
-            var currentUserID = Request.GetUserId();
-
+            var currentUserId = Request.GetUserId();
             await _followershipService.UnfollowUser(currentUserId, userId);
             return Ok();
         }
@@ -42,8 +40,7 @@ namespace NovaanServer.src.Followerships
         [HttpGet("api/followers/{userId}")]
         public async Task<List<FollowershipDTO>> GetFollowers(string userId, [FromQuery] Pagination pagination)
         {
-            var currentUserID = Request.GetUserId();
-
+            var currentUserId = Request.GetUserId();
             return await _followershipService.GetFollowers(currentUserId, userId, pagination);
         }
 
