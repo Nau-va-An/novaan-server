@@ -63,11 +63,32 @@ namespace NovaanServer.src.Preference
                 .FirstOrDefault()
                 ?? throw new BadHttpRequestException("User not found");
 
+            // check if diet, cuisine, allergen from userPreferenceDTO exists
+            var isPreferencesExist = ValidateUserPreferences(userPreferenceDTO);
+            if (!isPreferencesExist)
+            {
+                throw new NovaanException(ErrorCodes.PREFERENCE_NOT_FOUND, HttpStatusCode.NotFound);
+            }
+
             var update = Builders<User>.Update
                 .Set("Diet", userPreferenceDTO.Diets)
                 .Set("Cuisine", userPreferenceDTO.Cuisines)
                 .Set("Allergen", userPreferenceDTO.Allergens);
             await _mongoService.Users.UpdateOneAsync(user => user.Id == userId, update);
         }
+
+        private bool ValidateUserPreferences(UserPreferenceDTO userPreferenceDTO)
+        {
+            var dietIds = userPreferenceDTO.Diets;
+            var cuisineIds = userPreferenceDTO.Cuisines;
+            var allergenIds = userPreferenceDTO.Allergens;
+
+            var isDietExist = _mongoService.Diets.Find(d => dietIds.Contains(d.Id)).Any();
+            var isCuisineExist = _mongoService.Cuisines.Find(c => cuisineIds.Contains(c.Id)).Any();
+            var isAllergenExist = _mongoService.Allergens.Find(a => allergenIds.Contains(a.Id)).Any();
+
+            return isDietExist && isCuisineExist && isAllergenExist;
+        }
+
     }
 }

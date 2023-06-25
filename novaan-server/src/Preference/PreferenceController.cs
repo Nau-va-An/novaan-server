@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NovaanServer.src.Common.Utils;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
@@ -8,6 +9,7 @@ namespace NovaanServer.src.Preference
 {
     [Route("api/preference")]
     [ApiController]
+    [Authorize]
     public class PreferenceController : ControllerBase
     {
         private readonly IPreferenceService _preferenceService;
