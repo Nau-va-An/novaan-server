@@ -53,8 +53,11 @@ namespace NovaanServer.src.Admin
             var foundSubmission = collection.Find(filter).FirstOrDefault() ??
                 throw new NovaanException(ErrorCodes.ADMIN_SUBMISSION_NOT_FOUND, HttpStatusCode.NotFound);
 
-            // Try to update the submission with inputted status
-            var update = Builders<T>.Update.Set("Status", statusDTO.Status);
+            // Try to update the submission with inputted status and admin comment
+            var update = Builders<T>.Update
+                .Set("Status", statusDTO.Status)
+                .Set("AdminComment", statusDTO.AdminComment);
+                
             try
             {
                 var result = collection.UpdateOne(filter, update);

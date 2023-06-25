@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NovaanServer.src.Preference.DTOs;
 
@@ -5,6 +6,7 @@ namespace NovaanServer.src.Preference
 {
     [Route("api/preference")]
     [ApiController]
+    [Authorize]
     public class PreferenceController : ControllerBase
     {
         private readonly IPreferenceService _preferenceService;
