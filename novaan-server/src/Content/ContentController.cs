@@ -5,6 +5,7 @@ using NovaanServer.src.Common.Attributes;
 using NovaanServer.src.Common.Utils;
 using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.Filter;
+using S3Connector;
 
 namespace NovaanServer.src.Content
 {
@@ -14,9 +15,11 @@ namespace NovaanServer.src.Content
     public class ContentController : ControllerBase
     {
         private readonly IContentService _contentService;
-        public ContentController(IContentService contentService)
+        private readonly S3Service _s3Service;
+        public ContentController(IContentService contentService, S3Service s3Service)
         {
             _contentService = contentService;
+            _s3Service = s3Service;
         }
 
         /// <summary>
@@ -62,7 +65,7 @@ namespace NovaanServer.src.Content
 
         // Validate file metadata
         [HttpPost("validate")]
-        public IActionResult ValidateFileMetadata([FromBody] FileInformationDTO fileMetadataDTO)
+        public IActionResult ValidateFileMetadata(FileInformationDTO fileMetadataDTO)
         {
             var isFileValid = _contentService.ValidateFileMetadata(fileMetadataDTO);
             if (!isFileValid)
@@ -70,6 +73,13 @@ namespace NovaanServer.src.Content
                 return BadRequest();
             }
             return Ok();
+        }
+
+        // Download file
+        [HttpGet("download/{id}")]
+        public string DownloadFile(string id)
+        {
+           return _s3Service.DownloadFileAsync(id);
         }
     }
 }
