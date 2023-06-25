@@ -26,11 +26,6 @@ namespace NovaanServer.src.Profile
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
-            User currentUser = (await _mongoDBService.Users
-                .FindAsync(u => u.AccountId == currentUserId))
-                .FirstOrDefault() ??
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-
             User targetUser = (await _mongoDBService.Users
                 .FindAsync(u => u.Id == targetUserId))
                 .FirstOrDefault() ??
@@ -38,7 +33,7 @@ namespace NovaanServer.src.Profile
 
             // check if current user is following the targetUser
             bool isFollowing = (await _mongoDBService.Followerships
-                .FindAsync(f => f.FollowerId == currentUser.Id && f.FollowingId == targetUserId))
+                .FindAsync(f => f.FollowerId == currentUserId && f.FollowingId == targetUserId))
                 .Any();
 
             var recipeList = await GetRecipes(currentUserId, targetUserId, new Pagination { Start = 0, Limit = 10 });
@@ -62,29 +57,24 @@ namespace NovaanServer.src.Profile
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
-            var currentUser = (await _mongoDBService.Users
-                .FindAsync(u => u.AccountId == currentUserId))
-                .FirstOrDefault() ??
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-
             var targetUser = (await _mongoDBService.Users
                 .FindAsync(u => u.Id == targetUserId))
                 .FirstOrDefault() ??
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
 
             var recipes = new List<Recipe>();
-            if (currentUser.AccountId == targetUser.AccountId)
+            if (currentUserId == targetUserId)
             {
                 // get all recipes of current user
                 recipes = (await _mongoDBService.Recipes
-                    .FindAsync(r => r.CreatorId == targetUser.AccountId))
+                    .FindAsync(r => r.CreatorId == currentUserId))
                     .ToList();
             }
             else
             {
                 // get public recipes of targetUser
                 recipes = (await _mongoDBService.Recipes
-                    .FindAsync(r => r.CreatorId == targetUser.AccountId && r.Status == Status.Approved))
+                    .FindAsync(r => r.CreatorId == targetUser.Id && r.Status == Status.Approved))
                     .ToList();
             }
 
@@ -101,18 +91,13 @@ namespace NovaanServer.src.Profile
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
-            var currentUser = (await _mongoDBService.Users
-                .FindAsync(u => u.AccountId == currentUserId))
-                .FirstOrDefault() ??
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-
             var targetUser = (await _mongoDBService.Users
                 .FindAsync(u => u.Id == targetUserId))
                 .FirstOrDefault() ??
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
 
             // Only current user can see his/her saved posts
-            if (currentUser.Id != targetUser.Id)
+            if (currentUserId != targetUser.Id)
             {
                 // forbidden content
                 throw new NovaanException(ErrorCodes.FORBIDDEN_PROFILE_CONTENT, HttpStatusCode.Forbidden);
@@ -131,29 +116,24 @@ namespace NovaanServer.src.Profile
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
-            var currentUser = (await _mongoDBService.Users
-                .FindAsync(u => u.AccountId == currentUserId))
-                .FirstOrDefault() ??
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-
             var targetUser = (await _mongoDBService.Users
-                .FindAsync(u => u.Id == targetUserId))
-                .FirstOrDefault() ??
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+                 .FindAsync(u => u.Id == targetUserId))
+                 .FirstOrDefault() ??
+                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
 
             var tips = new List<CulinaryTip>();
-            if (currentUser.AccountId == targetUser.AccountId)
+            if (currentUserId == targetUser.Id)
             {
                 // get all tips of the current user
                 tips = (await _mongoDBService.CulinaryTips
-                    .FindAsync(t => t.CreatorId == targetUser.AccountId))
+                    .FindAsync(t => t.CreatorId == currentUserId))
                     .ToList();
             }
             else
             {
                 // get public tips of the targetUser
                 tips = (await _mongoDBService.CulinaryTips
-                    .FindAsync(t => t.CreatorId == targetUser.AccountId && t.Status == Status.Approved))
+                    .FindAsync(t => t.CreatorId == targetUser.Id && t.Status == Status.Approved))
                     .ToList();
             }
             return tips
