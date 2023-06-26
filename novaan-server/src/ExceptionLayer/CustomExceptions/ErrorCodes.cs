@@ -47,7 +47,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public static int USER_NOT_FOLLOWING = 1028;
         public static int FOLLOWERSHIP_NOT_DELETED = 1029;
         public const int USER_FOLLOWING_ITSELF = 1030;
-    
+
         // Preference
         public const int PREFERENCE_NOT_FOUND = 1031;
 

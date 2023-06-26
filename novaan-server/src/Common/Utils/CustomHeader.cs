@@ -4,19 +4,19 @@ using System.IdentityModel.Tokens.Jwt;
 
 namespace NovaanServer.src.Common.Utils
 {
-	public static class CustomHeader
-	{
+    public static class CustomHeader
+    {
         public static JwtSecurityToken? GetBearerToken(this HttpRequest request)
         {
             var authorizations = request.Headers["Authorization"];
-            if(authorizations.Count == 0)
+            if (authorizations.Count == 0)
             {
                 return null;
             }
 
             // There should be one and only one access token in one request
             var authHeader = authorizations[0];
-            if(!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
             {
                 var token = authHeader["Bearer ".Length..];
                 var tokenHandler = new JwtSecurityTokenHandler();
@@ -29,7 +29,7 @@ namespace NovaanServer.src.Common.Utils
         public static string? GetUserId(this HttpRequest request)
         {
             var token = request.GetBearerToken();
-            if(token == null)
+            if (token == null)
             {
                 return null;
             }

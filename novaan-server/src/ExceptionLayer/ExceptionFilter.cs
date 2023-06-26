@@ -52,7 +52,8 @@ namespace NovaanServer.ExceptionLayer
                         ErrCode = ex.ErrCode,
                         Message = ErrorCodes.ErrorNameDictionary.GetValueOrDefault(ex.ErrCode)
                     },
-                    FileNotFoundException ex => new BaseErrResponse {
+                    FileNotFoundException ex => new BaseErrResponse
+                    {
                         Success = false,
                         ErrCode = ErrorCodes.S3_FILE_NOT_FOUND,
                         Message = ex.Message
