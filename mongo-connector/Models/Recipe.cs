@@ -5,6 +5,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoConnector.Models
 {
+    [BsonIgnoreExtraElements]
     public class Recipe
     {
         [BsonId]
@@ -60,5 +61,6 @@ namespace MongoConnector.Models
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+        public string AdminComment { get; set; } = string.Empty;
     }
 }

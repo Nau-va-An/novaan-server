@@ -44,52 +44,48 @@ namespace MongoConnector
         // Seed data Diet
         public async Task SeedDietData()
         {
-            var dietCollection = MongoDatabase.GetCollection<Diet>(MongoCollections.Diets);
-            var dietData = await dietCollection.Find(_ => true).ToListAsync();
+            var dietData = await this.Diets.Find(_ => true).ToListAsync();
             if (dietData.Count == 0)
             {
                 var dietJson = File.ReadAllText("Seeder/dietPreferences.json");
                 var dietList = JsonConvert.DeserializeObject<List<Diet>>(dietJson);
-                await dietCollection.InsertManyAsync(dietList);
+                await this.Diets.InsertManyAsync(dietList);
             }
         }
 
         // Seed data Cuisine
         public async Task SeedCuisineData()
         {
-            var cuisineCollection = MongoDatabase.GetCollection<Cuisine>(MongoCollections.Cuisines);
-            var cuisineData = await cuisineCollection.Find(_ => true).ToListAsync();
+            var cuisineData = await this.Cuisines.Find(_ => true).ToListAsync();
             if (cuisineData.Count == 0)
             {
                 var cuisineJson = File.ReadAllText("Seeder/cuisinePreferences.json");
                 var cuisineList = JsonConvert.DeserializeObject<List<Cuisine>>(cuisineJson);
-                await cuisineCollection.InsertManyAsync(cuisineList);
+                await this.Cuisines.InsertManyAsync(cuisineList);
             }
         }
 
         // Seed data mealType
         public async Task SeedMealTypeData()
         {
-            var mealTypeCollection = MongoDatabase.GetCollection<MealType>(MongoCollections.MealTypes);
-            var mealTypeData = await mealTypeCollection.Find(_ => true).ToListAsync();
+            var mealTypeData = await this.MealTypes.Find(_ => true).ToListAsync();
             if (mealTypeData.Count == 0)
             {
                 var mealTypeJson = File.ReadAllText("Seeder/mealTypePreferences.json");
                 var mealTypeList = JsonConvert.DeserializeObject<List<MealType>>(mealTypeJson);
-                await mealTypeCollection.InsertManyAsync(mealTypeList);
+                await this.MealTypes.InsertManyAsync(mealTypeList);
             }
         }
 
         // Seed data allergen
         public async Task SeedAllergenData()
         {
-            var allergenCollection = MongoDatabase.GetCollection<Allergen>(MongoCollections.Allergens);
-            var allergenData = await allergenCollection.Find(_ => true).ToListAsync();
+            var allergenData = await this.Allergens.Find(_ => true).ToListAsync();
             if (allergenData.Count == 0)
             {
                 var allergenJson = File.ReadAllText("Seeder/allergenPreferences.json");
                 var allergenList = JsonConvert.DeserializeObject<List<Allergen>>(allergenJson);
-                await allergenCollection.InsertManyAsync(allergenList);
+                await this.Allergens.InsertManyAsync(allergenList);
             }
         }
 

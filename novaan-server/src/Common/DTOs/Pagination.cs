@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using NovaanServer.src.Common.Settings;
 
 namespace NovaanServer.src.Common.DTOs

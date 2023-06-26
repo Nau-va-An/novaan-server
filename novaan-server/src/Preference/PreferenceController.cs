@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NovaanServer.src.Common.Utils;
 using NovaanServer.src.Preference.DTOs;
 
 namespace NovaanServer.src.Preference
 {
     [Route("api/preference")]
     [ApiController]
+    [Authorize]
     public class PreferenceController : ControllerBase
     {
         private readonly IPreferenceService _preferenceService;
@@ -16,21 +19,23 @@ namespace NovaanServer.src.Preference
         [HttpGet("all")]
         public AllPreferencesDTO GetAllPreferences()
         {
-            var result = _preferenceService.GetAllPreferences();
-            return result;
+            var preferences = _preferenceService.GetAllPreferences();
+            return preferences;
         }
 
-        [HttpGet("user/{userId}")]
-        public async Task<UserPreferenceDTO> GetUserPreferences(string userId)
+        [HttpGet("me")]
+        public async Task<UserPreferenceDTO> GetUserPreferences()
         {
-            var result = await _preferenceService.GetUserPreferences(userId);
-            return result;
+            var currentUserId = Request.GetUserId();
+            var userPreferences = await _preferenceService.GetUserPreferences(currentUserId);
+            return userPreferences;
         }
 
-        [HttpPut("user/{userId}")]
-        public async Task<IActionResult> UpdateUserPreferences([FromBody] UserPreferenceDTO userPreferenceDTO, string userId)
+        [HttpPut("me")]
+        public async Task<IActionResult> UpdateUserPreferences([FromBody] UserPreferenceDTO userPreferenceDTO)
         {
-            await _preferenceService.UpdateUserPreferences(userId, userPreferenceDTO);
+            var currentUserId = Request.GetUserId();
+            await _preferenceService.UpdateUserPreferences(currentUserId, userPreferenceDTO);
             return Ok();
         }
     }

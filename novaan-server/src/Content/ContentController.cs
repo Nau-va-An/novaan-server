@@ -77,9 +77,12 @@ namespace NovaanServer.src.Content
 
         // Download file
         [HttpGet("download/{id}")]
-        public string DownloadFile(string id)
+        public async Task<DownloadFileResDTO> DownloadFile(string id)
         {
-            return _s3Service.DownloadFileAsync(id);
+            return new DownloadFileResDTO
+            {
+                Url = await _s3Service.GetDownloadUrlAsync(id)
+            };
         }
 
         // User likes a post

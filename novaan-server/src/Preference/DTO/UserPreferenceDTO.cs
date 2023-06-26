@@ -5,13 +5,13 @@ namespace NovaanServer.src.Preference.DTOs
     public class UserPreferenceDTO
     {
         [Required]
-        public List<string> Diets { get; set; } = new List<string>();
+        public HashSet<string> Diets { get; set; } = new HashSet<string>();
 
         [Required]
-        public List<string> Cuisines { get; set; } = new List<string>();
+        public HashSet<string> Cuisines { get; set; } = new HashSet<string>();
 
         [Required]
-        public List<string> Allergens { get; set; } = new List<string>();
+        public HashSet<string> Allergens { get; set; } = new HashSet<string>();
     }
 }
 

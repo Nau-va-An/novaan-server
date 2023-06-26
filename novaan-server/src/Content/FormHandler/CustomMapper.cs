@@ -18,7 +18,7 @@ namespace NovaanServer.src.Content.FormHandler
         public static void MappingObjectData<T>(T? obj, PropertyInfo property, string value)
         {
             Type propertyType = property.PropertyType;
-            if(string.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(value))
             {
                 throw new NovaanException(
                     ErrorCodes.CONTENT_FIELD_INVALID,
