@@ -64,7 +64,7 @@ namespace NovaanServer.src.Preference
                 ?? throw new BadHttpRequestException("User not found");
 
             // check if diet, cuisine, allergen from userPreferenceDTO exists
-            var isPreferencesExist = ValidateUserPreferences(userPreferenceDTO);
+            var isPreferencesExist = await ValidateUserPreferences(userPreferenceDTO);
             if (!isPreferencesExist)
             {
                 throw new NovaanException(ErrorCodes.PREFERENCE_NOT_FOUND, HttpStatusCode.NotFound);
@@ -77,17 +77,27 @@ namespace NovaanServer.src.Preference
             await _mongoService.Users.UpdateOneAsync(user => user.Id == userId, update);
         }
 
-        private bool ValidateUserPreferences(UserPreferenceDTO userPreferenceDTO)
+        private async Task<bool> ValidateUserPreferences(UserPreferenceDTO userPreferenceDTO)
         {
             var dietIds = userPreferenceDTO.Diets;
             var cuisineIds = userPreferenceDTO.Cuisines;
             var allergenIds = userPreferenceDTO.Allergens;
 
-            var isDietExist = _mongoService.Diets.Find(d => dietIds.Contains(d.Id)).Any();
-            var isCuisineExist = _mongoService.Cuisines.Find(c => cuisineIds.Contains(c.Id)).Any();
-            var isAllergenExist = _mongoService.Allergens.Find(a => allergenIds.Contains(a.Id)).Any();
+            var validDiets = (await _mongoService.Diets.FindAsync(_ => true)).ToList();
+            var validCuisines = (await _mongoService.Cuisines.FindAsync(_ => true)).ToList();
+            var validAllergens = (await _mongoService.Allergens.FindAsync(_ => true)).ToList();
 
-            return isDietExist && isCuisineExist && isAllergenExist;
+            var isDietsExist =  dietIds
+                .All(dietId => validDiets
+                .Any(diet => diet.Id == dietId));
+            var isCuisinesExist = cuisineIds
+                .All(cuisineId => validCuisines
+                .Any(cuisine => cuisine.Id == cuisineId));
+            var isAllergensExist = allergenIds
+                .All(allergenId => validAllergens
+                .Any(allergen => allergen.Id == allergenId));
+
+            return isDietsExist && isCuisinesExist && isAllergensExist;
         }
 
     }
