@@ -18,6 +18,8 @@ namespace NovaanServer.src.Preference
             _preferenceService = preferenceService;
         }
 
+        public object ErrorCode { get; private set; }
+
         [HttpGet("all")]
         public AllPreferencesDTO GetAllPreferences()
         {
