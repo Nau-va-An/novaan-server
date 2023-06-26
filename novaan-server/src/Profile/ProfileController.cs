@@ -7,8 +7,9 @@ using NovaanServer.src.Profile.DTOs;
 
 namespace NovaanServer.src.Profile
 {
-    [Authorize]
+    [Route("api/profile")]
     [ApiController]
+    [Authorize]
     public class ProfileController : ControllerBase
     {
         private readonly IProfileService _profileService;
@@ -18,15 +19,15 @@ namespace NovaanServer.src.Profile
             _profileService = profileService;
         }
 
-        [HttpGet("api/profile/{userId}")]
-        public async Task<ProfileResDTO> GetProfile(string userId)
+        [HttpGet("{userId}")]
+        public async Task<GetProfileResDTO> GetProfile(string userId)
         {
             var currentUserId = Request.GetUserId();
             return await _profileService.GetProfile(currentUserId, userId);
         }
 
         // Get recipes of a user
-        [HttpGet("api/profile/{userId}/recipes")]
+        [HttpGet("{userId}/recipes")]
         public async Task<List<Recipe>> GetRecipes(string userId, [FromQuery] Pagination pagination)
         {
             var currentUserId = Request.GetUserId();
@@ -34,7 +35,7 @@ namespace NovaanServer.src.Profile
         }
 
         // Get tips of a user
-        [HttpGet("api/profile/{userId}/tips")]
+        [HttpGet("{userId}/tips")]
         public async Task<List<CulinaryTip>> GetTips(string userId, [FromQuery] Pagination pagination)
         {
             var currentUserId = Request.GetUserId();
@@ -42,7 +43,7 @@ namespace NovaanServer.src.Profile
         }
 
         // Get saved post of a user
-        [HttpGet("api/profile/{userId}/saved")]
+        [HttpGet("{userId}/saved")]
         public async Task<List<SavedPost>> GetSavedPosts(string userId, [FromQuery] Pagination pagination)
         {
             // only current user can see his/her saved posts

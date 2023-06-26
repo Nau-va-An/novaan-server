@@ -76,7 +76,12 @@ namespace NovaanServer.src.Followerships
             }
 
             // Check if user is already following the followed user
-            Followership followership = (await _mongodbService.Followerships.FindAsync(f => f.FollowerId == currentUserId && f.FollowingId == followingUserId)).FirstOrDefault();
+            Followership followership = (await _mongodbService.Followerships
+                .FindAsync(
+                    f => f.FollowerId == currentUserId &&
+                    f.FollowingId == followingUserId
+                ))
+                .FirstOrDefault();
             if (followership == null)
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOLLOWING, HttpStatusCode.BadRequest);
@@ -85,7 +90,11 @@ namespace NovaanServer.src.Followerships
             try
             {
                 // Delete followership
-                await _mongodbService.Followerships.DeleteOneAsync(f => f.FollowerId == currentUserId && f.FollowingId == followingUserId);
+                await _mongodbService.Followerships
+                    .DeleteOneAsync(
+                        f => f.FollowerId == currentUserId &&
+                        f.FollowingId == followingUserId
+                    );
 
                 // Decrease following count of user that has id is userId
                 var update = Builders<User>.Update.Inc(u => u.FollowingCount, -1);
@@ -101,7 +110,11 @@ namespace NovaanServer.src.Followerships
             }
         }
 
-        public async Task<List<FollowershipDTO>> GetFollowers(string? currentUserId, string targetuserId, Pagination pagination)
+        public async Task<List<FollowershipDTO>> GetFollowers(
+            string? currentUserId, 
+            string targetuserId, 
+            Pagination pagination
+        )
         {
             if (currentUserId == null)
             {
@@ -139,7 +152,11 @@ namespace NovaanServer.src.Followerships
             return followerUsersDTO;
         }
 
-        public async Task<List<FollowershipDTO>> GetFollowing(string? currentUserId, string targetUserId, Pagination pagination)
+        public async Task<List<FollowershipDTO>> GetFollowing(
+            string? currentUserId,
+            string targetUserId, 
+            Pagination pagination
+        )
         {
             if (currentUserId == null)
             {

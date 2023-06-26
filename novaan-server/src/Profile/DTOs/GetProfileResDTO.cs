@@ -5,7 +5,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace NovaanServer.src.Profile.DTOs
 {
-	public class ProfileResDTO
+	public class GetProfileResDTO
 	{
 		public string Username { get; set; }
 
@@ -19,9 +19,6 @@ namespace NovaanServer.src.Profile.DTOs
 		public int FollowingCount { get; set; }
 
 		public string Avatar { get; set; }
-
-		public List<Recipe> RecipeList { get; set; }
-
 	}
 }
 

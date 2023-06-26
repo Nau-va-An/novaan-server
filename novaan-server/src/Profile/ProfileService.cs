@@ -19,7 +19,7 @@ namespace NovaanServer.src.Profile
             _mongoDBService = mongoDBService;
         }
 
-        public async Task<ProfileResDTO> GetProfile(string? currentUserId, string targetUserId)
+        public async Task<GetProfileResDTO> GetProfile(string? currentUserId, string targetUserId)
         {
             if (currentUserId == null)
             {
@@ -36,13 +36,16 @@ namespace NovaanServer.src.Profile
                 .FindAsync(f => f.FollowerId == currentUserId && f.FollowingId == targetUserId))
                 .Any();
 
+            // TODO: merge 2 queries into 1 (using lookup?)
+            // lookup sang bang followership de tim xem co user day khong => co thi isFollowing = true
+
+
             var recipeList = await GetRecipes(currentUserId, targetUserId, new Pagination { Start = 0, Limit = 10 });
-            var profile = new ProfileResDTO
+            var profile = new GetProfileResDTO
             {
                 Username = targetUser.DisplayName,
                 UserId = targetUser.Id,
                 Avatar = targetUser.ProfilePicture,
-                RecipeList = recipeList,
                 FollowersCount = targetUser.FollowerCount,
                 FollowingCount = targetUser.FollowingCount,
                 IsFollowing = isFollowing,
@@ -57,11 +60,6 @@ namespace NovaanServer.src.Profile
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
-            var targetUser = (await _mongoDBService.Users
-                .FindAsync(u => u.Id == targetUserId))
-                .FirstOrDefault() ??
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-
             var recipes = new List<Recipe>();
             if (currentUserId == targetUserId)
             {
@@ -74,7 +72,7 @@ namespace NovaanServer.src.Profile
             {
                 // get public recipes of targetUser
                 recipes = (await _mongoDBService.Recipes
-                    .FindAsync(r => r.CreatorId == targetUser.Id && r.Status == Status.Approved))
+                    .FindAsync(r => r.CreatorId == targetUserId && r.Status == Status.Approved))
                     .ToList();
             }
 
@@ -116,13 +114,8 @@ namespace NovaanServer.src.Profile
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
-            var targetUser = (await _mongoDBService.Users
-                 .FindAsync(u => u.Id == targetUserId))
-                 .FirstOrDefault() ??
-                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-
             var tips = new List<CulinaryTip>();
-            if (currentUserId == targetUser.Id)
+            if (currentUserId == targetUserId)
             {
                 // get all tips of the current user
                 tips = (await _mongoDBService.CulinaryTips
@@ -133,7 +126,7 @@ namespace NovaanServer.src.Profile
             {
                 // get public tips of the targetUser
                 tips = (await _mongoDBService.CulinaryTips
-                    .FindAsync(t => t.CreatorId == targetUser.Id && t.Status == Status.Approved))
+                    .FindAsync(t => t.CreatorId == targetUserId && t.Status == Status.Approved))
                     .ToList();
             }
             return tips
