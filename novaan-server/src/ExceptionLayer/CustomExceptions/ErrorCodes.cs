@@ -4,7 +4,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
     public static class ErrorCodes
     {
         // TODO: Please update latest error code to avoid duplicate value
-        // Latest error code: 1030
+        // Latest error code: 1032
 
         // Common
         public const int SERVER_UNAVAILABLE = 1000;
@@ -15,6 +15,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int FIELD_REQUIRED = 1024;
 
         // Authentication
+        public const int USER_NOT_FOUND = 1025;
         public const int EMAIL_TAKEN_BASIC = 1004;
         public const int EMAIL_TAKEN_GG = 1005;
         public const int EMAIL_OR_PASSWORD_NOT_FOUND = 1006;
@@ -41,12 +42,14 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int CONTENT_INGR_TOO_MANY = 1023;
 
         // Followership
-        public const int USER_NOT_FOUND = 1025;
-        public const int USER_ALREADY_FOLLOWING = 1026;
-        public const int FOLLOWERSHIP_NOT_CREATED = 1027;
-        public const int USER_NOT_FOLLOWING = 1028;
-        public const int FOLLOWERSHIP_NOT_DELETED = 1029;
+        public static int USER_ALREADY_FOLLOWING = 1026;
+        public static int FOLLOWERSHIP_NOT_CREATED = 1027;
+        public static int USER_NOT_FOLLOWING = 1028;
+        public static int FOLLOWERSHIP_NOT_DELETED = 1029;
         public const int USER_FOLLOWING_ITSELF = 1030;
+
+        // Profile
+        public static int FORBIDDEN_PROFILE_CONTENT = 1031;
 
         // S3
         public const int S3_FILE_NOT_FOUND = 1032;
