@@ -24,36 +24,30 @@ namespace NovaanServer.src.Followerships
         [HttpPost("api/follow/{userId}")]
         public async Task<IActionResult> FollowUser(string userId)
         {
-            var currentUserID = Request.GetUserId() ??
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-
-            await _followershipService.FollowUser(currentUserID, userId);
+            var currentUserId = Request.GetUserId();
+            await _followershipService.FollowUser(currentUserId, userId);
             return Ok();
         }
 
         [HttpPost("api/unfollow/{userId}")]
         public async Task<IActionResult> UnfollowUser(string userId)
         {
-            var currentUserID = Request.GetUserId() ??
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-
-            await _followershipService.UnfollowUser(currentUserID, userId);
+            var currentUserId = Request.GetUserId();
+            await _followershipService.UnfollowUser(currentUserId, userId);
             return Ok();
         }
 
         [HttpGet("api/followers/{userId}")]
         public async Task<List<FollowershipDTO>> GetFollowers(string userId, [FromQuery] Pagination pagination)
         {
-            var currentUserID = Request.GetUserId() ??
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-
-            return await _followershipService.GetFollowers(currentUserID, userId, pagination);
+            var currentUserId = Request.GetUserId();
+            return await _followershipService.GetFollowers(currentUserId, userId, pagination);
         }
 
         [HttpGet("api/following/{userId}")]
         public async Task<List<FollowershipDTO>> GetFollowing(string userId, [FromQuery] Pagination pagination)
         {
-            var currentUserID = Request.GetUserId() ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            var currentUserID = Request.GetUserId();
             return await _followershipService.GetFollowing(currentUserID, userId, pagination);
         }
 
