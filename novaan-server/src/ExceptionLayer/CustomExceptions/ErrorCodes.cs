@@ -48,6 +48,8 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int FOLLOWERSHIP_NOT_DELETED = 1029;
         public const int USER_FOLLOWING_ITSELF = 1030;
 
+        // S3
+        public const int S3_FILE_NOT_FOUND = 1032;
 
         public static Dictionary<int, string> ErrorNameDictionary = typeof(ErrorCodes).GetFields()
                 .Where(f => f.FieldType == typeof(int))
