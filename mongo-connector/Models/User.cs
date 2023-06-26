@@ -15,13 +15,13 @@ namespace MongoConnector.Models
         public string ProfilePicture { get; set; } = string.Empty;
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public List<string> Diet { get; set; } = new List<string>();
+        public HashSet<string> Diet { get; set; } = new HashSet<string>();
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public List<string> Cuisine { get; set; } = new List<string>();
+        public HashSet<string> Cuisine { get; set; } = new HashSet<string>();
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public List<string> Allergen { get; set; } = new List<string>();
+        public HashSet<string> Allergen { get; set; } = new HashSet<string>();
 
         public int FollowerCount { get; set; }
 

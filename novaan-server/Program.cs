@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using NovaanServer.src.Admin;
 using Newtonsoft.Json.Converters;
 using NovaanServer.src.Followerships;
+using NovaanServer.src.Preference;
 using NovaanServer.src.Profile;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,6 +49,7 @@ builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IPreferenceService, PreferenceService>();
 builder.Services.AddScoped<IFollowershipService, FollowershipService>();
 
 builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection("JwTConfig"));
