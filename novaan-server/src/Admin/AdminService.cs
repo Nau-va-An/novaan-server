@@ -52,7 +52,7 @@ namespace NovaanServer.src.Admin
             var update = Builders<T>.Update
                 .Set("Status", statusDTO.Status)
                 .Set("AdminComment", statusDTO.AdminComment);
-                
+
             try
             {
                 var result = collection.UpdateOne(filter, update);

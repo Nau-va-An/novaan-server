@@ -53,7 +53,7 @@ namespace NovaanServer.src.Content
         public async Task<IActionResult> UploadRecipe()
         {
             var userId = Request.GetUserId();
-            if(userId == null)
+            if (userId == null)
             {
                 return Unauthorized();
             }

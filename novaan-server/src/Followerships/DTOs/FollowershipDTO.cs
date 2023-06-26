@@ -15,6 +15,6 @@ namespace NovaanServer.src.Followerships.DTOs
         public string Avatar { get; set; } = string.Empty;
 
         // public bool IsFollowed { get; set; }
-    }   
+    }
 }
 

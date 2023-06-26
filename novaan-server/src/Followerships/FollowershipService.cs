@@ -111,8 +111,8 @@ namespace NovaanServer.src.Followerships
         }
 
         public async Task<List<FollowershipDTO>> GetFollowers(
-            string? currentUserId, 
-            string targetuserId, 
+            string? currentUserId,
+            string targetuserId,
             Pagination pagination
         )
         {
@@ -154,7 +154,7 @@ namespace NovaanServer.src.Followerships
 
         public async Task<List<FollowershipDTO>> GetFollowing(
             string? currentUserId,
-            string targetUserId, 
+            string targetUserId,
             Pagination pagination
         )
         {

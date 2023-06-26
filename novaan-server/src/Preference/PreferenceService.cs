@@ -87,7 +87,7 @@ namespace NovaanServer.src.Preference
             var validCuisines = (await _mongoService.Cuisines.FindAsync(_ => true)).ToList();
             var validAllergens = (await _mongoService.Allergens.FindAsync(_ => true)).ToList();
 
-            var isDietsExist =  dietIds
+            var isDietsExist = dietIds
                 .All(dietId => validDiets
                 .Any(diet => diet.Id == dietId));
             var isCuisinesExist = cuisineIds

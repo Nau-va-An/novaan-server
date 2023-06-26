@@ -5,20 +5,20 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace NovaanServer.src.Profile.DTOs
 {
-	public class GetProfileResDTO
-	{
-		public string Username { get; set; }
+    public class GetProfileResDTO
+    {
+        public string Username { get; set; }
 
-		[BsonRepresentation(BsonType.ObjectId)]
-		public string UserId { get; set; }
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string UserId { get; set; }
 
-		public bool IsFollowing { get; set; }
+        public bool IsFollowing { get; set; }
 
-		public int FollowersCount { get; set; }
+        public int FollowersCount { get; set; }
 
-		public int FollowingCount { get; set; }
+        public int FollowingCount { get; set; }
 
-		public string Avatar { get; set; }
-	}
+        public string Avatar { get; set; }
+    }
 }
 

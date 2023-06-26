@@ -1,8 +1,6 @@
-using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NovaanServer.src.Common.Utils;
-using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using NovaanServer.src.Preference.DTOs;
 
 namespace NovaanServer.src.Preference
@@ -18,21 +16,19 @@ namespace NovaanServer.src.Preference
             _preferenceService = preferenceService;
         }
 
-        public object ErrorCode { get; private set; }
-
         [HttpGet("all")]
         public AllPreferencesDTO GetAllPreferences()
         {
-            var result = _preferenceService.GetAllPreferences();
-            return result;
+            var preferences = _preferenceService.GetAllPreferences();
+            return preferences;
         }
 
         [HttpGet("me")]
         public async Task<UserPreferenceDTO> GetUserPreferences()
         {
             var currentUserId = Request.GetUserId();
-            var result = await _preferenceService.GetUserPreferences(currentUserId);
-            return result;
+            var userPreferences = await _preferenceService.GetUserPreferences(currentUserId);
+            return userPreferences;
         }
 
         [HttpPut("me")]
