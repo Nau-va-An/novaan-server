@@ -44,7 +44,7 @@ namespace NovaanServer.src.Admin
             }
         }
 
-        public void UpdateStatus<T>(StatusDTO statusDTO, string collectionName)
+        public void UpdateStatus<T>(UpdateStatusDTO statusDTO, string collectionName)
         {
             var collection = _mongoService.GetCollection<T>(collectionName);
             var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(statusDTO.PostId));

@@ -26,7 +26,7 @@ namespace NovaanServer.src.Admin
         }
 
         [HttpPut("status/{type}")]
-        public IActionResult UpdateStatus([FromBody] StatusDTO statusDTO, SubmissionType type)
+        public IActionResult UpdateStatus([FromBody] UpdateStatusDTO statusDTO, SubmissionType type)
         {
             if (type == SubmissionType.Recipe)
             {

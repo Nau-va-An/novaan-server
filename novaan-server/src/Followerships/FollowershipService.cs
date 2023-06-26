@@ -24,16 +24,15 @@ namespace NovaanServer.src.Followerships
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
-            var followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followingUserId)).FirstOrDefault() ??
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-
             if (currentUserId == followingUserId)
             {
                 throw new NovaanException(ErrorCodes.USER_FOLLOWING_ITSELF, HttpStatusCode.BadRequest);
             }
 
             // Check if user is already following the followed user
-            var followership = (await _mongodbService.Followerships.FindAsync(f => f.FollowerId == currentUserId && f.FollowingId == followingUserId)).FirstOrDefault();
+            var followership = (await _mongodbService.Followerships
+                .FindAsync(f => f.FollowerId == currentUserId && f.FollowingId == followingUserId))
+                .FirstOrDefault();
             if (followership != null)
             {
                 throw new NovaanException(ErrorCodes.USER_ALREADY_FOLLOWING, HttpStatusCode.BadRequest);
@@ -67,12 +66,6 @@ namespace NovaanServer.src.Followerships
         public async Task UnfollowUser(string? currentUserId, string followingUserId)
         {
             if (currentUserId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
-            User followedUser = (await _mongodbService.Users.FindAsync(u => u.Id == followingUserId)).FirstOrDefault();
-            if (followedUser == null)
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
