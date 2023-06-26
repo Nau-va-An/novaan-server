@@ -39,7 +39,7 @@ namespace NovaanServer.src.Preference
             }
 
             var user = (await _mongoService.Users
-                .FindAsync(user => user.AccountID == userId))
+                .FindAsync(user => user.Id == userId))
                 .FirstOrDefault()
                 ?? throw new BadHttpRequestException("User not found");
 
@@ -59,7 +59,7 @@ namespace NovaanServer.src.Preference
             }
 
             var foundUser = (await _mongoService.Users
-                .FindAsync(user => user.AccountID == userId))
+                .FindAsync(user => user.Id == userId))
                 .FirstOrDefault()
                 ?? throw new BadHttpRequestException("User not found");
 
