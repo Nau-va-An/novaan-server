@@ -34,6 +34,11 @@ namespace MongoConnector
             MongoClient = new MongoClient(mongoDbSettings);
             MongoDatabase = MongoClient.GetDatabase(databaseName);
         }
+        public MongoDBService(IMongoClient mongoClient)
+        {
+            this.MongoDatabase = mongoClient.GetDatabase("dbname");
+
+        }
 
         public bool PingDatabase()
         {
