@@ -16,6 +16,14 @@ using NovaanServer.src.Profile;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options => options.AddPolicy(
+    name: "AdminPortalPolicy",
+    builder => builder
+        .WithOrigins("http://localhost:3000")
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+));
+
 // Add services to the container.
 builder.Services.AddControllers()
 .AddNewtonsoftJson(options =>
@@ -63,6 +71,9 @@ builder.Services.AddSingleton<TokenValidationParameters>(tokenSettings);
 var app = builder.Build();
 
 await SeedData(app);
+
+// TODO: Need to config for production
+app.UseCors("AdminPortalPolicy");
 
 app.UseMiddleware<ExceptionFilter>();
 

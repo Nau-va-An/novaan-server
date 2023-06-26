@@ -87,13 +87,29 @@ namespace S3Connector
         }
 
         // Return a limited time download link
-        public string DownloadFileAsync(string keyId)
+        public async Task<string> GetDownloadUrlAsync(string keyId)
         {
+            // Check if the file exists on S3
+            try
+            {
+                await _s3Client.GetObjectMetadataAsync(_bucketName, keyId);
+            }
+            catch (AmazonS3Exception ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    throw new FileNotFoundException("File not found on AWS S3");
+                }
+
+                // Status wasn't not found, so throw the exception
+                throw;
+            }
+
             var downloadReq = new GetPreSignedUrlRequest
             {
                 BucketName = _bucketName,
                 Key = keyId,
-                // Add this time to appsettings to avoid hard-coded value
+                // TODO: Add this time to appsettings to avoid hard-coded value
                 Expires = DateTime.UtcNow.AddMinutes(5)
             };
 
