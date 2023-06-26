@@ -1,6 +1,4 @@
-﻿using System;
-using System.Net;
-using Microsoft.AspNetCore.Authorization;
+﻿using System.Net;
 using MongoConnector;
 using MongoConnector.Enums;
 using MongoConnector.Models;
@@ -23,14 +21,11 @@ namespace NovaanServer.src.Admin
         {
             try
             {
-                var recipes = _mongoService.GetCollection<Recipe>(MongoCollections.Recipes);
-                var culinaryTips = _mongoService.GetCollection<CulinaryTip>(MongoCollections.CulinaryTips);
-
                 var recipesFilter = Builders<Recipe>.Filter.In("Status", status);
                 var culinaryTipsFilter = Builders<CulinaryTip>.Filter.In("Status", status);
 
-                var recipesResult = recipes.Find(recipesFilter).ToList();
-                var culinaryTipsResult = culinaryTips.Find(culinaryTipsFilter).ToList();
+                var recipesResult = _mongoService.Recipes.Find(recipesFilter).ToList();
+                var culinaryTipsResult = _mongoService.CulinaryTips.Find(culinaryTipsFilter).ToList();
 
                 return new SubmissionsDTO
                 {
