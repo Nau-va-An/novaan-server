@@ -1,5 +1,8 @@
+using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NovaanServer.src.Common.Utils;
+using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using NovaanServer.src.Preference.DTOs;
 
 namespace NovaanServer.src.Preference
@@ -15,6 +18,8 @@ namespace NovaanServer.src.Preference
             _preferenceService = preferenceService;
         }
 
+        public object ErrorCode { get; private set; }
+
         [HttpGet("all")]
         public AllPreferencesDTO GetAllPreferences()
         {
@@ -22,17 +27,19 @@ namespace NovaanServer.src.Preference
             return result;
         }
 
-        [HttpGet("user/{userId}")]
-        public async Task<UserPreferenceDTO> GetUserPreferences(string userId)
+        [HttpGet("me")]
+        public async Task<UserPreferenceDTO> GetUserPreferences()
         {
-            var result = await _preferenceService.GetUserPreferences(userId);
+            var currentUserId = Request.GetUserId();
+            var result = await _preferenceService.GetUserPreferences(currentUserId);
             return result;
         }
 
-        [HttpPut("user/{userId}")]
-        public async Task<IActionResult> UpdateUserPreferences([FromBody] UserPreferenceDTO userPreferenceDTO, string userId)
+        [HttpPut("me")]
+        public async Task<IActionResult> UpdateUserPreferences([FromBody] UserPreferenceDTO userPreferenceDTO)
         {
-            await _preferenceService.UpdateUserPreferences(userId, userPreferenceDTO);
+            var currentUserId = Request.GetUserId();
+            await _preferenceService.UpdateUserPreferences(currentUserId, userPreferenceDTO);
             return Ok();
         }
     }

@@ -10,26 +10,24 @@ namespace MongoConnector.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
 
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string AccountID { get; set; }
-
         public string DisplayName { get; set; } = string.Empty;
 
         public string ProfilePicture { get; set; } = string.Empty;
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public List<string> Diet { get; set; } = new List<string>();
+        public HashSet<string> Diet { get; set; } = new HashSet<string>();
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public List<string> Cuisine { get; set; } = new List<string>();
+        public HashSet<string> Cuisine { get; set; } = new HashSet<string>();
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public List<string> Allergen { get; set; } = new List<string>();
+        public HashSet<string> Allergen { get; set; } = new HashSet<string>();
 
         public int FollowerCount { get; set; }
 
         public int FollowingCount { get; set; }
-
+      
+        public List<SavedPost> SavedPost { get; set; } = new List<SavedPost>();
     }
 }
 

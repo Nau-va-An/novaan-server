@@ -11,9 +11,11 @@ namespace MongoConnector.Models
         public string Id { get; set; } 
 
         [Required]
-        public string FollowerId { get; set; } = string.Empty;
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string FollowerId { get; set; }
 
         [Required]
-        public string FollowingId { get; set; } = string.Empty;
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string FollowingId { get; set; }
     }
 }

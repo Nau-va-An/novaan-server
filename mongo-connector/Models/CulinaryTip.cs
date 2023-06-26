@@ -5,6 +5,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoConnector.Models
 {
+    [BsonIgnoreExtraElements]
     public class CulinaryTip
     {
         [BsonId]
