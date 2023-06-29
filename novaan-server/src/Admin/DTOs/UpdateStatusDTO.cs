@@ -10,7 +10,6 @@ namespace NovaanServer.src.Admin.DTOs
         public string PostId { get; set; }
 
         public Status Status { get; set; }
-        public SubmissionType submissionType { get; set; }
 
         public string AdminComment { get; set; } = string.Empty;
     }
