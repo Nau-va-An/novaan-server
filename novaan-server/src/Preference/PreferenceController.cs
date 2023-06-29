@@ -17,9 +17,9 @@ namespace NovaanServer.src.Preference
         }
 
         [HttpGet("all")]
-        public AllPreferencesDTO GetAllPreferences()
+        public async Task<AllPreferencesDTO> GetAllPreferences()
         {
-            var preferences = _preferenceService.GetAllPreferences();
+            var preferences = await _preferenceService.GetAllPreferences();
             return preferences;
         }
 

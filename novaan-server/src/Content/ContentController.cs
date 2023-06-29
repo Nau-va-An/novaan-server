@@ -27,9 +27,9 @@ namespace NovaanServer.src.Content
         /// </summary>
         /// <returns></returns>
         [HttpGet("posts")]
-        public PostDTO GetPosts()
+        public async Task<PostDTO> GetPosts()
         {
-            return _contentService.GetPosts();
+            return await _contentService.GetPosts();
         }
 
         [HttpPost("upload/tips")]
