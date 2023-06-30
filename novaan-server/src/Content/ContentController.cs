@@ -89,6 +89,7 @@ namespace NovaanServer.src.Content
         [HttpPost("interaction/like/{postId}")]
         public async Task<IActionResult> LikePost(string postId)
         {
+            //Them param submissionType
             var userId = Request.GetUserId();
             await _contentService.LikePost(postId, userId);
             return Ok();

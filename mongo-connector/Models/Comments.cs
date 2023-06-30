@@ -26,7 +26,7 @@ namespace MongoConnector.Models
         [Range(1, 5, ErrorMessage = "Field value must be between 1 and 5.")]
         public int Rating { get; set; }
 
-        public Status Status { get; set; }
+        public Status Status { get; set; } = Status.Approved;
 
         public DateTime CreatedAt { get; set; }
 

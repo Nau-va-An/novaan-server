@@ -649,23 +649,10 @@ namespace NovaanServer.src.Content
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
             }
-
-            // Find recipe or tip that has the postId
-            var recipe = (await _mongoService.Recipes
-                .FindAsync(r => r.Id == postId))
-                .FirstOrDefault();
-
-            var tip = (await _mongoService.CulinaryTips
-                .FindAsync(t => t.Id == postId))
-                .FirstOrDefault();
-
-            if (recipe == null && tip == null){
-                throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
-            }
-
             // Update status of post to Reported
-            if (recipe != null)
+            if (reportDTO.PostType == SubmissionType.Recipe)
             {
+                
                 await _mongoService.Recipes
                     .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
                     .Set(r => r.Status, Status.Reported));
