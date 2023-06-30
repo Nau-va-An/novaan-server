@@ -19,9 +19,9 @@ namespace NovaanServer.src.Admin
         }
 
         [HttpGet("submissions")]
-        public SubmissionsDTO GetSubmissions([FromQuery] List<Status> status)
+        public async Task<SubmissionsDTO> GetSubmissions([FromQuery] List<Status> status)
         {
-            return _submissionService.GetSubmissions(status);
+            return await _submissionService.GetSubmissions(status);
         }
 
         [HttpPut("status/{type}")]
