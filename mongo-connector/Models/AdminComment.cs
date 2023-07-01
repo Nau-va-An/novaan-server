@@ -8,7 +8,9 @@ namespace MongoConnector.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
+
         public string Comment { get; set; } = string.Empty;
+
         public DateTime CreatedAt { get; set; }
     }
 }

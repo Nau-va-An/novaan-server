@@ -12,22 +12,22 @@ namespace MongoConnector.Models
 
         public string DisplayName { get; set; } = string.Empty;
 
-        public string ProfilePicture { get; set; } = string.Empty;
+        public string Avatar { get; set; } = string.Empty;
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public HashSet<string> Diet { get; set; } = new HashSet<string>();
+        public HashSet<string> Diet { get; set; } = new();
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public HashSet<string> Cuisine { get; set; } = new HashSet<string>();
+        public HashSet<string> Cuisine { get; set; } = new();
 
         [BsonRepresentation(BsonType.ObjectId)]
-        public HashSet<string> Allergen { get; set; } = new HashSet<string>();
+        public HashSet<string> Allergen { get; set; } = new();
 
         public int FollowerCount { get; set; }
 
         public int FollowingCount { get; set; }
       
-        public List<SavedPost> SavedPost { get; set; } = new List<SavedPost>();
+        public List<SavedPost> SavedPost { get; set; } = new();
     }
 }
 

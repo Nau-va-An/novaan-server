@@ -31,24 +31,24 @@ namespace NovaanServer.src.Profile
                 db.users.aggregate([
                     {
                         $match: {
-                        "_id": ObjectId("64940b479b7adc28001f72a2")
+                            "_id": ObjectId("64940b479b7adc28001f72a2")
                         }
                     },
                     {
                         $lookup: {
-                        from: "followerships",
-                        localField: "_id",
-                        foreignField: "FollowingId",
-                        as: "joinedData"
+                            from: "followerships",
+                            localField: "_id",
+                            foreignField: "FollowingId",
+                            as: "joinedData"
                         }
                     },
                     {
                         $project: {
-                        joinedData: 1,
-                        _id: 0
+                            joinedData: 1,
+                            _id: 0
                         }
                     }
-                    ])
+                ])
                 */
             var profile = await _mongoDBService.Users
                .Aggregate()
@@ -64,14 +64,13 @@ namespace NovaanServer.src.Profile
                    Followerships = u.Followerships,
                    Username = u.DisplayName,
                    UserId = u.Id,
-                   Avatar = u.ProfilePicture,
+                   Avatar = u.Avatar,
                    FollowersCount = u.FollowerCount,
                    FollowingCount = u.FollowingCount,
-                   IsFollowing = u.Followerships.Any(f => f.FollowerId == currentUserId)
+                   IsFollowing = u.Followerships.Any()
                })
                .FirstOrDefaultAsync()
                ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            profile.Recipes = await GetRecipes(currentUserId, targetUserId, new Pagination());
             return profile;
         }
 
