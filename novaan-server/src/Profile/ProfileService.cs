@@ -26,52 +26,30 @@ namespace NovaanServer.src.Profile
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
+            User targetUser = (await _mongoDBService.Users
+                .FindAsync(u => u.Id == targetUserId))
+                .FirstOrDefault() ??
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
 
-            /* Querry to test in Mongosh
-                db.users.aggregate([
-                    {
-                        $match: {
-                        "_id": ObjectId("64940b479b7adc28001f72a2")
-                        }
-                    },
-                    {
-                        $lookup: {
-                        from: "followerships",
-                        localField: "_id",
-                        foreignField: "FollowingId",
-                        as: "joinedData"
-                        }
-                    },
-                    {
-                        $project: {
-                        joinedData: 1,
-                        _id: 0
-                        }
-                    }
-                    ])
-                */
-            var profile = await _mongoDBService.Users
-               .Aggregate()
-               .Match(u => u.Id == targetUserId)
-               .Lookup(
-                   foreignCollection: _mongoDBService.Followerships,
-                   localField: u => u.Id,
-                   foreignField: f => f.FollowingId,
-                   @as: (UserDTO u) => u.Followerships
-               )
-               .Project(u => new GetProfileResDTO
-               {
-                   Followerships = u.Followerships,
-                   Username = u.DisplayName,
-                   UserId = u.Id,
-                   Avatar = u.ProfilePicture,
-                   FollowersCount = u.FollowerCount,
-                   FollowingCount = u.FollowingCount,
-                   IsFollowing = u.Followerships.Any(f => f.FollowerId == currentUserId)
-               })
-               .FirstOrDefaultAsync()
-               ?? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            profile.Recipes = await GetRecipes(currentUserId, targetUserId, new Pagination());
+            // check if current user is following the targetUser
+            bool isFollowing = (await _mongoDBService.Followerships
+                .FindAsync(f => f.FollowerId == currentUserId && f.FollowingId == targetUserId))
+                .Any();
+
+            // TODO: merge 2 queries into 1 (using lookup?)
+            // lookup sang bang followership de tim xem co user day khong => co thi isFollowing = true
+
+
+            var recipeList = await GetRecipes(currentUserId, targetUserId, new Pagination { Start = 0, Limit = 10 });
+            var profile = new GetProfileResDTO
+            {
+                Username = targetUser.DisplayName,
+                UserId = targetUser.Id,
+                Avatar = targetUser.ProfilePicture,
+                FollowersCount = targetUser.FollowerCount,
+                FollowingCount = targetUser.FollowingCount,
+                IsFollowing = isFollowing,
+            };
             return profile;
         }
 
