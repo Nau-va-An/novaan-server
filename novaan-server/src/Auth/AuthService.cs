@@ -70,8 +70,8 @@ namespace NovaanServer.Auth
             var ggAcountInfo = await GetGoogleAccountInfo(googleOAuthDTO);
 
             // Find existing account associated with fetched account's googleId
-            var foundAccount = _mongoService.Accounts
-                .Find(acc => acc.GoogleId == ggAcountInfo.GoogleId)
+            var foundAccount = (await _mongoService.Accounts
+                .FindAsync(acc => acc.GoogleId == ggAcountInfo.GoogleId))
                 .FirstOrDefault();
 
             // Create new account if none found
@@ -103,10 +103,10 @@ namespace NovaanServer.Auth
         // Check if email exists
         private async Task<bool> CheckEmailExist(string email)
         {
-            var foundAccount = await _mongoService.Accounts
-                .Find(
+            var foundAccount = (await _mongoService.Accounts
+                .FindAsync(
                     acc => acc.Email == email
-                )
+                ))
                 .FirstOrDefaultAsync();
             return foundAccount != null;
         }

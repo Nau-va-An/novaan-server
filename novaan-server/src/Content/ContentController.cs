@@ -27,9 +27,10 @@ namespace NovaanServer.src.Content
         /// </summary>
         /// <returns></returns>
         [HttpGet("posts")]
-        public PostDTO GetPosts()
+        public async Task<GetReelDTO> GetPersonalReels()
         {
-            return _contentService.GetPosts();
+            var userId = Request.GetUserId();
+            return await _contentService.GetPersonalReel(userId);
         }
 
         [HttpPost("upload/tips")]
