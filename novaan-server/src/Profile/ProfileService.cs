@@ -64,7 +64,7 @@ namespace NovaanServer.src.Profile
                    Followerships = u.Followerships,
                    Username = u.DisplayName,
                    UserId = u.Id,
-                   Avatar = u.ProfilePicture,
+                   Avatar = u.Avatar,
                    FollowersCount = u.FollowerCount,
                    FollowingCount = u.FollowingCount,
                    IsFollowing = u.Followerships.Any()

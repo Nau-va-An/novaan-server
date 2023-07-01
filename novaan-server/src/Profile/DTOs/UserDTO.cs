@@ -12,7 +12,7 @@ namespace NovaanServer.src.Profile.DTOs
 
         public string DisplayName { get; set; } = string.Empty;
 
-        public string ProfilePicture { get; set; } = string.Empty;
+        public string Avatar { get; set; } = string.Empty;
 
         [BsonRepresentation(BsonType.ObjectId)]
         public HashSet<string> Diet { get; set; } = new();

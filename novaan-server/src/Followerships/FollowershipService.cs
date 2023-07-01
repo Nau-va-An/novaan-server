@@ -145,7 +145,7 @@ namespace NovaanServer.src.Followerships
                 {
                     UserId = u.Id,
                     UserName = u.DisplayName,
-                    Avatar = u.ProfilePicture,
+                    Avatar = u.Avatar,
                     // IsFollowed = followers.Any(f => f.FollowerId == currentUser.Id && f.FollowingId == u.Id)
                 }).ToList();
 
@@ -184,7 +184,7 @@ namespace NovaanServer.src.Followerships
                 {
                     UserId = u.Id,
                     UserName = u.DisplayName,
-                    Avatar = u.ProfilePicture,
+                    Avatar = u.Avatar,
                     // IsFollowed = following.Any(f => f.FollowerId == currentUser.Id && f.FollowingId == u.Id)
                 }).ToList();
             return followingUsersDTO;
