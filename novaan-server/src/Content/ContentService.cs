@@ -274,7 +274,7 @@ namespace NovaanServer.src.Content
             }
         }
 
-        public async Task<PostDTO> GetPosts()
+        public async Task<GetReelDTO> GetPersonalReel(string? userId)
         {
             try
             {
@@ -284,9 +284,9 @@ namespace NovaanServer.src.Content
                 var culinaryTips = (await _mongoService.CulinaryTips
                     .FindAsync(c => c.Status == Status.Approved))
                     .ToList();
-                return new PostDTO
+                return new GetReelDTO
                 {
-                    RecipeList = recipes,
+                    Recipes = recipes,
                     CulinaryTips = culinaryTips
                 };
             }
