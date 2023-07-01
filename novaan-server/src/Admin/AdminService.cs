@@ -53,14 +53,11 @@ namespace NovaanServer.src.Admin
 
             if (!string.IsNullOrEmpty(statusDTO.AdminComment))
             {
-                // get list of adminComment from foundsubmission
-                var listComments = foundSubmission.GetType().GetProperty("AdminComment").GetValue(foundSubmission) as List<AdminComment> ?? new List<AdminComment>();
-                listComments.Add(new AdminComment
+                update = update.Push("AdminComment", new AdminComment
                 {
                     Comment = statusDTO.AdminComment,
                     CreatedAt = DateTime.Now
                 });
-                update = update.Set("AdminComment", listComments);
             }
 
             try
