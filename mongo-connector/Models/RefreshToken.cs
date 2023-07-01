@@ -17,14 +17,14 @@ namespace MongoConnector.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string UserId { get; set; }
 
-        public string CurrentJwtId { get; set; }
+        public string CurrentJwtId { get; set; } = string.Empty;
 
         public bool IsRevoked { get; set; } = false;
 
         // Support multi session (signin on multiple device)
-        public List<string> ValidTokenFamily { get; set; }
+        public List<string> ValidTokenFamily { get; set; } = new();
 
-        public List<string> RevokeTokenFamily { get; set; }
+        public List<string> RevokeTokenFamily { get; set; } = new();
 
         public DateTime AddedDate { get; set; }
 
