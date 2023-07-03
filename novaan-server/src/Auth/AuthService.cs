@@ -103,11 +103,10 @@ namespace NovaanServer.Auth
         // Check if email exists
         private async Task<bool> CheckEmailExist(string email)
         {
-            var foundAccount = (await _mongoService.Accounts
-                .FindAsync(
-                    acc => acc.Email == email
-                ))
-                .FirstOrDefaultAsync();
+            // Check if email existed in account collection
+            Account foundAccount = (await _mongoService.Accounts
+                .FindAsync(acc => acc.Email == email))
+                .FirstOrDefault();
             return foundAccount != null;
         }
 
