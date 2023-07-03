@@ -55,6 +55,6 @@ namespace MongoConnector.Models
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        public List<AdminComment> AdminComment { get; set; } = new();
+        public List<AdminComment> AdminComments { get; set; } = new();
     }
 }

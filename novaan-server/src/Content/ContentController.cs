@@ -33,6 +33,22 @@ namespace NovaanServer.src.Content
             return await _contentService.GetPersonalReel(userId);
         }
 
+        // View recipe details
+        [HttpGet("/post/recipe/{postId}")]
+        public async Task<GetRecipeDetailDTO> GetRecipeDetail(string postId)
+        {
+            var currentUserId = Request.GetUserId();
+            return await _contentService.GetRecipe(postId, currentUserId);
+        }
+
+        // View culinary tip details
+        [HttpGet("/post/tip/{postId}")]
+        public async Task<GetTipsDetailDTO> GetTipsDetail(string postId)
+        {
+            var currentUserId = Request.GetUserId();
+            return await _contentService.GetCulinaryTip(postId, currentUserId);
+        }
+
         [HttpPost("upload/tips")]
         [MultipartFormData]
         [DisableFormValueModelBinding]
