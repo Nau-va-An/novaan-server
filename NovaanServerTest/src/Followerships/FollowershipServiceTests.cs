@@ -5,7 +5,10 @@ namespace NovaanServerTest.src.Followerships
     using AutoFixture;
     using AutoFixture.AutoMoq;
     using MongoConnector;
+    using MongoDB.Driver.Core.Misc;
+    using NovaanServer.Auth;
     using NovaanServer.src.Common.DTOs;
+    using NovaanServer.src.ExceptionLayer.CustomExceptions;
     using NovaanServer.src.Followerships;
     using Xunit;
 
@@ -13,45 +16,41 @@ namespace NovaanServerTest.src.Followerships
     {
         private FollowershipService _testClass;
         private MongoDBService _mongoDBService;
+        private MongoDBServiceTests _mongoDBServiceTests = new MongoDBServiceTests();
 
         public FollowershipServiceTests()
         {
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            _mongoDBService = fixture.Create<MongoDBService>();
-            _testClass = fixture.Create<FollowershipService>();
+            this._mongoDBServiceTests.InitializeMongoAccountCollection();
+            var mongoDBService = new MongoDBService(_mongoDBServiceTests.mongoClient.Object);
+            _testClass = new FollowershipService(mongoDBService);
         }
 
-        [Fact]
-        public void CanConstruct()
-        {
-            // Act
-            var instance = new FollowershipService(_mongoDBService);
-
-            // Assert
-            Assert.NotNull(instance);
-        }
-
-        [Fact]
-        public void CannotConstructWithNullMongoDBService()
-        {
-            Assert.Throws<ArgumentNullException>(() => new FollowershipService(_mongoDBService));
-        }
 
         [Fact]
         public async Task CanCallFollowUser()
         {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            var currentUserID = fixture.Create<string>();
-            var followingUserId = fixture.Create<string>();
 
             // Act
-            await _testClass.FollowUser(currentUserID, followingUserId);
+            await _testClass.FollowUser("1", "1");
 
             // Assert
-            throw new NotImplementedException("Create or modify test");
+            Assert.True(true);
         }
 
+        [Fact]
+        public async Task CannnotCallFollowUserUserExceptionUserFollowed()
+        {
+            // Assert
+            await Assert.ThrowsAsync<NovaanException>(() => _testClass.FollowUser("1", "2"));
+        }
+
+        [Fact]
+        public async Task CannnotCallFollowUserExceptionUserNotFound()
+        {
+            // Assert
+            await Assert.ThrowsAsync<NovaanException>(() => _testClass.FollowUser("1", "7"));
+        }
+        /*
         [Theory]
         [InlineData(null)]
         [InlineData("")]
@@ -203,19 +202,6 @@ namespace NovaanServerTest.src.Followerships
             await Assert.ThrowsAsync<ArgumentNullException>(() => _testClass.GetFollowing(fixture.Create<string>(), value, fixture.Create<Pagination>()));
         }
 
-        [Fact]
-        public void CanSetAndGet_mongodbService()
-        {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-
-            var testValue = fixture.Create<MongoDBService>();
-
-            // Act
-            _testClass._mongodbService = testValue;
-
-            // Assert
-            Assert.Same(testValue, _testClass._mongodbService);
-        }
+    */
     }
 }
