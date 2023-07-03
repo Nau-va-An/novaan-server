@@ -3,9 +3,9 @@ using MongoConnector.Models;
 
 namespace NovaanServer.src.Content.DTOs
 {
-    public class PostDTO
+    public class GetReelDTO
     {
-        public List<Recipe> RecipeList { get; set; } = new List<Recipe>();
+        public List<Recipe> Recipes { get; set; } = new List<Recipe>();
 
         public List<CulinaryTip> CulinaryTips { get; set; } = new List<CulinaryTip>();
     }

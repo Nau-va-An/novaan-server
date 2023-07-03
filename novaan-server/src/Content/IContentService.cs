@@ -12,7 +12,7 @@ namespace NovaanServer.src.Content
         Task<T> ProcessMultipartRequest<T>(HttpRequest request);
 
         bool ValidateFileMetadata(FileInformationDTO fileMetadata);
-        PostDTO GetPosts();
+        Task<GetReelDTO> GetPersonalReel(string? userId);
         Task LikePost(string postId, string? userId);
         Task SavePost(string postId, string? userId);
         Task CommentOnPost(string postId, string? userId, CommentDTO commentDTO);

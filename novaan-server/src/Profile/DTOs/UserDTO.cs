@@ -1,10 +1,10 @@
-﻿using System;
+using MongoConnector.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace MongoConnector.Models
+namespace NovaanServer.src.Profile.DTOs
 {
-    public class User
+    public class UserDTO
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -26,8 +26,10 @@ namespace MongoConnector.Models
         public int FollowerCount { get; set; }
 
         public int FollowingCount { get; set; }
-      
-        public List<SavedPost> SavedPost { get; set; } = new();
-    }
-}
 
+        public List<SavedPost> SavedPost { get; set; } = new();
+
+        public List<Followership> Followerships { get; set; } = new();
+    }
+
+}

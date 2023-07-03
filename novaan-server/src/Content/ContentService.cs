@@ -279,15 +279,19 @@ namespace NovaanServer.src.Content
             }
         }
 
-        public PostDTO GetPosts()
+        public async Task<GetReelDTO> GetPersonalReel(string? userId)
         {
             try
             {
-                var recipes = _mongoService.Recipes.Find(r => r.Status == Status.Approved).ToList();
-                var culinaryTips = _mongoService.CulinaryTips.Find(c => c.Status == Status.Approved).ToList();
-                return new PostDTO
+                var recipes = (await _mongoService.Recipes
+                    .FindAsync(r => r.Status == Status.Approved))
+                    .ToList();
+                var culinaryTips = (await _mongoService.CulinaryTips
+                    .FindAsync(c => c.Status == Status.Approved))
+                    .ToList();
+                return new GetReelDTO
                 {
-                    RecipeList = recipes,
+                    Recipes = recipes,
                     CulinaryTips = culinaryTips
                 };
             }

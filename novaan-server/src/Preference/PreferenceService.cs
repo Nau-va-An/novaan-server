@@ -18,11 +18,11 @@ namespace NovaanServer.src.Preference
         }
 
         // TODO: Check if can reduce to one request
-        public AllPreferencesDTO GetAllPreferences()
+        public async Task<AllPreferencesDTO> GetAllPreferences()
         {
-            var diet = _mongoService.Diets.Find(_ => true).ToList();
-            var cuisine = _mongoService.Cuisines.Find(_ => true).ToList();
-            var allergen = _mongoService.Allergens.Find(_ => true).ToList();
+            var diet = (await  _mongoService.Diets.FindAsync(_ => true)).ToList();
+            var cuisine = (await  _mongoService.Cuisines.FindAsync(_ => true)).ToList();
+            var allergen = (await  _mongoService.Allergens.FindAsync(_ => true)).ToList();
             return new AllPreferencesDTO
             {
                 Diets = diet,

@@ -17,15 +17,15 @@ namespace NovaanServer.src.Admin
             _mongoService = mongoService;
         }
 
-        public SubmissionsDTO GetSubmissions(List<Status> status)
+        public async Task<SubmissionsDTO> GetSubmissions(List<Status> status)
         {
             try
             {
                 var recipesFilter = Builders<Recipe>.Filter.In("Status", status);
                 var culinaryTipsFilter = Builders<CulinaryTip>.Filter.In("Status", status);
 
-                var recipesResult = _mongoService.Recipes.Find(recipesFilter).ToList();
-                var culinaryTipsResult = _mongoService.CulinaryTips.Find(culinaryTipsFilter).ToList();
+                var recipesResult = (await _mongoService.Recipes.FindAsync(recipesFilter)).ToList();
+                var culinaryTipsResult = (await _mongoService.CulinaryTips.FindAsync(culinaryTipsFilter)).ToList();
 
                 return new SubmissionsDTO
                 {
@@ -39,19 +39,26 @@ namespace NovaanServer.src.Admin
             }
         }
 
-        public void UpdateStatus<T>(UpdateStatusDTO statusDTO, string collectionName)
+        public async Task UpdateStatus<T>(UpdateStatusDTO statusDTO, string collectionName)
         {
             var collection = _mongoService.GetCollection<T>(collectionName);
             var filter = Builders<T>.Filter.Eq("_id", ObjectId.Parse(statusDTO.PostId));
 
             // Check if the submission is available
-            var foundSubmission = collection.Find(filter).FirstOrDefault() ??
+            var foundSubmission = (await collection.FindAsync(filter)).FirstOrDefault() ??
                 throw new NovaanException(ErrorCodes.ADMIN_SUBMISSION_NOT_FOUND, HttpStatusCode.NotFound);
 
-            // Try to update the submission with inputted status and admin comment
             var update = Builders<T>.Update
-                .Set("Status", statusDTO.Status)
-                .Set("AdminComment", statusDTO.AdminComment);
+                .Set("Status", statusDTO.Status);
+
+            if (!string.IsNullOrEmpty(statusDTO.AdminComment))
+            {
+                update = update.Push("AdminComment", new AdminComment
+                {
+                    Comment = statusDTO.AdminComment,
+                    CreatedAt = DateTime.Now
+                });
+            }
 
             try
             {
