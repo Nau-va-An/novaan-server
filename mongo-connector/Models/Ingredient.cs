@@ -16,7 +16,8 @@ namespace MongoConnector.Models
 
         [Required]
         public float Amount { get; set; }
-
+        
+        [Required]
         public string Unit { get; set; } = string.Empty;
     }
 }

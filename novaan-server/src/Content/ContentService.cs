@@ -12,6 +12,7 @@ using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.Content.FormHandler;
 using NovaanServer.src.Content.Settings;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
+using NovaanServer.src.Preference;
 using S3Connector;
 using Utils.UtilClass;
 
@@ -203,6 +204,24 @@ namespace NovaanServer.src.Content
                 throw new NovaanException(ErrorCodes.CONTENT_PREP_TIME_TOO_LONG, HttpStatusCode.BadRequest);
             }
 
+            // Makesure all enum value is valid
+            if (!Enum.IsDefined(typeof(Difficulty), recipe.Difficulty))
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_DIFFICULTY_INVALID, HttpStatusCode.BadRequest);
+            }
+
+            if (!Enum.IsDefined(typeof(PortionType), recipe.PortionType))
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_PORTION_TYPE_INVALID, HttpStatusCode.BadRequest);
+            }
+
+            // Check if alleregence preference exist
+            bool isPreferencesExist = await ValidatePreferences(recipe.DietPreference, recipe.CuisinePreference, recipe.AllergenPreference, recipe.MealTypePreference);
+            if (!isPreferencesExist)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_PREFERENCE_NOT_EXIST, HttpStatusCode.BadRequest);
+            }
+
             // Try to push to S3 here
             try
             {
@@ -299,28 +318,33 @@ namespace NovaanServer.src.Content
         private static void HandleListSection<T>(T? obj, string fieldName, string value)
         {
             var splitValues = fieldName.Split("_");
-            if (splitValues.Length != 3)
-            {
-                throw new NovaanException(
-                    ErrorCodes.CONTENT_FIELD_INVALID,
-                    HttpStatusCode.BadRequest
-                );
-            }
 
+            if (splitValues.Length > 3)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
+            }
             // splitValues[0] should always be "Instruction"
             var properties = typeof(T).GetProperties();
             var property = properties.FirstOrDefault(p => p.Name == splitValues[0]) ??
-                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
-
+                throw new NovaanException(ErrorCodes.FIELD_NOT_FOUND);
 
             bool canParse = int.TryParse(splitValues[1], out var nestedFieldKey);
             if (!canParse)
             {
                 throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
             }
-            var nestedFieldName = splitValues[2];
 
-            CustomMapper.MappingObjectData(obj, property, value, nestedFieldName, nestedFieldKey);
+            // Handle case that have nested property
+            if (splitValues.Count() == 3)
+            {
+                var nestedFieldName = splitValues[2];
+
+                CustomMapper.MappingObjectData(obj, property, value, nestedFieldName, nestedFieldKey);
+            }
+            else
+            {
+                CustomMapper.MappingObjectData(obj, property, value, null, nestedFieldKey);
+            }
         }
 
         private async Task<MemoryStream> ProcessStreamContent(FileMultipartSection section)
@@ -401,6 +425,52 @@ namespace NovaanServer.src.Content
             {
                 throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
             }
+        }
+
+        public async Task<bool> ValidatePreferences(HashSet<string>? dietPreference, HashSet<string>? cuisinesPreference, HashSet<string>? allergensPreference, HashSet<string>? mealTypesPreference)
+        {
+            // If any of those hash set is not empty and have any element not in the database, return false
+            if (dietPreference != null && dietPreference.Count != 0)
+            {
+                var diet = (await _mongoService.Diets.FindAsync(_ => true)).ToList();
+                var dietIds = diet.Select(d => d.Id).ToHashSet();
+                if (dietPreference.Any(d => !dietIds.Contains(d)))
+                {
+                    return false;
+                }
+            }
+
+            if (cuisinesPreference != null && cuisinesPreference.Count != 0)
+            {
+                var cuisine = (await _mongoService.Cuisines.FindAsync(_ => true)).ToList();
+                var cuisineIds = cuisine.Select(c => c.Id).ToHashSet();
+                if (cuisinesPreference.Any(c => !cuisineIds.Contains(c)))
+                {
+                    return false;
+                }
+            }
+
+            if (allergensPreference != null && allergensPreference.Count != 0)
+            {
+                var allergen = (await _mongoService.Allergens.FindAsync(_ => true)).ToList();
+                var allergenIds = allergen.Select(a => a.Id).ToHashSet();
+                if (allergensPreference.Any(a => !allergenIds.Contains(a)))
+                {
+                    return false;
+                }
+            }
+
+            if (mealTypesPreference != null && mealTypesPreference.Count != 0)
+            {
+                var mealType = (await _mongoService.MealTypes.FindAsync(_ => true)).ToList();
+                var mealTypeIds = mealType.Select(m => m.Id).ToHashSet();
+                if (mealTypesPreference.Any(m => !mealTypeIds.Contains(m)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

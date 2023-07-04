@@ -56,5 +56,13 @@ namespace MongoConnector.Models
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         public List<AdminComment> AdminComment { get; set; } = new();
+
+        public HashSet<string> DietPreference { get; set; } = new HashSet<string>();
+
+        public HashSet<string> CuisinePreference { get; set; } = new HashSet<string>();
+
+        public HashSet<string> MealTypePreference { get; set; } = new HashSet<string>();
+        
+        public HashSet<string> AllergenPreference { get; set; } = new HashSet<string>();
     }
 }
