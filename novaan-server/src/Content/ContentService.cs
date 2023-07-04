@@ -274,21 +274,26 @@ namespace NovaanServer.src.Content
             }
         }
 
-        public async Task<GetReelDTO> GetPersonalReel(string? userId)
+        public async Task<List<string>> GetPersonalReel(string? userId)
         {
             try
             {
-                var recipes = (await _mongoService.Recipes
-                    .FindAsync(r => r.Status == Status.Approved))
-                    .ToList();
-                var culinaryTips = (await _mongoService.CulinaryTips
-                    .FindAsync(c => c.Status == Status.Approved))
-                    .ToList();
-                return new GetReelDTO
-                {
-                    Recipes = recipes,
-                    CulinaryTips = culinaryTips
-                };
+                // TODO: Get all id of both recipe and tips 
+                // add them to postIds order by updatedAt
+                var recipes = await _mongoService.Recipes
+                    .Find(r => r.Status == Status.Approved)
+                    .Project(r => new { r.Id, r.UpdatedAt })
+                    .ToListAsync();
+
+                var tips = await _mongoService.CulinaryTips
+                    .Find(t => t.Status == Status.Approved)
+                    .Project(t => new { t.Id, t.UpdatedAt })
+                    .ToListAsync();
+
+                var allPosts = recipes.Concat(tips).ToList();
+                allPosts.Sort((x, y) => y.UpdatedAt.CompareTo(x.UpdatedAt));
+
+                return allPosts.Select(p => p.Id).ToList();
             }
             catch
             {
