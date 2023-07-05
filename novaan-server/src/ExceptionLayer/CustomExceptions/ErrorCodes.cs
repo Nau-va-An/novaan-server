@@ -4,7 +4,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
     public static class ErrorCodes
     {
         // TODO: Please update latest error code to avoid duplicate value
-        // Latest error code: 1033
+        // Latest error code: 1034
 
         // Common
         public const int SERVER_UNAVAILABLE = 1000;
@@ -56,6 +56,9 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
 
         // S3
         public const int S3_FILE_NOT_FOUND = 1033;
+
+        // Search
+        public const int SEARCH_INGREDIENTS_NOT_FOUND = 1034;
 
         public static Dictionary<int, string> ErrorNameDictionary = typeof(ErrorCodes).GetFields()
                 .Where(f => f.FieldType == typeof(int))

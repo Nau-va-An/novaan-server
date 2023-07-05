@@ -14,6 +14,7 @@ using Newtonsoft.Json.Converters;
 using NovaanServer.src.Followerships;
 using NovaanServer.src.Preference;
 using NovaanServer.src.Profile;
+using NovaanServer.src.Search;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,6 +49,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPreferenceService, PreferenceService>();
 builder.Services.AddScoped<IFollowershipService, FollowershipService>();
