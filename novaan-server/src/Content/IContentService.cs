@@ -20,7 +20,7 @@ namespace NovaanServer.src.Content
         Task ReportPost(string postId, string? userId, ReportDTO reportDTO);
         Task ReportComment(string commentId, string? userId, ReportDTO reportDTO);
         Task LikePost(string postId, string? userId, LikeReqDTO likeDTO);
-        Task DeleteComment(string postId, CommentDTO commentDTO, string? userId);
+        Task DeleteComment(string postId, SubmissionType postType, string? userId);
     }
 }
 

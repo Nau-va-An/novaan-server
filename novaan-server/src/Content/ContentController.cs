@@ -126,10 +126,10 @@ namespace NovaanServer.src.Content
 
         // delete comment on specific post
         [HttpDelete("interaction/comment/{postId}")]
-        public async Task<IActionResult> DeleteCommentOnPost(string postId, CommentDTO commentDTO)
+        public async Task<IActionResult> DeleteCommentOnPost(string postId, SubmissionType postType)
         {
             var userId = Request.GetUserId();
-            await _contentService.DeleteComment(postId, commentDTO, userId);
+            await _contentService.DeleteComment(postId, postType, userId);
             return Ok();
         }
 

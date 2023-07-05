@@ -674,7 +674,7 @@ namespace NovaanServer.src.Content
                 .Set(c => c.UpdatedAt, DateTime.Now));
         }
 
-        public async Task DeleteComment(string postId, CommentDTO commentDTO, string? userId)
+        public async Task DeleteComment(string postId, SubmissionType submissionType, string? userId)
         {
             if (userId == null)
             {
@@ -683,11 +683,11 @@ namespace NovaanServer.src.Content
 
             // get comment of user on this post
             var comment = (await _mongoService.Comments
-                .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == commentDTO.PostType))
+                .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == submissionType))
                 .FirstOrDefault()
                 ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
-            switch (commentDTO.PostType)
+            switch (submissionType)
             {
                 case SubmissionType.Recipe:
                     var recipe = (await _mongoService.Recipes
@@ -704,7 +704,8 @@ namespace NovaanServer.src.Content
                                 recipe.AverageRating,
                                 comment.Rating,
                                 null)
-                        ));
+                        )
+                        .Set(r => r.RatingsCount, recipe.RatingsCount - 1));
                     break;
 
                 case SubmissionType.CulinaryTip:
@@ -722,7 +723,8 @@ namespace NovaanServer.src.Content
                                 tip.AverageRating,
                                 comment.Rating,
                                 null)
-                        ));
+                        )
+                        .Set(t => t.RatingsCount, tip.RatingsCount - 1));
                     break;
 
                 default:
