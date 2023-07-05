@@ -14,6 +14,9 @@ namespace MongoConnector.Models
         
         [BsonRepresentation(MongoDB.Bson.BsonType.ObjectId)]
         public string PostId { get; set; }
+
+        // TODO: Add Liked property to check if user like or unlike this post
+        public bool Liked { get; set; }
         
         public SubmissionType postType { get; set; }
     }

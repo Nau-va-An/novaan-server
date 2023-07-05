@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoConnector.Enums;
 using MongoConnector.Models;
 using NovaanServer.src.Common.Attributes;
 using NovaanServer.src.Common.Utils;
@@ -88,11 +89,11 @@ namespace NovaanServer.src.Content
 
         // User likes a post
         [HttpPost("interaction/like/{postId}")]
-        public async Task<IActionResult> LikePost(string postId)
+        public async Task<IActionResult> LikePost(string postId, LikeReqDTO likeDTO)
         {
             //Them param submissionType
             var userId = Request.GetUserId();
-            await _contentService.LikePost(postId, userId);
+            await _contentService.LikePost(postId, userId, likeDTO);
             return Ok();
         }
 

@@ -4,7 +4,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
     public static class ErrorCodes
     {
         // TODO: Please update latest error code to avoid duplicate value
-        // Latest error code: 1037
+        // Latest error code: 1038
 
         // Common
         public const int SERVER_UNAVAILABLE = 1000;
@@ -44,6 +44,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int CONTENT_NOT_FOUND = 1035;
         public const int CONTENT_ALREADY_COMMENTED = 1036;
         public const int COMMENT_NOT_FOUND = 1037;
+        public const int SUBMISSION_TYPE_INVALID = 1038;
 
         // Followership
         public static int USER_ALREADY_FOLLOWING = 1026;
