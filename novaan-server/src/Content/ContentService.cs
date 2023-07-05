@@ -531,11 +531,11 @@ namespace NovaanServer.src.Content
                     await _mongoService.Recipes
                         .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
                         .Inc(r => r.RatingsCount, 1)
-                        .Set(r => r.AverageRating, 
+                        .Set(r => r.AverageRating,
                             CalculateRatingAverage(
                                     recipe.RatingsCount,
-                                    recipe.AverageRating, 
-                                    null, 
+                                    recipe.AverageRating,
+                                    null,
                                     commentDTO.Rating)
                         ));
                     break;
@@ -608,7 +608,7 @@ namespace NovaanServer.src.Content
                 .FirstOrDefault()
                 ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
-             switch (commentDTO.PostType)
+            switch (commentDTO.PostType)
             {
                 case SubmissionType.Recipe:
                     var recipe = (await _mongoService.Recipes
@@ -617,16 +617,17 @@ namespace NovaanServer.src.Content
                         ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
                     // Update rating average of post with new rating from user and ratingaverage of post before edit
-                    if(comment.Rating != commentDTO.Rating){
-                         await _mongoService.Recipes
-                        .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
-                        .Set(r => r.AverageRating, 
-                            CalculateRatingAverage(
-                                recipe.RatingsCount, 
-                                recipe.AverageRating, 
-                                comment.Rating, 
-                                commentDTO.Rating)
-                        ));
+                    if (comment.Rating != commentDTO.Rating)
+                    {
+                        await _mongoService.Recipes
+                       .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
+                       .Set(r => r.AverageRating,
+                           CalculateRatingAverage(
+                               recipe.RatingsCount,
+                               recipe.AverageRating,
+                               comment.Rating,
+                               commentDTO.Rating)
+                       ));
                     }
                     break;
 
@@ -637,14 +638,15 @@ namespace NovaanServer.src.Content
                         ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
                     // Update rating average of post with new rating from user and ratingaverage of post before edit
-                    if(comment.Rating != commentDTO.Rating){
+                    if (comment.Rating != commentDTO.Rating)
+                    {
                         await _mongoService.CulinaryTips
                         .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
-                        .Set(t => t.AverageRating, 
+                        .Set(t => t.AverageRating,
                             CalculateRatingAverage(
-                                tip.RatingsCount, 
-                                tip.AverageRating, 
-                                comment.Rating, 
+                                tip.RatingsCount,
+                                tip.AverageRating,
+                                comment.Rating,
                                 commentDTO.Rating)
                         ));
                     }
@@ -672,12 +674,80 @@ namespace NovaanServer.src.Content
                 .Set(c => c.UpdatedAt, DateTime.Now));
         }
 
-        private double? CalculateRatingAverage(int ratingCount, double ratingAverage, int? previousRating, int newRating)
+        public async Task DeleteComment(string postId, CommentDTO commentDTO, string? userId)
         {
+            if (userId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // get comment of user on this post
+            var comment = (await _mongoService.Comments
+                .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == commentDTO.PostType))
+                .FirstOrDefault()
+                ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+            switch (commentDTO.PostType)
+            {
+                case SubmissionType.Recipe:
+                    var recipe = (await _mongoService.Recipes
+                        .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update rating average of post because the rating of this comment will be removed
+                    await _mongoService.Recipes
+                        .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
+                        .Set(r => r.AverageRating,
+                            CalculateRatingAverage(
+                                recipe.RatingsCount,
+                                recipe.AverageRating,
+                                comment.Rating,
+                                null)
+                        ));
+                    break;
+
+                case SubmissionType.CulinaryTip:
+                    var tip = (await _mongoService.CulinaryTips
+                        .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update rating average of post because the rating of this comment will be removed
+                    await _mongoService.CulinaryTips
+                        .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
+                        .Set(t => t.AverageRating,
+                            CalculateRatingAverage(
+                                tip.RatingsCount,
+                                tip.AverageRating,
+                                comment.Rating,
+                                null)
+                        ));
+                    break;
+
+                default:
+                    throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
+            }
+
+            // Delete comment
+            await _mongoService.Comments
+                .DeleteOneAsync(c => c.Id == comment.Id);
+        }
+
+        private double? CalculateRatingAverage(int ratingCount, double ratingAverage, int? previousRating, int? newRating)
+        {
+            // Case 1: User has not rated this post before and add new rating
             if (previousRating == null)
             {
                 return (ratingAverage * ratingCount + newRating) / (ratingCount + 1);
             }
+
+            // Case 2: User has rated this post before and remove rating
+            if (newRating == null)
+            {
+                return (ratingAverage * ratingCount - previousRating) / (ratingCount - 1);
+            }
+            // Case 3: User has rated this post before and change rating
             return (ratingAverage * ratingCount - previousRating + newRating) / ratingCount;
         }
 
@@ -701,7 +771,7 @@ namespace NovaanServer.src.Content
                         .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
                         .Set(r => r.Status, Status.Reported));
                     break;
-                
+
                 case SubmissionType.CulinaryTip:
                     var tip = (await _mongoService.CulinaryTips
                         .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
@@ -759,6 +829,8 @@ namespace NovaanServer.src.Content
                     Reason = reportDTO.Reason
                 });
         }
+
+
     }
 }
 
