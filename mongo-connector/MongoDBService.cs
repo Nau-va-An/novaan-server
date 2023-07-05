@@ -3,6 +3,7 @@ using MongoDB.Driver;
 using MongoDB.Bson;
 using MongoConnector.Models;
 using Newtonsoft.Json;
+using mongo_connector.Models;
 
 namespace MongoConnector
 {
@@ -176,6 +177,14 @@ namespace MongoConnector
             //     var indexModel = new CreateIndexModel<Followership>(indexKeysDefinition); // Create index model
             //     value.Indexes.CreateOne(indexModel);    // Create index
             // }
+        }
+
+        public IMongoCollection<IngredientToRecipes> IngredientToRecipes
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<IngredientToRecipes>(MongoCollections.IngredientToRecipes);
+            }
         }
 
     }
