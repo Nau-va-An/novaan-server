@@ -1,4 +1,5 @@
 ﻿using System;
+using MongoConnector.Enums;
 using MongoConnector.Models;
 using NovaanServer.src.Content.DTOs;
 
@@ -13,9 +14,9 @@ namespace NovaanServer.src.Content
 
         bool ValidateFileMetadata(FileInformationDTO fileMetadata);
         Task<GetReelDTO> GetPersonalReel(string? userId);
-        Task SavePost(string postId, string? userId);
+        Task SavePost(string postId, string? userId, SubmissionType postType);
         Task CommentOnPost(string postId, string? userId, CommentDTO commentDTO);
-        Task EditComment(string postId, string commentId, string? userId, CommentDTO commentDTO);
+        Task EditComment(string postId, string? userId, CommentDTO commentDTO);
         Task ReportPost(string postId, string? userId, ReportDTO reportDTO);
         Task ReportComment(string commentId, string? userId, ReportDTO reportDTO);
         Task LikePost(string postId, string? userId, LikeReqDTO likeDTO);

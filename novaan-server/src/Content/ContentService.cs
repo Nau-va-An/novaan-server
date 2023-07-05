@@ -416,79 +416,84 @@ namespace NovaanServer.src.Content
             }
 
             // Switchcase for handle submissionType
-            switch (likeDTO.SubmissionType)
+            switch (likeDTO.PostType)
             {
                 case SubmissionType.Recipe:
                     var recipe = (await _mongoService.Recipes
-                        .FindAsync(r => r.Id == postId))
+                        .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
                         .FirstOrDefault()
                         ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
-                    
-                    // If there is a document contain userId and postId, it will be updated
-                    await _mongoService.Likes
-                        .UpdateOneAsync(l => l.PostId == postId && l.UserId == userId && l.postType == SubmissionType.Recipe,
-                        Builders<Likes>.Update
-                        .Set(l => l.UserId, userId)
-                        .Set(l => l.PostId, postId)
-                        .Set(l => l.Liked, likeDTO.Liked)
-                        .Set(l => l.postType, SubmissionType.Recipe),
-                    // If not, it will be inserted
-                        new UpdateOptions { IsUpsert = true });
 
                     // Update likeCount of recipe
                     await _mongoService.Recipes
                         .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
                         .Inc(r => r.LikesCount, likeDTO.Liked ? 1 : -1));
-
                     break;
 
                 case SubmissionType.CulinaryTip:
                     var tip = (await _mongoService.CulinaryTips
-                        .FindAsync(t => t.Id == postId))
+                        .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
                         .FirstOrDefault()
                         ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
-                    // If there is a document contain userId and postId, it will be updated
-                    await _mongoService.Likes
-                        .UpdateOneAsync(l => l.PostId == postId && l.UserId == userId && l.postType == SubmissionType.CulinaryTip,
-                        Builders<Likes>.Update
-                        .Set(l => l.UserId, userId)
-                        .Set(l => l.PostId, postId)
-                        .Set(l => l.Liked, likeDTO.Liked)
-                        .Set(l => l.postType, SubmissionType.CulinaryTip),
-                    // If not, it will be inserted
-                        new UpdateOptions { IsUpsert = true });
+                    // Update likeCount of tip
+                    await _mongoService.CulinaryTips
+                        .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
+                        .Inc(t => t.LikesCount, likeDTO.Liked ? 1 : -1));
                     break;
 
                 default:
                     throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
             }
+
+            // If there is a document contain userId and postId, it will be updated
+            await _mongoService.Likes
+                .UpdateOneAsync(l => l.PostId == postId && l.UserId == userId && l.postType == SubmissionType.Recipe,
+                Builders<Likes>.Update
+                .Set(l => l.UserId, userId)
+                .Set(l => l.PostId, postId)
+                .Set(l => l.Liked, likeDTO.Liked)
+                .Set(l => l.postType, likeDTO.PostType),
+                // If not, it will be inserted
+                new UpdateOptions { IsUpsert = true });
         }
 
-        public async Task SavePost(string postId, string? userId)
+        public async Task SavePost(string postId, string? userId, SubmissionType postType)
         {
             if (userId == null)
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
             }
 
-            // Find recipe or tip that has the postId
-            var recipe = (await _mongoService.Recipes
-                .FindAsync(r => r.Id == postId))
-                .FirstOrDefault();
-            var tip = (await _mongoService.CulinaryTips
-                .FindAsync(t => t.Id == postId))
-                .FirstOrDefault();
-
-            if (recipe == null && tip == null)
+            // Switchcase for handle submissionType
+            switch (postType)
             {
-                throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+                case SubmissionType.Recipe:
+                    var recipe = (await _mongoService.Recipes
+                        .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    break;
+
+                case SubmissionType.CulinaryTip:
+                    var tip = (await _mongoService.CulinaryTips
+                        .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    break;
+
+                default:
+                    throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
             }
 
             // Check if user has saved this post before in savedPost list of user collection
-            var hasSavedPost = (await _mongoService.Users
-                .FindAsync(u => u.Id == userId && u.SavedPost.Any(p => p.PostId == postId)))
+            bool hasSavedPost = (await _mongoService.Users
+                .FindAsync(u => u.Id == userId && u.SavedPost
+                .Any(p => p.PostId == postId && p.PostType == postType)))
                 .FirstOrDefault() != null;
+
 
             if (!hasSavedPost)
             {
@@ -498,7 +503,7 @@ namespace NovaanServer.src.Content
                     .Push(u => u.SavedPost, new SavedPost
                     {
                         PostId = postId,
-                        PostType = recipe != null ? SubmissionType.Recipe : SubmissionType.CulinaryTip
+                        PostType = postType
                     }));
             }
             else
@@ -514,23 +519,53 @@ namespace NovaanServer.src.Content
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
             }
 
-            // Find recipe or tip that has the postId
-            var recipe = (await _mongoService.Recipes
-                .FindAsync(r => r.Id == postId))
-                .FirstOrDefault();
-
-            var tip = (await _mongoService.CulinaryTips
-                .FindAsync(t => t.Id == postId))
-                .FirstOrDefault();
-
-            if (recipe == null && tip == null)
+            switch (commentDTO.PostType)
             {
-                throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+                case SubmissionType.Recipe:
+                    var recipe = (await _mongoService.Recipes
+                        .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update ratingCount and rating average
+                    await _mongoService.Recipes
+                        .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
+                        .Inc(r => r.RatingsCount, 1)
+                        .Set(r => r.AverageRating, 
+                            CalculateRatingAverage(
+                                    recipe.RatingsCount,
+                                    recipe.AverageRating, 
+                                    null, 
+                                    commentDTO.Rating)
+                        ));
+                    break;
+
+                case SubmissionType.CulinaryTip:
+                    var tip = (await _mongoService.CulinaryTips
+                        .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update ratingCount and rating average
+                    await _mongoService.CulinaryTips
+                        .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
+                        .Inc(t => t.RatingsCount, 1)
+                        .Set(t => t.AverageRating,
+                            CalculateRatingAverage(
+                                    tip.RatingsCount,
+                                    tip.AverageRating,
+                                    null,
+                                    commentDTO.Rating)
+                        ));
+                    break;
+
+                default:
+                    throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
             }
 
             // Check if user has commented on this post before
             var hasCommented = (await _mongoService.Comments
-                .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == (recipe != null ? SubmissionType.Recipe : SubmissionType.CulinaryTip)))
+                .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == commentDTO.PostType))
                 .FirstOrDefault() != null;
 
             if (hasCommented)
@@ -552,40 +587,71 @@ namespace NovaanServer.src.Content
                 {
                     UserId = userId,
                     PostId = postId,
-                    postType = recipe != null ? SubmissionType.Recipe : SubmissionType.CulinaryTip,
+                    postType = commentDTO.PostType,
                     Comment = commentDTO.Comment,
                     CreatedAt = DateTime.Now,
                     Image = imageId,
                     Rating = commentDTO.Rating
                 });
-
-            // Update ratingCount and rating average of recipe or tip
-            if (recipe != null)
-            {
-                await _mongoService.Recipes
-                    .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
-                    .Inc(r => r.RatingsCount, 1)
-                    .Set(r => r.AverageRating, CalculateRatingAverage(recipe.RatingsCount, recipe.AverageRating, null, commentDTO.Rating)));
-            }
-            else
-            {
-                await _mongoService.CulinaryTips
-                    .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
-                    .Inc(t => t.RatingsCount, 1)
-                    .Set(t => t.AverageRating, CalculateRatingAverage(tip.RatingsCount, tip.AverageRating, null, commentDTO.Rating)));
-            }
         }
 
-        public async Task EditComment(string postId, string commentId, string? userId, CommentDTO commentDTO)
+        public async Task EditComment(string postId, string? userId, CommentDTO commentDTO)
         {
-            // Get comment of user on this post
-            var comment = (await _mongoService.Comments
-                .FindAsync(c => c.Id == commentId && c.UserId == userId && c.PostId == postId))
-                .FirstOrDefault();
-
-            if (comment == null)
+            if (userId == null)
             {
-                throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // get comment of user on this post
+            var comment = (await _mongoService.Comments
+                .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == commentDTO.PostType))
+                .FirstOrDefault()
+                ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+             switch (commentDTO.PostType)
+            {
+                case SubmissionType.Recipe:
+                    var recipe = (await _mongoService.Recipes
+                        .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update rating average of post with new rating from user and ratingaverage of post before edit
+                    if(comment.Rating != commentDTO.Rating){
+                         await _mongoService.Recipes
+                        .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
+                        .Set(r => r.AverageRating, 
+                            CalculateRatingAverage(
+                                recipe.RatingsCount, 
+                                recipe.AverageRating, 
+                                comment.Rating, 
+                                commentDTO.Rating)
+                        ));
+                    }
+                    break;
+
+                case SubmissionType.CulinaryTip:
+                    var tip = (await _mongoService.CulinaryTips
+                        .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update rating average of post with new rating from user and ratingaverage of post before edit
+                    if(comment.Rating != commentDTO.Rating){
+                        await _mongoService.CulinaryTips
+                        .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
+                        .Set(t => t.AverageRating, 
+                            CalculateRatingAverage(
+                                tip.RatingsCount, 
+                                tip.AverageRating, 
+                                comment.Rating, 
+                                commentDTO.Rating)
+                        ));
+                    }
+                    break;
+
+                default:
+                    throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
             }
 
             string imageId = "";
@@ -597,39 +663,9 @@ namespace NovaanServer.src.Content
                 await _s3Service.UploadFileAsync(commentDTO.Image.OpenReadStream(), imageId);
             }
 
-            // Update rating average of post with new rating from user and ratingaverage of post before edit
-            if (commentDTO.Rating != comment.Rating)
-            {
-                var recipe = (await _mongoService.Recipes
-                    .FindAsync(r => r.Id == postId))
-                    .FirstOrDefault();
-
-                var tip = (await _mongoService.CulinaryTips
-                    .FindAsync(t => t.Id == postId))
-                    .FirstOrDefault();
-
-                if (recipe == null && tip == null)
-                {
-                    throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
-                }
-
-                if (recipe != null)
-                {
-                    await _mongoService.Recipes
-                        .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
-                        .Set(r => r.AverageRating, CalculateRatingAverage(recipe.RatingsCount, recipe.AverageRating, comment.Rating, commentDTO.Rating)));
-                }
-                else
-                {
-                    await _mongoService.CulinaryTips
-                        .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
-                        .Set(t => t.AverageRating, CalculateRatingAverage(tip.RatingsCount, tip.AverageRating, comment.Rating, commentDTO.Rating)));
-                }
-            }
-
-            // Edit comment
+            // Update comment
             await _mongoService.Comments
-                .UpdateOneAsync(c => c.Id == commentId, Builders<Comments>.Update
+                .UpdateOneAsync(c => c.Id == comment.Id, Builders<Comments>.Update
                 .Set(c => c.Comment, commentDTO.Comment)
                 .Set(c => c.Image, imageId)
                 .Set(c => c.Rating, commentDTO.Rating)
@@ -651,19 +687,35 @@ namespace NovaanServer.src.Content
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
             }
-            // Update status of post to Reported
-            if (reportDTO.PostType == SubmissionType.Recipe)
-            {
 
-                await _mongoService.Recipes
-                    .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
-                    .Set(r => r.Status, Status.Reported));
-            }
-            else
+            switch (reportDTO.PostType)
             {
-                await _mongoService.CulinaryTips
-                    .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
-                    .Set(t => t.Status, Status.Reported));
+                case SubmissionType.Recipe:
+                    var recipe = (await _mongoService.Recipes
+                        .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update status of post to Reported
+                    await _mongoService.Recipes
+                        .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
+                        .Set(r => r.Status, Status.Reported));
+                    break;
+                
+                case SubmissionType.CulinaryTip:
+                    var tip = (await _mongoService.CulinaryTips
+                        .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update status of post to Reported
+                    await _mongoService.CulinaryTips
+                        .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
+                        .Set(t => t.Status, Status.Reported));
+                    break;
+
+                default:
+                    throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
             }
 
             // Add report to database

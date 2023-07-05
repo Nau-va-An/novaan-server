@@ -99,10 +99,10 @@ namespace NovaanServer.src.Content
 
         // Save a post 
         [HttpPost("interaction/save/{postId}")]
-        public async Task<IActionResult> SavePost(string postId)
+        public async Task<IActionResult> SavePost(string postId, SubmissionType submissionType)
         {
             var userId = Request.GetUserId();
-            await _contentService.SavePost(postId, userId);
+            await _contentService.SavePost(postId, userId, submissionType);
             return Ok();
         }
 
@@ -116,11 +116,20 @@ namespace NovaanServer.src.Content
         }
 
         // Edit comment on specific post
-        [HttpPut("interaction/comment/{postId}/{commentId}")]
-        public async Task<IActionResult> EditCommentOnPost(string postId, string commentId, [FromForm] CommentDTO commentDTO)
+        [HttpPut("interaction/comment/{postId}")]
+        public async Task<IActionResult> EditCommentOnPost(string postId, [FromForm] CommentDTO commentDTO)
         {
             var userId = Request.GetUserId();
-            await _contentService.EditComment(postId,commentId ,userId, commentDTO);
+            await _contentService.EditComment(postId, userId, commentDTO);
+            return Ok();
+        }
+
+        // delete comment on specific post
+        [HttpDelete("interaction/comment/{postId}")]
+        public async Task<IActionResult> DeleteCommentOnPost(string postId, string commentId)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.DeleteComment(postId, commentId, userId);
             return Ok();
         }
 

@@ -1,9 +1,13 @@
+using System.ComponentModel.DataAnnotations;
 using MongoConnector.Enums;
 
 namespace NovaanServer.src.Content.DTOs
 {
     public class LikeReqDTO{
-        public SubmissionType SubmissionType { get; set; }
+
+        [Required]
+        public SubmissionType PostType { get; set; }
+        [Required]
         public bool Liked { get; set; }
     }
 }
