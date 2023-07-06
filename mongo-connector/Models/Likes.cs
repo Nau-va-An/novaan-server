@@ -15,6 +15,6 @@ namespace MongoConnector.Models
         [BsonRepresentation(MongoDB.Bson.BsonType.ObjectId)]
         public string PostId { get; set; }
 
-        public SubmissionType postType { get; set; }
+        public SubmissionType PostType { get; set; }
     }
 }

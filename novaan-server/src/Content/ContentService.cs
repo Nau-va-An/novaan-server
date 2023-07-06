@@ -414,15 +414,16 @@ namespace NovaanServer.src.Content
             var tip = (await _mongoService.CulinaryTips
                 .FindAsync(t => t.Id == postId))
                 .FirstOrDefault()
-                ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
 
-            if (currentUserId != tip.CreatorId && tip.Status != Status.Approved)
+            if (tip == null || tip.CreatorId != currentUserId && tip.Status != Status.Approved)
             {
                 throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
             // Check if user has liked this post
-            var isLiked = await IsLiked(postId, currentUserId);
+            bool isLiked = await IsLiked(postId, currentUserId);
+
+            // Check if user has saved this post
             bool isSaved = await IsSaved(postId, currentUserId);
 
             GetTipsDetailDTO getTipsDetailDTO = new GetTipsDetailDTO()
@@ -494,7 +495,6 @@ namespace NovaanServer.src.Content
 
         private async Task<bool> IsSaved(string postId, string? currentUserId)
         {
-
             // Check if user had saved this post
             return (await _mongoService.Users
                 .FindAsync(u => u.Id == currentUserId && u.SavedPosts.Any(p => p.PostId == postId)))
@@ -503,6 +503,7 @@ namespace NovaanServer.src.Content
 
         private async Task<bool> IsLiked(string id, string? currentUserId)
         {
+            // Check if user had liked this post
             return (await _mongoService.Likes
                 .FindAsync(l => l.UserId == currentUserId && l.PostId == id))
                 .FirstOrDefault() != null;
