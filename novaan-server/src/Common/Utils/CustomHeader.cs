@@ -1,6 +1,6 @@
-﻿using System;
-using NovaanServer.src.ExceptionLayer.CustomExceptions;
+﻿using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 
 namespace NovaanServer.src.Common.Utils
 {
@@ -35,7 +35,11 @@ namespace NovaanServer.src.Common.Utils
             }
 
             var userId = token.Claims.FirstOrDefault(cl => cl.Type == JwtRegisteredClaimNames.NameId);
-            return userId?.Value;
+            if (userId == null || userId.Value == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
+            }
+            return userId.Value;
         }
     }
 }
