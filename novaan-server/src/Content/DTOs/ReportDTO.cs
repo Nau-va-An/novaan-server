@@ -3,7 +3,8 @@ using MongoConnector.Enums;
 
 namespace NovaanServer.src.Content.DTOs
 {
-    public class ReportDTO{
+    public class ReportDTO
+    {
         [Required]
         public SubmissionType PostType { get; set; }
 

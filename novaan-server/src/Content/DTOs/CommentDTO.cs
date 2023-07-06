@@ -16,7 +16,7 @@ namespace NovaanServer.src.Content.DTOs
         [Required]
         public SubmissionType PostType { get; set; }
 
-        public Status? CommentStatus { get; set; } = Status.Approved;
+        public Status CommentStatus { get; set; } = Status.Approved;
     }
 
 }
