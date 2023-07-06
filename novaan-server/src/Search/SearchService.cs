@@ -28,12 +28,18 @@ namespace NovaanServer.src.Search
                 // Format current ingredients
                 .Select(ingredient => ingredient.Trim().ToLower())
                 // Filter out basic ingredients
-                .Where(ingredient => !_basicIngredients.Contains(ingredient))
+                .Where(ingredient => !_basicIngredients.Contains(ingredient, StringComparer.OrdinalIgnoreCase))
                 .ToList();
 
             var ingredientRecipeMap = (await _mongoDBService.IngredientToRecipes
                 .FindAsync(i => ingredients.Contains(i.Ingredient)))
                 .ToList();
+
+            // Return empty result when query ingredient from database return empty
+            if (ingredientRecipeMap.Count == 0)
+            {
+                return new();
+            }
 
             var recipeIngredientMap = new Dictionary<string, int>();
 
@@ -57,6 +63,7 @@ namespace NovaanServer.src.Search
                     var currentRecipe = item.RecipeIds[i];
                     if (currentRecipe == null)
                     {
+                        endedArray++;
                         continue;
                     }
 
