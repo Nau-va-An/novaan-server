@@ -413,7 +413,7 @@ namespace NovaanServer.src.Content
             // Get tips
             var tip = (await _mongoService.CulinaryTips
                 .FindAsync(t => t.Id == postId))
-                .FirstOrDefault()
+                .FirstOrDefault();
 
             if (tip == null || tip.CreatorId != currentUserId && tip.Status != Status.Approved)
             {
