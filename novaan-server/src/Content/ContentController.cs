@@ -27,7 +27,7 @@ namespace NovaanServer.src.Content
         /// </summary>
         /// <returns></returns>
         [HttpGet("posts")]
-        public async Task<GetReelDTO> GetPersonalReels()
+        public async Task<List<string>> GetPersonalReels()
         {
             var userId = Request.GetUserId();
             return await _contentService.GetPersonalReel(userId);
