@@ -5,6 +5,7 @@ using MongoDB.Driver;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using System.Net;
 using MongoConnector.Models;
+using mongo_connector.Models;
 
 namespace NovaanServer.src.Search
 {
@@ -31,8 +32,9 @@ namespace NovaanServer.src.Search
                 .Where(ingredient => !_basicIngredients.Contains(ingredient, StringComparer.OrdinalIgnoreCase))
                 .ToList();
 
+            var ingredientFilter = Builders<IngredientToRecipes>.Filter.In(itr => itr.Ingredient, ingredients);
             var ingredientRecipeMap = (await _mongoDBService.IngredientToRecipes
-                .FindAsync(i => ingredients.Contains(i.Ingredient)))
+                .FindAsync(ingredientFilter))
                 .ToList();
 
             // Return empty result when query ingredient from database return empty
@@ -90,7 +92,13 @@ namespace NovaanServer.src.Search
                 i++;
             }
 
+            // Return empty when the dictionary contain no entry
             var recipeIds = recipeIngredientMap.Keys.ToList();
+            if (recipeIds.Count == 0)
+            {
+                return new();
+            }
+
             var recipeFilter = Builders<Recipe>.Filter.In(r => r.Id, recipeIds);
             var matchRecipes = (await _mongoDBService.Recipes
                 .Find(recipeFilter)
