@@ -35,9 +35,11 @@ namespace NovaanServer.src.Common.Utils
             }
 
             var userId = token.Claims.FirstOrDefault(cl => cl.Type == JwtRegisteredClaimNames.NameId);
-            return userId == null || userId.Value == null
-                ? throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound)
-                : userId.Value;
+            if (userId == null || userId.Value == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound)
+            }
+            return userId.Value;
         }
     }
 }
