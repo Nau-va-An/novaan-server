@@ -426,7 +426,14 @@ namespace NovaanServer.src.Content
             // Check if user has saved this post
             bool isSaved = await IsSaved(postId, currentUserId);
 
-            GetTipsDetailDTO getTipsDetailDTO = new GetTipsDetailDTO()
+            AdminComment? latestComment = null;
+            if (tip.AdminComments.Count > 0 &&
+                (tip.Status == Status.Rejected || tip.Status == Status.Reported)
+            )
+            {
+                latestComment = tip.AdminComments.Last();
+            }
+            GetTipsDetailDTO getTipsDetailDTO = new()
             {
                 Id = tip.Id,
                 CreatorId = tip.CreatorId,
@@ -435,10 +442,7 @@ namespace NovaanServer.src.Content
                 Video = tip.Video,
                 Status = tip.Status,
                 CreatedAt = tip.CreatedAt,
-                AdminComment = tip.Status == Status.Rejected
-                    ?
-                    tip.AdminComments[tip.AdminComments.Count - 1]
-                    : null,
+                AdminComment = latestComment,
                 IsLiked = isLiked,
                 IsSaved = isSaved
             };
