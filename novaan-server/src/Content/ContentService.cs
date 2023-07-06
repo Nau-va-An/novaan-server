@@ -469,7 +469,14 @@ namespace NovaanServer.src.Content
             // Check if user has saved this post
             bool isSaved = await IsSaved(postId, currentUserId);
 
-            GetRecipeDetailDTO getRecipeDetailDTO = new GetRecipeDetailDTO()
+            AdminComment? latestComment = null;
+            if (recipe.AdminComments.Count > 0 &&
+                (recipe.Status == Status.Rejected || recipe.Status == Status.Reported)
+            )
+            {
+                latestComment = recipe.AdminComments.Last();
+            }
+            GetRecipeDetailDTO getRecipeDetailDTO = new()
             {
                 Id = recipe.Id,
                 CreatorId = recipe.CreatorId,
@@ -482,10 +489,7 @@ namespace NovaanServer.src.Content
                 PrepTime = recipe.PrepTime,
                 Ingredients = recipe.Ingredients,
                 Instructions = recipe.Instructions,
-                AdminComment = recipe.Status == Status.Rejected
-                    ?
-                    recipe.AdminComments[recipe.AdminComments.Count - 1]
-                    : null,
+                AdminComment = latestComment,
                 IsLiked = isLiked,
                 IsSaved = isSaved
             };
