@@ -4,9 +4,9 @@ namespace NovaanServer.src.Search.DTOs
 {
     public class GetRecipesByIngredientsRes
     {
-        public string Id { get; set; }
+        public string Id { get; set; } = string.Empty;
 
-        public string AuthorId { get; set; }
+        public string AuthorId { get; set; } = string.Empty;
 
         public string AuthorName { get; set; } = string.Empty;
 
@@ -17,5 +17,8 @@ namespace NovaanServer.src.Search.DTOs
         public bool Liked { get; set; }
 
         public TimeSpan CookTime { get; set; }
+
+        // TODO: Remove this later
+        public int MatchedIngredient { get; set; }
     }
 }

@@ -8,6 +8,6 @@ namespace NovaanServer.src.Search.DTOs
         [Required]
         public List<string> Ingredients { get; set; } = new List<string>();
 
-        public Pagination? pagination { get; set; } = new Pagination();
+        public Pagination? Pagination { get; set; } = new Pagination();
     }
 }

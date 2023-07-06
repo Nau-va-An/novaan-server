@@ -4,12 +4,15 @@ using NovaanServer.src.Search.DTOs;
 using MongoDB.Driver;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using System.Net;
+using MongoConnector.Models;
 
 namespace NovaanServer.src.Search
 {
     public class SearchService : ISearchService
     {
         private readonly MongoDBService _mongoDBService;
+        private static readonly List<string> _basicIngredients =
+            JsonConvert.DeserializeObject<List<string>>(File.ReadAllText("BasicIngredients.json")) ?? new();
 
         public SearchService(MongoDBService mongoDBService)
         {
@@ -18,50 +21,61 @@ namespace NovaanServer.src.Search
 
         public async Task<List<GetRecipesByIngredientsRes>> AdvancedSearchRecipes(string? currentUserId, AdvancedSearchRecipesReq req)
         {
-            // read basic ingredients from the json file in same folder
-            var basicIngredients = File.ReadAllText("BasicIngredients.json");
-            var listBasicIngredients = JsonConvert.DeserializeObject<List<string>>(basicIngredients) ?? new List<string>();
-
             // Remove the basic ingredients, ignoring case, from the input list
-            var ingredients = req.Ingredients
-                .Where(i => !listBasicIngredients.Contains(i, StringComparer.OrdinalIgnoreCase))
+            var ingredients = req.Ingredients;
+
+            ingredients = ingredients
+                // Format current ingredients
+                .Select(ingredient => ingredient.Trim().ToLower())
+                // Filter out basic ingredients
+                .Where(ingredient => !_basicIngredients.Contains(ingredient))
                 .ToList();
 
-            var recipeMappings = new Dictionary<string, List<int>>();
+            var ingredientRecipeMap = (await _mongoDBService.IngredientToRecipes
+                .FindAsync(i => ingredients.Contains(i.Ingredient)))
+                .ToList();
+
+            var recipeIngredientMap = new Dictionary<string, int>();
 
             // Initialize counters and variables
             int i = 0;
             int endedArray = 0;
+            int mostRelevance = 0; // Count the number of matched ingredients
+            string mostRelevanceKey = string.Empty; // Key of the most relevance recipe
 
             while (endedArray < ingredients.Count)
             {
-                if (i >= ingredients.Count)
+                endedArray = 0;
+                foreach (var item in ingredientRecipeMap)
                 {
-                    i = 0;
-                    endedArray++;
-                    continue;
-                }
-
-                var ingredient = ingredients[i];
-                var ingredientToRecipes =  (await _mongoDBService.IngredientToRecipes
-                    .Find(i => i.Ingredient.Equals(ingredient, StringComparison.OrdinalIgnoreCase))
-                    .ToListAsync())
-                    .FirstOrDefault();
-
-                // Iterate over the recipe IDs associated with the current ingredient and update the recipeMappings dictionary accordingly. 
-                // If the recipe ID already exists in the dictionary, append the current ingredient index to the corresponding list.
-                // Otherwise, create a new entry in the dictionary with the recipe ID as the key and a list containing the current ingredient index.
-                if (ingredientToRecipes != null)
-                {
-                    foreach (var recipeId in ingredientToRecipes.RecipeIds)
+                    if (i >= item.RecipeIds.Count)
                     {
-                        if (recipeMappings.ContainsKey(recipeId))
+                        endedArray++;
+                        continue;
+                    }
+
+                    var currentRecipe = item.RecipeIds[i];
+                    if (currentRecipe == null)
+                    {
+                        continue;
+                    }
+
+                    if (recipeIngredientMap.ContainsKey(currentRecipe))
+                    {
+                        recipeIngredientMap[currentRecipe]++;
+                        if (recipeIngredientMap[currentRecipe] > mostRelevance)
                         {
-                            recipeMappings[recipeId].Add(i);
+                            mostRelevance = recipeIngredientMap[currentRecipe];
+                            mostRelevanceKey = currentRecipe;
                         }
-                        else
+                    }
+                    else
+                    {
+                        recipeIngredientMap[currentRecipe] = 1;
+                        if (mostRelevance == 0)
                         {
-                            recipeMappings.Add(recipeId, new List<int> { i });
+                            mostRelevance = 1;
+                            mostRelevanceKey = currentRecipe;
                         }
                     }
                 }
@@ -69,24 +83,25 @@ namespace NovaanServer.src.Search
                 i++;
             }
 
-            // Extract the recipe IDs
-            var recipeIds = recipeMappings
-                .Where(r => r.Value.Count == ingredients.Count)
-                .Select(r => r.Key)
+            var recipeIds = recipeIngredientMap.Keys.ToList();
+            var recipeFilter = Builders<Recipe>.Filter.In(r => r.Id, recipeIds);
+            var matchRecipes = (await _mongoDBService.Recipes
+                .Find(recipeFilter)
+                .ToListAsync())
+                .Where(r => r.Ingredients.Count == recipeIngredientMap[r.Id])
                 .ToList();
 
-            // Return the recipes that can be made using the input ingredients
-            return await _mongoDBService.Recipes
-                .Find(r => recipeIds.Contains(r.Id))
-                .Project(r => new GetRecipesByIngredientsRes
-                {
-                    Id = r.Id,
-                    Title = r.Title,
-                    Thumbnails = r.Video,
-                    CookTime = r.CookTime,
-                })
-                .ToListAsync();
+            matchRecipes.Sort((a, b) => recipeIngredientMap[b.Id].CompareTo(recipeIngredientMap[a.Id]));
 
+            var result = matchRecipes.Select(mr => new GetRecipesByIngredientsRes()
+            {
+                Id = mr.Id,
+                Title = mr.Title,
+                Thumbnails = mr.Video,
+                CookTime = mr.CookTime,
+            }).ToList();
+
+            return result;
         }
     }
 }
