@@ -1,8 +1,8 @@
 ﻿using System;
 namespace NovaanServer.src.Content.Settings
 {
-	public static class ContentSettings
-	{
+    public static class ContentSettings
+    {
         public readonly static TimeSpan COOK_MAX = TimeSpan.Parse("3.00:59:00"); // 72 hours + 59 minutes
         public readonly static TimeSpan PREP_MAX = TimeSpan.Parse("3.00:59:00"); // 72 hours + 50 minutes
 
