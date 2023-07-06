@@ -121,7 +121,7 @@ namespace NovaanServer.src.Profile
                 // forbidden content
                 throw new NovaanException(ErrorCodes.FORBIDDEN_PROFILE_CONTENT, HttpStatusCode.Forbidden);
             }
-            var savedPost = targetUser.SavedPost
+            var savedPost = targetUser.SavedPosts
                 .Skip(pagination.Start)
                 .Take(pagination.Limit)
                 .ToList();

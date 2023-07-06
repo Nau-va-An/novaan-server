@@ -178,6 +178,14 @@ namespace MongoConnector
             // }
         }
 
+        public IMongoCollection<Likes> Likes
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Likes>(MongoCollections.Likes);
+            }
+        }
+
     }
 }
 

@@ -27,7 +27,7 @@ namespace MongoConnector.Models
 
         public int FollowingCount { get; set; }
       
-        public List<SavedPost> SavedPost { get; set; } = new();
+        public List<SavedPost> SavedPosts { get; set; } = new();
     }
 }
 
