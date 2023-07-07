@@ -101,7 +101,8 @@ namespace NovaanServer.src.Search
             }
 
             // where r => r.Ingredients.Count == recipeIngredientMap[r.Id] and r.Id in Recipe collection
-            var recipeFilter = Builders<Recipe>.Filter.In(r => r.Id, recipeIds);
+            var recipeFilter = Builders<Recipe>.Filter.In(r => r.Id, recipeIds) &
+                Builders<Recipe>.Filter.SizeLte(r => r.Ingredients, mostRelevance);
 
             //  get all recipe that had id in recipe collection with same Ingredients.Count and join with user collection to get author name 
             var matchRecipes = (await _mongoDBService.Recipes
@@ -112,13 +113,13 @@ namespace NovaanServer.src.Search
                     foreignCollection: _mongoDBService.Users,
                     localField: r => r.CreatorId,
                     foreignField: u => u.Id,
-                    @as: (RecipeWithUserInfoDTO r) => r.AuthorName
+                    @as: (RecipeWithUserInfoDTO r) => r.Author
                 )
                 .Lookup(
                     foreignCollection: _mongoDBService.Likes,
                     localField: r => r.Id,
                     foreignField: l => l.PostId,
-                    @as: (RecipeWithUserInfoDTO r) => r.Liked
+                    @as: (RecipeWithUserInfoDTO r) => r.Likes
                 )
                 .ToListAsync())
                 .Where(r => r.Ingredients.Count == recipeIngredientMap[r.Id])
@@ -132,9 +133,9 @@ namespace NovaanServer.src.Search
                Title = mr.Title,
                Thumbnails = mr.Video,
                CookTime = mr.CookTime,
-               AuthorId = mr.CreatorId,
-               AuthorName = mr.AuthorName.Where(u => u.Id == mr.CreatorId).Select(u => u.DisplayName).FirstOrDefault()?? string.Empty,
-               Liked = mr.Liked.Any(l => l.UserId == currentUserId && l.PostId == mr.Id)
+               AuthorId = mr.Author.Select(a => a.Id).FirstOrDefault() ?? "",
+               AuthorName = mr.Author.Select(a => a.DisplayName).FirstOrDefault() ?? "",
+               Liked = mr.Likes.Any(l => l.UserId == currentUserId && l.PostId == mr.Id)
             }).ToList();
 
             return result;

@@ -14,9 +14,9 @@ namespace NovaanServer.src.Search.DTOs
         [BsonRepresentation(BsonType.ObjectId)]
         public string CreatorId { get; set; }
 
-        public List<User> AuthorName { get; set; }
+        public List<User> Author { get; set; } = new();
 
-        public List<Like> Liked { get; set; }
+        public List<Like> Likes { get; set; } = new();
 
         public Difficulty Difficulty { get; set; } = Difficulty.Easy;
 
@@ -34,7 +34,7 @@ namespace NovaanServer.src.Search.DTOs
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         public string Description { get; set; } = string.Empty;
 
