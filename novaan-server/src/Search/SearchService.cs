@@ -51,7 +51,8 @@ namespace NovaanServer.src.Search
             int mostRelevance = 0; // Count the number of matched ingredients
             string mostRelevanceKey = string.Empty; // Key of the most relevance recipe
 
-            while (endedArray < ingredients.Count)
+            // End the loop if endedArray counter exceed the number of all available ingredients
+            while (endedArray < ingredientRecipeMap.Count)
             {
                 endedArray = 0;
                 foreach (var item in ingredientRecipeMap)
