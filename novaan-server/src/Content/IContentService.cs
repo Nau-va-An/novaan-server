@@ -13,7 +13,7 @@ namespace NovaanServer.src.Content
       
         bool ValidateFileMetadata(FileInformationDTO fileMetadata);
       
-        Task<List<string>> GetPersonalReel(string? userId);
+        Task<List<GetPostDTO>> GetPersonalReel(string? userId);
       
         Task<GetTipsDetailDTO> GetCulinaryTip(string postId, string? currentUserId);
         Task<GetRecipeDetailDTO> GetRecipe(string postId, string? currentUserId);
