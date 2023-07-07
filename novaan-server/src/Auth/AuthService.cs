@@ -97,7 +97,7 @@ namespace NovaanServer.Auth
                 }
             }
 
-            return foundAccount.Id;
+            return foundAccount.UserId;
         }
 
         // Check if email exists
