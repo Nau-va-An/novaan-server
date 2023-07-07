@@ -17,8 +17,5 @@ namespace NovaanServer.src.Search.DTOs
         public bool Liked { get; set; }
 
         public TimeSpan CookTime { get; set; }
-
-        // TODO: Remove this later
-        public int MatchedIngredient { get; set; }
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NovaanServer.src.Common.Utils;
 using NovaanServer.src.Search.DTOs;
@@ -6,7 +7,7 @@ namespace NovaanServer.src.Search
 {
     [Route("api/search")]
     [ApiController]
-    // [Authorize]
+    [Authorize]
     public class SearchController : ControllerBase
     {
         private readonly ISearchService _searchService;

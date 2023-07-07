@@ -27,7 +27,7 @@ namespace NovaanServer.src.Search
 
             ingredients = ingredients
                 // Format current ingredients
-                .Select(ingredient => ingredient.Trim().ToLower())
+                .Select(ingredient => ingredient.Trim())
                 // Filter out basic ingredients
                 .Where(ingredient => !_basicIngredients.Contains(ingredient, StringComparer.OrdinalIgnoreCase))
                 .ToList();
@@ -100,9 +100,26 @@ namespace NovaanServer.src.Search
                 return new();
             }
 
+            // where r => r.Ingredients.Count == recipeIngredientMap[r.Id] and r.Id in Recipe collection
             var recipeFilter = Builders<Recipe>.Filter.In(r => r.Id, recipeIds);
+
+            //  get all recipe that had id in recipe collection with same Ingredients.Count and join with user collection to get author name 
             var matchRecipes = (await _mongoDBService.Recipes
-                .Find(recipeFilter)
+                .Aggregate()
+                .Match(recipeFilter)
+                // get user name only from user collection
+                .Lookup(
+                    foreignCollection: _mongoDBService.Users,
+                    localField: r => r.CreatorId,
+                    foreignField: u => u.Id,
+                    @as: (RecipeWithUserInfoDTO r) => r.AuthorName
+                )
+                .Lookup(
+                    foreignCollection: _mongoDBService.Likes,
+                    localField: r => r.Id,
+                    foreignField: l => l.PostId,
+                    @as: (RecipeWithUserInfoDTO r) => r.Liked
+                )
                 .ToListAsync())
                 .Where(r => r.Ingredients.Count == recipeIngredientMap[r.Id])
                 .ToList();
@@ -111,10 +128,13 @@ namespace NovaanServer.src.Search
 
             var result = matchRecipes.Select(mr => new GetRecipesByIngredientsRes()
             {
-                Id = mr.Id,
-                Title = mr.Title,
-                Thumbnails = mr.Video,
-                CookTime = mr.CookTime,
+               Id = mr.Id,
+               Title = mr.Title,
+               Thumbnails = mr.Video,
+               CookTime = mr.CookTime,
+               AuthorId = mr.CreatorId,
+               AuthorName = mr.AuthorName.Where(u => u.Id == mr.CreatorId).Select(u => u.DisplayName).FirstOrDefault()?? string.Empty,
+               Liked = mr.Liked.Any(l => l.UserId == currentUserId && l.PostId == mr.Id)
             }).ToList();
 
             return result;

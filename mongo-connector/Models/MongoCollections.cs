@@ -13,6 +13,7 @@
         public static string Allergens { get; } = "allergens";
         public static string Followerships { get; } = "followerships";
         public static string IngredientToRecipes { get; } = "ingredientToRecipes";
+        public static string Likes { get; } = "likes";
     }
 }
 
