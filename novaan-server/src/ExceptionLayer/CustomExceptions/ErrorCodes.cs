@@ -26,6 +26,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int ADMIN_SUBMISSION_NOT_FOUND = 1009;
 
         // Content
+        public const int CONTENT_NOT_FOUND = 1034;
         public const int CONTENT_CONTENT_TYPE_INVALID = 1010;
         public const int CONTENT_DISPOSITION_INVALID = 1011;
         public const int CONTENT_FILENAME_INVALID = 1012;
