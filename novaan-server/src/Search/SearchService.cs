@@ -116,13 +116,14 @@ namespace NovaanServer.src.Search
                 .ToList();
 
             matchRecipes.Sort((a, b) => recipeIngredientMap[b.Id].CompareTo(recipeIngredientMap[a.Id]));
-
+            
             var result = matchRecipes.Select(mr => new AdvancedSearchRes()
             {
                 Id = mr.Id,
                 Title = mr.Title,
                 Thumbnails = mr.Video,
                 CookTime = mr.CookTime,
+                // Author come back as an array but should be only one author for each recipe
                 AuthorId = mr.Author.Select(a => a.Id).FirstOrDefault() ?? "",
                 AuthorName = mr.Author.Select(a => a.DisplayName).FirstOrDefault() ?? "",
                 Saved = mr.Author.Any(a => a.SavedPosts.Any(sp => sp.PostId == mr.Id))
