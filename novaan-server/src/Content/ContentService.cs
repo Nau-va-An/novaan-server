@@ -922,12 +922,21 @@ namespace NovaanServer.src.Content
             {
                 latestComment = recipe.AdminComments.Last();
             }
+
+            // Get creator name
+            var creatorName = (await _mongoService.Users
+                .FindAsync(u => u.Id == recipe.CreatorId))
+                .FirstOrDefault()?.DisplayName ?? string.Empty;
+
             GetRecipeDetailDTO getRecipeDetailDTO = new()
             {
                 Id = recipe.Id,
                 CreatorId = recipe.CreatorId,
+                CreatorName = creatorName,
                 Title = recipe.Title,
                 Description = recipe.Description,
+                Difficulty = (int)recipe.Difficulty,
+                PortionType = (int)recipe.PortionType,
                 Video = recipe.Video,
                 Status = recipe.Status,
                 CreatedAt = recipe.CreatedAt,

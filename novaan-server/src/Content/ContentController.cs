@@ -35,7 +35,7 @@ namespace NovaanServer.src.Content
         }
 
         // View recipe details
-        [HttpGet("/post/recipe/{postId}")]
+        [HttpGet("post/recipe/{postId}")]
         public async Task<GetRecipeDetailDTO> GetRecipeDetail(string postId)
         {
             var currentUserId = Request.GetUserId();
@@ -43,7 +43,7 @@ namespace NovaanServer.src.Content
         }
 
         // View culinary tip details
-        [HttpGet("/post/tip/{postId}")]
+        [HttpGet("post/tip/{postId}")]
         public async Task<GetTipsDetailDTO> GetTipsDetail(string postId)
         {
             var currentUserId = Request.GetUserId();
