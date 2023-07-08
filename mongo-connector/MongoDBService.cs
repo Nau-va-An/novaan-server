@@ -3,6 +3,7 @@ using MongoDB.Driver;
 using MongoDB.Bson;
 using MongoConnector.Models;
 using Newtonsoft.Json;
+using mongo_connector.Models;
 
 namespace MongoConnector
 {
@@ -178,14 +179,21 @@ namespace MongoConnector
             // }
         }
 
-        public IMongoCollection<Likes> Likes
+        public IMongoCollection<IngredientToRecipes> IngredientToRecipes
         {
             get
             {
-                return MongoDatabase.GetCollection<Likes>(MongoCollections.Likes);
+                return MongoDatabase.GetCollection<IngredientToRecipes>(MongoCollections.IngredientToRecipes);
             }
         }
 
+        public IMongoCollection<Like> Likes
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Like>(MongoCollections.Likes);
+            }
+        }
     }
 }
 

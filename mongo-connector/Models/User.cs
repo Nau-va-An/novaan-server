@@ -4,6 +4,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace MongoConnector.Models
 {
+    [BsonIgnoreExtraElements]
     public class User
     {
         [BsonId]

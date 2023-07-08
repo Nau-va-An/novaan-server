@@ -348,12 +348,8 @@ namespace NovaanServer.src.Content
                 throw new Exception("File is empty");
             }
 
-            var extension = Path.GetExtension(section.FileName);
-            if (extension == null)
-            {
-                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
-            }
-
+            var extension = Path.GetExtension(section.FileName)
+                ?? throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
             var isImage = ContentSettings.PermittedImgExtension.Contains(extension);
             var isVideo = !isImage && ContentSettings.PermittedVidExtension.Contains(extension);
             if (!isImage && !isVideo)
