@@ -16,7 +16,7 @@ namespace NovaanServer.src.Content.DTOs
 
         public string Description { get; set; } = string.Empty;
 
-        public string Video { get; set; } = string.Empty;
+        public string Thumbnail { get; set; } = string.Empty;
 
         public Status Status { get; set; } = Status.Pending;
 

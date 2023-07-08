@@ -876,18 +876,19 @@ namespace NovaanServer.src.Content
                 )
                 .Project(t => new GetTipsDetailDTO
                 {
-                    Id = t.Id,
-                    CreatorId = t.CreatorId,
-                    CreatorName = t.UsersInfo[0].DisplayName ?? string.Empty,
-                    Title = t.Title,
-                    Description = t.Description,
-                    Status = t.Status,
-                    AdminComment = t.AdminComments.Count > 0 &&
-                       (t.Status == Status.Rejected || t.Status == Status.Reported) ?
-                       t.AdminComments.Last() : null,
-                    CreatedAt = t.CreatedAt,
-                    IsLiked = t.LikeInfo.Any(l => l.UserId == currentUserId),
-                    IsSaved = t.UsersInfo[0].SavedPosts.Any(p => p.PostId == postId)
+                   Id = t.Id,
+                   CreatorId = t.CreatorId,
+                   CreatorName = t.UsersInfo[0].DisplayName ?? string.Empty,
+                   Title = t.Title,
+                   Thumbnail = t.Video,
+                   Description = t.Description,
+                   Status = t.Status,
+                   AdminComment = t.AdminComments.Count > 0 &&
+                      (t.Status == Status.Rejected || t.Status == Status.Reported) ?
+                      t.AdminComments.Last() : null,
+                   CreatedAt = t.CreatedAt,
+                   IsLiked = t.LikeInfo.Any(l => l.UserId == currentUserId),
+                   IsSaved = t.UsersInfo[0].SavedPosts.Any(p => p.PostId == postId) 
                 })
                 .FirstOrDefaultAsync()
                 ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
@@ -896,7 +897,7 @@ namespace NovaanServer.src.Content
             {
                 throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
             }
-          
+
             return tip;
         }
 
