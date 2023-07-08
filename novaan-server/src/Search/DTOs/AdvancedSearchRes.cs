@@ -1,8 +1,9 @@
+
 using MongoConnector.Enums;
 
 namespace NovaanServer.src.Search.DTOs
 {
-    public class GetRecipesByIngredientsRes
+    public class AdvancedSearchRes
     {
         public string Id { get; set; } = string.Empty;
 
@@ -14,7 +15,7 @@ namespace NovaanServer.src.Search.DTOs
 
         public string Thumbnails { get; set; } = string.Empty;
 
-        public bool Liked { get; set; }
+        public bool Saved { get; set; }
 
         public TimeSpan CookTime { get; set; }
     }

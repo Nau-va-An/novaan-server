@@ -20,16 +20,29 @@ namespace NovaanServer.src.Search
             _mongoDBService = mongoDBService;
         }
 
-        public async Task<List<GetRecipesByIngredientsRes>> AdvancedSearchRecipes(string? currentUserId, AdvancedSearchRecipesReq req)
+        public async Task<List<AdvancedSearchRes>> AdvancedSearchRecipes(
+            string? currentUserId, AdvancedSearchReq req
+        )
         {
             // Remove the basic ingredients, ignoring case, from the input list
             var ingredients = req.Ingredients;
 
+            // Counter to keep track how many ingredients remove during filter
+            int basicIngredientNum = 0;
             ingredients = ingredients
                 // Format current ingredients
                 .Select(ingredient => ingredient.Trim())
                 // Filter out basic ingredients
-                .Where(ingredient => !_basicIngredients.Contains(ingredient, StringComparer.OrdinalIgnoreCase))
+                .Where(ingredient =>
+                {
+                    var isBasicIngredient = _basicIngredients
+                        .Contains(ingredient, StringComparer.OrdinalIgnoreCase);
+                    if (isBasicIngredient)
+                    {
+                        basicIngredientNum++;
+                    }
+                    return !isBasicIngredient;
+                })
                 .ToList();
 
             var ingredientFilter = Builders<IngredientToRecipes>.Filter.In(itr => itr.Ingredient, ingredients);
@@ -45,52 +58,35 @@ namespace NovaanServer.src.Search
 
             var recipeIngredientMap = new Dictionary<string, int>();
 
-            // Initialize counters and variables
-            int i = 0;
-            int endedArray = 0;
             int mostRelevance = 0; // Count the number of matched ingredients
             string mostRelevanceKey = string.Empty; // Key of the most relevance recipe
 
-            // End the loop if endedArray counter exceed the number of all available ingredients
-            while (endedArray < ingredientRecipeMap.Count)
+            // O(m*n) where
+            // m is the number of input ingredients
+            // n is the average number of recipes each ingredient belong to
+            foreach (var item in ingredientRecipeMap)
             {
-                endedArray = 0;
-                foreach (var item in ingredientRecipeMap)
+                foreach (var recipeId in item.RecipeIds)
                 {
-                    if (i >= item.RecipeIds.Count)
+                    if (recipeIngredientMap.ContainsKey(recipeId))
                     {
-                        endedArray++;
-                        continue;
-                    }
-
-                    var currentRecipe = item.RecipeIds[i];
-                    if (currentRecipe == null)
-                    {
-                        endedArray++;
-                        continue;
-                    }
-
-                    if (recipeIngredientMap.ContainsKey(currentRecipe))
-                    {
-                        recipeIngredientMap[currentRecipe]++;
-                        if (recipeIngredientMap[currentRecipe] > mostRelevance)
+                        recipeIngredientMap[recipeId]++;
+                        if (recipeIngredientMap[recipeId] > mostRelevance)
                         {
-                            mostRelevance = recipeIngredientMap[currentRecipe];
-                            mostRelevanceKey = currentRecipe;
+                            mostRelevance = recipeIngredientMap[recipeId];
+                            mostRelevanceKey = recipeId;
                         }
                     }
                     else
                     {
-                        recipeIngredientMap[currentRecipe] = 1;
+                        recipeIngredientMap[recipeId] = 1;
                         if (mostRelevance == 0)
                         {
                             mostRelevance = 1;
-                            mostRelevanceKey = currentRecipe;
+                            mostRelevanceKey = recipeId;
                         }
                     }
                 }
-
-                i++;
             }
 
             // Return empty when the dictionary contain no entry
@@ -102,7 +98,7 @@ namespace NovaanServer.src.Search
 
             // where r => r.Ingredients.Count == recipeIngredientMap[r.Id] and r.Id in Recipe collection
             var recipeFilter = Builders<Recipe>.Filter.In(r => r.Id, recipeIds) &
-                Builders<Recipe>.Filter.SizeLte(r => r.Ingredients, mostRelevance);
+                Builders<Recipe>.Filter.SizeLte(r => r.Ingredients, mostRelevance + basicIngredientNum);
 
             //  get all recipe that had id in recipe collection with same Ingredients.Count and join with user collection to get author name 
             var matchRecipes = (await _mongoDBService.Recipes
@@ -115,27 +111,21 @@ namespace NovaanServer.src.Search
                     foreignField: u => u.Id,
                     @as: (RecipeWithUserInfoDTO r) => r.Author
                 )
-                .Lookup(
-                    foreignCollection: _mongoDBService.Likes,
-                    localField: r => r.Id,
-                    foreignField: l => l.PostId,
-                    @as: (RecipeWithUserInfoDTO r) => r.Likes
-                )
                 .ToListAsync())
-                .Where(r => r.Ingredients.Count == recipeIngredientMap[r.Id])
+                .Where(r => r.Ingredients.Count == recipeIngredientMap[r.Id] + basicIngredientNum)
                 .ToList();
 
             matchRecipes.Sort((a, b) => recipeIngredientMap[b.Id].CompareTo(recipeIngredientMap[a.Id]));
 
-            var result = matchRecipes.Select(mr => new GetRecipesByIngredientsRes()
+            var result = matchRecipes.Select(mr => new AdvancedSearchRes()
             {
-               Id = mr.Id,
-               Title = mr.Title,
-               Thumbnails = mr.Video,
-               CookTime = mr.CookTime,
-               AuthorId = mr.Author.Select(a => a.Id).FirstOrDefault() ?? "",
-               AuthorName = mr.Author.Select(a => a.DisplayName).FirstOrDefault() ?? "",
-               Liked = mr.Likes.Any(l => l.UserId == currentUserId && l.PostId == mr.Id)
+                Id = mr.Id,
+                Title = mr.Title,
+                Thumbnails = mr.Video,
+                CookTime = mr.CookTime,
+                AuthorId = mr.Author.Select(a => a.Id).FirstOrDefault() ?? "",
+                AuthorName = mr.Author.Select(a => a.DisplayName).FirstOrDefault() ?? "",
+                Saved = mr.Author.Any(a => a.SavedPosts.Any(sp => sp.PostId == mr.Id))
             }).ToList();
 
             return result;

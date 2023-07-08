@@ -3,7 +3,7 @@ using NovaanServer.src.Common.DTOs;
 
 namespace NovaanServer.src.Search.DTOs
 {
-    public class AdvancedSearchRecipesReq
+    public class AdvancedSearchReq
     {
         [Required]
         public List<string> Ingredients { get; set; } = new List<string>();

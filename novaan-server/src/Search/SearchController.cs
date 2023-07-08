@@ -18,7 +18,7 @@ namespace NovaanServer.src.Search
         }
 
         [HttpGet("advanced/recipes")]
-        public async Task<List<GetRecipesByIngredientsRes>> AdvancedSearchRecipes([FromQuery] AdvancedSearchRecipesReq req)
+        public async Task<List<AdvancedSearchRes>> AdvancedSearchRecipes([FromQuery] AdvancedSearchReq req)
         {
             var currentUserId = Request.GetUserId();
             return await _searchService.AdvancedSearchRecipes(currentUserId, req);
