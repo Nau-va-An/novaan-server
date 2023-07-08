@@ -44,7 +44,7 @@ namespace NovaanServer.src.Search.DTOs
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        public List<AdminComment> AdminComment { get; set; } = new();
+        public List<AdminComment> AdminComments { get; set; } = new();
 
         public List<string> DietPreference { get; set; } = new();
 
