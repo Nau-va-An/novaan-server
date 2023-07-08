@@ -423,7 +423,7 @@ namespace NovaanServer.src.Content
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
             }
 
-            var updates = Builders<Likes>.Update
+            var updates = Builders<Like>.Update
                 .Set(l => l.UserId, userId)
                 .Set(l => l.PostId, postId)
                 .BitwiseXor(l => l.Liked, 1)
@@ -899,9 +899,47 @@ namespace NovaanServer.src.Content
         public async Task<GetRecipeDetailDTO> GetRecipe(string postId, string currentUserId)
         {
             // Get recipe
-            var recipe = (await _mongoService.Recipes
-                .FindAsync(r => r.Id == postId))
-                .FirstOrDefault()
+            var recipe = await _mongoService.Recipes
+                // join with user collection to get creator name
+                .Aggregate()
+                .Match(r => r.Id == postId)
+                .Lookup(
+                    foreignCollection: _mongoService.Users,
+                    localField: r => r.CreatorId,
+                    foreignField: u => u.Id,
+                    @as: (RecipeDTO r) => r.UsersInfo
+                )
+                // join with like collection to get isLiked
+                .Lookup(
+                    foreignCollection: _mongoService.Likes,
+                    localField: r => r.Id,
+                    foreignField: l => l.PostId,
+                    @as: (RecipeDTO r) => r.LikeInfo
+                )
+                .Project(r => new GetRecipeDetailDTO
+                {
+                    Id = r.Id,
+                    CreatorId = r.CreatorId,
+                    CreatorName = r.UsersInfo[0].DisplayName ?? string.Empty,
+                    Title = r.Title,
+                    Description = r.Description,
+                    Difficulty = (int)r.Difficulty,
+                    PortionType = (int)r.PortionType,
+                    Video = r.Video,
+                    Status = r.Status,
+                    CreatedAt = r.CreatedAt,
+                    CookTime = r.CookTime,
+                    PrepTime = r.PrepTime,
+                    Ingredients = r.Ingredients,
+                    Instructions = r.Instructions,
+                    // only get admin comment if status is Rejected or Reported
+                    AdminComment = r.AdminComments.Count > 0 &&
+                       (r.Status == Status.Rejected || r.Status == Status.Reported) ?
+                       r.AdminComments.Last() : null,
+                    IsLiked = r.LikeInfo.Any(l => l.UserId == currentUserId),
+                    IsSaved = r.UsersInfo[0].SavedPosts.Any(p => p.PostId == postId)
+                })
+                .FirstOrDefaultAsync()
                 ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
 
             if (currentUserId != recipe.CreatorId && recipe.Status != Status.Approved)
@@ -909,47 +947,7 @@ namespace NovaanServer.src.Content
                 throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
-            // Check if user has liked this post
-            bool isLiked = await IsLiked(postId, currentUserId);
-
-            // Check if user has saved this post
-            bool isSaved = await IsSaved(postId, currentUserId);
-
-            AdminComment? latestComment = null;
-            if (recipe.AdminComments.Count > 0 &&
-                (recipe.Status == Status.Rejected || recipe.Status == Status.Reported)
-            )
-            {
-                latestComment = recipe.AdminComments.Last();
-            }
-
-            // Get creator name
-            var creatorName = (await _mongoService.Users
-                .FindAsync(u => u.Id == recipe.CreatorId))
-                .FirstOrDefault()?.DisplayName ?? string.Empty;
-
-            GetRecipeDetailDTO getRecipeDetailDTO = new()
-            {
-                Id = recipe.Id,
-                CreatorId = recipe.CreatorId,
-                CreatorName = creatorName,
-                Title = recipe.Title,
-                Description = recipe.Description,
-                Difficulty = (int)recipe.Difficulty,
-                PortionType = (int)recipe.PortionType,
-                Video = recipe.Video,
-                Status = recipe.Status,
-                CreatedAt = recipe.CreatedAt,
-                CookTime = recipe.CookTime,
-                PrepTime = recipe.PrepTime,
-                Ingredients = recipe.Ingredients,
-                Instructions = recipe.Instructions,
-                AdminComment = latestComment,
-                IsLiked = isLiked,
-                IsSaved = isSaved
-            };
-
-            return getRecipeDetailDTO;
+            return recipe;
         }
 
         private async Task<bool> IsSaved(string postId, string? currentUserId)

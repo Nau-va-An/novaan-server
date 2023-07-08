@@ -41,8 +41,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int CONTENT_PREP_TIME_TOO_LONG = 1021;
         public const int CONTENT_COOK_TIME_TOO_LONG = 1022;
         public const int CONTENT_INGR_TOO_MANY = 1023;
-        public const int CONTENT_ALREADY_SAVED = 1034;
-        public const int CONTENT_NOT_FOUND = 1035;
+        public const int CONTENT_ALREADY_SAVED = 1035;
         public const int CONTENT_ALREADY_COMMENTED = 1036;
         public const int COMMENT_NOT_FOUND = 1037;
         public const int SUBMISSION_TYPE_INVALID = 1038;
