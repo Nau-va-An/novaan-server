@@ -858,42 +858,46 @@ namespace NovaanServer.src.Content
         public async Task<GetTipsDetailDTO> GetCulinaryTip(string postId, string currentUserId)
         {
             // Get tips
-            var tip = (await _mongoService.CulinaryTips
-                .FindAsync(t => t.Id == postId))
-                .FirstOrDefault();
+            var tip = await _mongoService.CulinaryTips
+                .Aggregate()
+                .Match(t => t.Id == postId)
+                .Lookup(
+                    foreignCollection: _mongoService.Users,
+                    localField: t => t.CreatorId,
+                    foreignField: u => u.Id,
+                    @as: (TipsDTO t) => t.UsersInfo
+                )
+                // join with like collection to get isLiked
+                .Lookup(
+                    foreignCollection: _mongoService.Likes,
+                    localField: t => t.Id,
+                    foreignField: l => l.PostId,
+                    @as: (TipsDTO t) => t.LikeInfo
+                )
+                .Project(t => new GetTipsDetailDTO
+                {
+                    Id = t.Id,
+                    CreatorId = t.CreatorId,
+                    CreatorName = t.UsersInfo[0].DisplayName ?? string.Empty,
+                    Title = t.Title,
+                    Description = t.Description,
+                    Status = t.Status,
+                    AdminComment = t.AdminComments.Count > 0 &&
+                       (t.Status == Status.Rejected || t.Status == Status.Reported) ?
+                       t.AdminComments.Last() : null,
+                    CreatedAt = t.CreatedAt,
+                    IsLiked = t.LikeInfo.Any(l => l.UserId == currentUserId),
+                    IsSaved = t.UsersInfo[0].SavedPosts.Any(p => p.PostId == postId)
+                })
+                .FirstOrDefaultAsync()
+                ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
 
-            if (tip == null || tip.CreatorId != currentUserId && tip.Status != Status.Approved)
+            if (tip.CreatorId != currentUserId && tip.Status != Status.Approved)
             {
                 throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
             }
-
-            // Check if user has liked this post
-            bool isLiked = await IsLiked(postId, currentUserId);
-
-            // Check if user has saved this post
-            bool isSaved = await IsSaved(postId, currentUserId);
-
-            AdminComment? latestComment = null;
-            if (tip.AdminComments.Count > 0 &&
-                (tip.Status == Status.Rejected || tip.Status == Status.Reported)
-            )
-            {
-                latestComment = tip.AdminComments.Last();
-            }
-            GetTipsDetailDTO getTipsDetailDTO = new()
-            {
-                Id = tip.Id,
-                CreatorId = tip.CreatorId,
-                Title = tip.Title,
-                Description = tip.Description,
-                Video = tip.Video,
-                Status = tip.Status,
-                CreatedAt = tip.CreatedAt,
-                AdminComment = latestComment,
-                IsLiked = isLiked,
-                IsSaved = isSaved
-            };
-            return getTipsDetailDTO;
+          
+            return tip;
         }
 
         public async Task<GetRecipeDetailDTO> GetRecipe(string postId, string currentUserId)
@@ -948,22 +952,6 @@ namespace NovaanServer.src.Content
             }
 
             return recipe;
-        }
-
-        private async Task<bool> IsSaved(string postId, string? currentUserId)
-        {
-            // Check if user had saved this post
-            return (await _mongoService.Users
-                .FindAsync(u => u.Id == currentUserId && u.SavedPosts.Any(p => p.PostId == postId)))
-                .FirstOrDefault() != null;
-        }
-
-        private async Task<bool> IsLiked(string id, string? currentUserId)
-        {
-            // Check if user had liked this post
-            return (await _mongoService.Likes
-                .FindAsync(l => l.UserId == currentUserId && l.PostId == id))
-                .FirstOrDefault() != null;
         }
     }
 }
