@@ -411,13 +411,8 @@ namespace NovaanServer.src.Content
             }
         }
 
-        public async Task<GetTipsDetailDTO> GetCulinaryTip(string postId, string? currentUserId)
+        public async Task<GetTipsDetailDTO> GetCulinaryTip(string postId, string currentUserId)
         {
-            if (currentUserId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
             // Get tips
             var tip = (await _mongoService.CulinaryTips
                 .FindAsync(t => t.Id == postId))
@@ -457,13 +452,8 @@ namespace NovaanServer.src.Content
             return getTipsDetailDTO;
         }
 
-        public async Task<GetRecipeDetailDTO> GetRecipe(string postId, string? currentUserId)
+        public async Task<GetRecipeDetailDTO> GetRecipe(string postId, string currentUserId)
         {
-            if (currentUserId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
             // Get recipe
             var recipe = (await _mongoService.Recipes
                 .FindAsync(r => r.Id == postId))

@@ -31,15 +31,10 @@ namespace NovaanServer.src.Preference
             };
         }
 
-        public async Task<UserPreferenceDTO> GetUserPreferences(string? userId)
+        public async Task<UserPreferenceDTO> GetUserPreferences(string currentUserId)
         {
-            if (userId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
             var user = (await _mongoService.Users
-                .FindAsync(user => user.Id == userId))
+                .FindAsync(user => user.Id == currentUserId))
                 .FirstOrDefault()
                 ?? throw new BadHttpRequestException("User not found");
 
@@ -51,15 +46,10 @@ namespace NovaanServer.src.Preference
             };
         }
 
-        public async Task UpdateUserPreferences(string? userId, UserPreferenceDTO userPreferenceDTO)
+        public async Task UpdateUserPreferences(string currentUserId, UserPreferenceDTO userPreferenceDTO)
         {
-            if (userId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
             var foundUser = (await _mongoService.Users
-                .FindAsync(user => user.Id == userId))
+                .FindAsync(user => user.Id == currentUserId))
                 .FirstOrDefault()
                 ?? throw new BadHttpRequestException("User not found");
 
@@ -74,7 +64,7 @@ namespace NovaanServer.src.Preference
                 .Set("Diet", userPreferenceDTO.Diets)
                 .Set("Cuisine", userPreferenceDTO.Cuisines)
                 .Set("Allergen", userPreferenceDTO.Allergens);
-            await _mongoService.Users.UpdateOneAsync(user => user.Id == userId, update);
+            await _mongoService.Users.UpdateOneAsync(user => user.Id == currentUserId, update);
         }
 
         private async Task<bool> ValidateUserPreferences(UserPreferenceDTO userPreferenceDTO)
