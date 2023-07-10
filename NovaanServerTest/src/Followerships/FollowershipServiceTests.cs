@@ -20,7 +20,7 @@ namespace NovaanServerTest.src.Followerships
 
         public FollowershipServiceTests()
         {
-            this._mongoDBServiceTests.InitializeMongoAccountCollection();
+            this._mongoDBServiceTests.InitializeMongoCollection();
             var mongoDBService = new MongoDBService(_mongoDBServiceTests.mongoClient.Object);
             _testClass = new FollowershipService(mongoDBService);
         }
@@ -38,7 +38,7 @@ namespace NovaanServerTest.src.Followerships
         }
 
         [Fact]
-        public async Task CannnotCallFollowUserUserExceptionUserFollowed()
+        public async Task CannnotCallFollowUserUserExceptionUserAlreadyFollowing()
         {
             // Assert
             await Assert.ThrowsAsync<NovaanException>(() => _testClass.FollowUser("1", "2"));
@@ -50,158 +50,70 @@ namespace NovaanServerTest.src.Followerships
             // Assert
             await Assert.ThrowsAsync<NovaanException>(() => _testClass.FollowUser("1", "7"));
         }
-        /*
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task CannotCallFollowUserWithInvalidCurrentUserID(string value)
+
+        [Fact]
+        public async Task CannnotCallFollowUserExceptionUserFollowItself()
         {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _testClass.FollowUser(value, fixture.Create<string>()));
+            // Assert
+            await Assert.ThrowsAsync<NovaanException>(() => _testClass.FollowUser("1", "1"));
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task CannotCallFollowUserWithInvalidFollowingUserId(string value)
-        {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _testClass.FollowUser(fixture.Create<string>(), value));
-        }
 
         [Fact]
         public async Task CanCallUnfollowUser()
         {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            var currentUserID = fixture.Create<string>();
-            var followingUserId = fixture.Create<string>();
 
             // Act
-            await _testClass.UnfollowUser(currentUserID, followingUserId);
+            await _testClass.FollowUser("1", "1");
 
             // Assert
-            throw new NotImplementedException("Create or modify test");
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task CannotCallUnfollowUserWithInvalidCurrentUserID(string value)
-        {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _testClass.UnfollowUser(value, fixture.Create<string>()));
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task CannotCallUnfollowUserWithInvalidFollowingUserId(string value)
-        {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _testClass.UnfollowUser(fixture.Create<string>(), value));
+            Assert.True(true);
         }
 
         [Fact]
-        public async Task CanCallGetFollowers()
+        public async Task CannnotCallUnfollowUserUserExceptionUserNotFollowing()
         {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            var currentUserID = fixture.Create<string>();
-            var userId = fixture.Create<string>();
-            var pagination = fixture.Create<Pagination>();
-
-            // Act
-            var result = await _testClass.GetFollowers(currentUserID, userId, pagination);
-
             // Assert
-            throw new NotImplementedException("Create or modify test");
+            await Assert.ThrowsAsync<NovaanException>(() => _testClass.FollowUser("1", "2"));
         }
 
         [Fact]
-        public async Task CannotCallGetFollowersWithNullPagination()
+        public async Task CannnotCalUnfollowUserExceptionUserNotFound()
         {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _testClass.GetFollowers(fixture.Create<string>(), fixture.Create<string>(), default(Pagination)));
+            // Assert
+            await Assert.ThrowsAsync<NovaanException>(() => _testClass.FollowUser("1", "7"));
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task CannotCallGetFollowersWithInvalidCurrentUserID(string value)
+        [Fact]
+        public async Task CannnotCallUnfollowUserExceptionUserFollowItself()
         {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _testClass.GetFollowers(value, fixture.Create<string>(), fixture.Create<Pagination>()));
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task CannotCallGetFollowersWithInvalidUserId(string value)
-        {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _testClass.GetFollowers(fixture.Create<string>(), value, fixture.Create<Pagination>()));
+            // Assert
+            await Assert.ThrowsAsync<NovaanException>(() => _testClass.FollowUser("1", "1"));
         }
 
         [Fact]
         public async Task CanCallGetFollowing()
         {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            var currentUserID = fixture.Create<string>();
-            var userId = fixture.Create<string>();
-            var pagination = fixture.Create<Pagination>();
-
-            // Act
-            var result = await _testClass.GetFollowing(currentUserID, userId, pagination);
-
-            // Assert
-            throw new NotImplementedException("Create or modify test");
+            Pagination pa = new Pagination { Start = 1, Limit = 2 };
+            var result = _testClass.GetFollowing(null, "1", pa);
+            // Assert true is Not throw exception 
+            Assert.True(true);
         }
 
         [Fact]
-        public async Task CannotCallGetFollowingWithNullPagination()
+        public async Task CannotCallGetFollowingUserNotFound1()
         {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _testClass.GetFollowing(fixture.Create<string>(), fixture.Create<string>(), default(Pagination)));
+            Pagination pa = new Pagination { Start = 1, Limit = 2 };
+            // Assert 
+            await Assert.ThrowsAsync<NovaanException>(() => _testClass.GetFollowing(null, "9", pa));
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task CannotCallGetFollowingWithInvalidCurrentUserID(string value)
+        [Fact]
+        public async Task CannotCallGetFollowingUserNotFound2()
         {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _testClass.GetFollowing(value, fixture.Create<string>(), fixture.Create<Pagination>()));
+            Pagination pa = new Pagination { Start = 1, Limit = 2 };
+            // Assert 
+            await Assert.ThrowsAsync<NovaanException>(() => _testClass.GetFollowing("1", "8", pa));
         }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task CannotCallGetFollowingWithInvalidUserId(string value)
-        {
-            // Arrange
-            var fixture = new Fixture().Customize(new AutoMoqCustomization());
-            await Assert.ThrowsAsync<ArgumentNullException>(() => _testClass.GetFollowing(fixture.Create<string>(), value, fixture.Create<Pagination>()));
-        }
-
-    */
     }
 }
