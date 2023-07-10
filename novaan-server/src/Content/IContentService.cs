@@ -15,8 +15,8 @@ namespace NovaanServer.src.Content
       
         Task<List<GetPostDTO>> GetPersonalReel(string? userId);
       
-        Task<GetTipsDetailDTO> GetCulinaryTip(string postId, string? currentUserId);
-        Task<GetRecipeDetailDTO> GetRecipe(string postId, string? currentUserId);
+        Task<GetTipsDetailDTO> GetCulinaryTip(string postId, string currentUserId);
+        Task<GetRecipeDetailDTO> GetRecipe(string postId, string currentUserId);
     }
 }
 

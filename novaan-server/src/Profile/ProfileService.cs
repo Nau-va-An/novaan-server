@@ -19,14 +19,8 @@ namespace NovaanServer.src.Profile
             _mongoDBService = mongoDBService;
         }
 
-        public async Task<GetProfileResDTO> GetProfile(string? currentUserId, string targetUserId)
+        public async Task<GetProfileResDTO> GetProfile(string currentUserId, string targetUserId)
         {
-            if (currentUserId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
-
             /* Querry to test in Mongosh
                 db.users.aggregate([
                     {
@@ -74,13 +68,8 @@ namespace NovaanServer.src.Profile
             return profile;
         }
 
-        public async Task<List<Recipe>> GetRecipes(string? currentUserId, string targetUserId, Pagination pagination)
+        public async Task<List<Recipe>> GetRecipes(string currentUserId, string targetUserId, Pagination pagination)
         {
-            if (currentUserId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
             var recipes = new List<Recipe>();
             if (currentUserId == targetUserId)
             {
@@ -103,13 +92,8 @@ namespace NovaanServer.src.Profile
                 .ToList();
         }
 
-        public async Task<List<SavedPost>> GetSavedPosts(string? currentUserId, string targetUserId, Pagination pagination)
+        public async Task<List<SavedPost>> GetSavedPosts(string currentUserId, string targetUserId, Pagination pagination)
         {
-            if (currentUserId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
             var targetUser = (await _mongoDBService.Users
                 .FindAsync(u => u.Id == targetUserId))
                 .FirstOrDefault() ??
@@ -128,13 +112,8 @@ namespace NovaanServer.src.Profile
             return savedPost;
         }
 
-        public async Task<List<CulinaryTip>> GetTips(string? currentUserId, string targetUserId, Pagination pagination)
+        public async Task<List<CulinaryTip>> GetTips(string currentUserId, string targetUserId, Pagination pagination)
         {
-            if (currentUserId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
             var tips = new List<CulinaryTip>();
             if (currentUserId == targetUserId)
             {
