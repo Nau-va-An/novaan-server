@@ -7,12 +7,15 @@ using Microsoft.Net.Http.Headers;
 using MongoConnector;
 using MongoConnector.Enums;
 using MongoConnector.Models;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using NovaanServer.src.Content.DTOs;
 using NovaanServer.src.Content.FormHandler;
 using NovaanServer.src.Content.Settings;
 using NovaanServer.src.ExceptionLayer.CustomExceptions;
 using S3Connector;
+using Utils.Json;
 using Utils.UtilClass;
 
 namespace NovaanServer.src.Content
@@ -415,47 +418,45 @@ namespace NovaanServer.src.Content
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
             }
 
-            // Switchcase for handle submissionType
+            var updates = Builders<Likes>.Update
+                .Set(l => l.UserId, userId)
+                .Set(l => l.PostId, postId)
+                .BitwiseXor(l => l.Liked, 1)
+                .Set(l => l.PostType, likeDTO.PostType);
+
+            // If there is a document contain userId and postId, it will be updated
+            var response = await _mongoService.Likes
+                .UpdateOneAsync(
+                    l => l.PostId == postId &&
+                    l.UserId == userId &&
+                    l.PostType == SubmissionType.Recipe,
+                updates,
+                // If not, it will be inserted
+                new UpdateOptions { IsUpsert = true });
+
+            // Update likeCount according to upsert result
+            bool isLiked = response.UpsertedId != null;
             switch (likeDTO.PostType)
             {
                 case SubmissionType.Recipe:
-                    var recipe = (await _mongoService.Recipes
-                        .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
-                        .FirstOrDefault()
-                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
-
-                    // Update likeCount of recipe
                     await _mongoService.Recipes
-                        .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
-                        .Inc(r => r.LikesCount, likeDTO.Liked ? 1 : -1));
+                        .UpdateOneAsync(
+                            r => r.Id == postId,
+                            Builders<Recipe>.Update.Inc(r => r.LikesCount, isLiked ? 1 : -1)
+                        );
                     break;
 
                 case SubmissionType.CulinaryTip:
-                    var tip = (await _mongoService.CulinaryTips
-                        .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
-                        .FirstOrDefault()
-                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
-
-                    // Update likeCount of tip
                     await _mongoService.CulinaryTips
-                        .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
-                        .Inc(t => t.LikesCount, likeDTO.Liked ? 1 : -1));
+                        .UpdateOneAsync(
+                            t => t.Id == postId,
+                            Builders<CulinaryTip>.Update.Inc(t => t.LikesCount, isLiked ? 1 : -1)
+                        );
                     break;
 
                 default:
                     throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
             }
-
-            // If there is a document contain userId and postId, it will be updated
-            await _mongoService.Likes
-                .UpdateOneAsync(l => l.PostId == postId && l.UserId == userId && l.postType == SubmissionType.Recipe,
-                Builders<Likes>.Update
-                .Set(l => l.UserId, userId)
-                .Set(l => l.PostId, postId)
-                .Set(l => l.Liked, likeDTO.Liked)
-                .Set(l => l.postType, likeDTO.PostType),
-                // If not, it will be inserted
-                new UpdateOptions { IsUpsert = true });
         }
 
         public async Task SavePost(string postId, string? userId, SubmissionType postType)
@@ -473,7 +474,6 @@ namespace NovaanServer.src.Content
                         .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
                         .FirstOrDefault()
                         ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
-
                     break;
 
                 case SubmissionType.CulinaryTip:
@@ -481,7 +481,6 @@ namespace NovaanServer.src.Content
                         .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
                         .FirstOrDefault()
                         ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
-
                     break;
 
                 default:
@@ -490,25 +489,34 @@ namespace NovaanServer.src.Content
 
             // Check if user has saved this post before in savedPost list of user collection
             bool hasSavedPost = (await _mongoService.Users
-                .FindAsync(u => u.Id == userId && u.SavedPost
-                .Any(p => p.PostId == postId && p.PostType == postType)))
+                .FindAsync(
+                    u => u.Id == userId &&
+                    u.SavedPost.Any(p => p.PostId == postId && p.PostType == postType))
+                )
                 .FirstOrDefault() != null;
-
 
             if (!hasSavedPost)
             {
-                // Save post
-                await _mongoService.Users
-                    .UpdateOneAsync(u => u.Id == userId, Builders<User>.Update
-                    .Push(u => u.SavedPost, new SavedPost
+                // Add the post to user saved posts list
+                var updates = Builders<User>.Update.Push(
+                    u => u.SavedPost,
+                    new SavedPost
                     {
                         PostId = postId,
                         PostType = postType
-                    }));
+                    }
+                );
+                await _mongoService.Users
+                    .UpdateOneAsync(u => u.Id == userId, updates);
             }
             else
             {
-                throw new NovaanException(ErrorCodes.CONTENT_ALREADY_SAVED, HttpStatusCode.BadRequest);
+                // Remove the post from user saved posts list
+                var updates = Builders<User>.Update.PullFilter(
+                    u => u.SavedPost,
+                    sp => sp.PostId == postId && sp.PostType == postType
+                );
+                await _mongoService.Users.UpdateOneAsync(u => u.Id == userId, updates);
             }
         }
 

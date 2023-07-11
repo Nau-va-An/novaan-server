@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using MongoConnector.Enums;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -16,8 +17,9 @@ namespace MongoConnector.Models
         public string PostId { get; set; }
 
         // TODO: Add Liked property to check if user like or unlike this post
-        public bool Liked { get; set; }
+        [Range(0, 1)]
+        public int Liked { get; set; }
         
-        public SubmissionType postType { get; set; }
+        public SubmissionType PostType { get; set; }
     }
 }
