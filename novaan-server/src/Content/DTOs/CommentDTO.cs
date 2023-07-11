@@ -9,14 +9,14 @@ namespace NovaanServer.src.Content.DTOs
 
         public IFormFile? Image { get; set; }
 
+        public string? ExistingImage { get; set; }
+
         [Required]
         [Range(1, 5, ErrorMessage = "Field value must be between 1 and 5.")]
         public int Rating { get; set; }
 
         [Required]
         public SubmissionType PostType { get; set; }
-
-        public Status CommentStatus { get; set; } = Status.Approved;
     }
 
 }

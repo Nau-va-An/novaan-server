@@ -621,6 +621,40 @@ namespace NovaanServer.src.Content
                 .FirstOrDefault()
                 ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
+            string imageId = comment.Image??"";
+            
+            if (!string.IsNullOrEmpty(commentDTO.ExistingImage) && commentDTO.ExistingImage != comment.Image)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_IMAGE_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Case 1: User remove image from comment 
+            if (commentDTO.Image == null && !string.IsNullOrEmpty(comment.Image) && commentDTO.ExistingImage == null)
+            {
+                // Delete image from S3
+                await _s3Service.DeleteFileAsync(comment.Image);
+                imageId = null;
+            }
+
+            // Case 2: User replace image by new image
+            if(commentDTO.Image != null){
+                // Delete old image from S3
+                await _s3Service.DeleteFileAsync(comment.Image);
+
+                // Upload new image to S3
+                imageId = System.Guid.NewGuid().ToString() +
+                               Path.GetExtension(commentDTO.Image.FileName);
+                await _s3Service.UploadFileAsync(commentDTO.Image.OpenReadStream(), imageId);
+            }
+
+            // Update comment
+            await _mongoService.Comments
+                .UpdateOneAsync(c => c.Id == comment.Id, Builders<Comments>.Update
+                .Set(c => c.Comment, commentDTO.Comment)
+                .Set(c => c.Image, imageId)
+                .Set(c => c.Rating, commentDTO.Rating)
+                .Set(c => c.UpdatedAt, DateTime.Now));
+
             switch (commentDTO.PostType)
             {
                 case SubmissionType.Recipe:
@@ -668,23 +702,6 @@ namespace NovaanServer.src.Content
                 default:
                     throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
             }
-
-            string imageId = "";
-            if (commentDTO.Image != null)
-            {
-                // upload image to S3
-                imageId = System.Guid.NewGuid().ToString() +
-                                Path.GetExtension(commentDTO.Image.FileName);
-                await _s3Service.UploadFileAsync(commentDTO.Image.OpenReadStream(), imageId);
-            }
-
-            // Update comment
-            await _mongoService.Comments
-                .UpdateOneAsync(c => c.Id == comment.Id, Builders<Comments>.Update
-                .Set(c => c.Comment, commentDTO.Comment)
-                .Set(c => c.Image, imageId)
-                .Set(c => c.Rating, commentDTO.Rating)
-                .Set(c => c.UpdatedAt, DateTime.Now));
         }
 
         public async Task DeleteComment(string postId, SubmissionType submissionType, string? userId)

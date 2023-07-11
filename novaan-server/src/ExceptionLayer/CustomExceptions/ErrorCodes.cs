@@ -4,7 +4,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
     public static class ErrorCodes
     {
         // TODO: Please update latest error code to avoid duplicate value
-        // Latest error code: 1038
+        // Latest error code: 1040
 
         // Common
         public const int SERVER_UNAVAILABLE = 1000;
@@ -45,6 +45,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int CONTENT_ALREADY_COMMENTED = 1036;
         public const int COMMENT_NOT_FOUND = 1037;
         public const int SUBMISSION_TYPE_INVALID = 1038;
+        public const int CONTENT_IMAGE_NOT_FOUND = 1039;
 
         // Followership
         public static int USER_ALREADY_FOLLOWING = 1026;
@@ -63,12 +64,11 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int S3_FILE_NOT_FOUND = 1033;
 
         // Search
-        public const int SEARCH_INGREDIENTS_NOT_FOUND = 1034;
+        public const int SEARCH_INGREDIENTS_NOT_FOUND = 1040;
 
         public static Dictionary<int, string> ErrorNameDictionary = typeof(ErrorCodes).GetFields()
                 .Where(f => f.FieldType == typeof(int))
                 .ToDictionary(f => (int)f.GetValue(null), f => f.Name);
-
     }
 }
 
