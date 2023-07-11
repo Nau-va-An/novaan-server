@@ -768,10 +768,6 @@ namespace NovaanServer.src.Content
                         .FirstOrDefault()
                         ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
-                    // Update status of post to Reported
-                    await _mongoService.Recipes
-                        .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
-                        .Set(r => r.Status, Status.Reported));
                     break;
 
                 case SubmissionType.CulinaryTip:
@@ -780,10 +776,6 @@ namespace NovaanServer.src.Content
                         .FirstOrDefault()
                         ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
-                    // Update status of post to Reported
-                    await _mongoService.CulinaryTips
-                        .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
-                        .Set(t => t.Status, Status.Reported));
                     break;
 
                 default:
