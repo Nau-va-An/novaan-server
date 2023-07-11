@@ -7,7 +7,5 @@ namespace NovaanServer.src.Content.DTOs
     {
         [Required]
         public SubmissionType PostType { get; set; }
-        [Required]
-        public bool Liked { get; set; }
     }
 }
