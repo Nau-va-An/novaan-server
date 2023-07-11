@@ -15,6 +15,7 @@
         public static string Comments { get; } = "comments";
         public static string Likes { get; } = "likes";
         public static string Reports { get; } = "reports";
+        public static string IngredientToRecipes { get; } = "ingredientToRecipes";
     }
 }
 

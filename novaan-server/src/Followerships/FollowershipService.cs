@@ -17,13 +17,8 @@ namespace NovaanServer.src.Followerships
             _mongodbService = mongoDBService;
         }
 
-        public async Task FollowUser(string? currentUserId, string followingUserId)
+        public async Task FollowUser(string currentUserId, string followingUserId)
         {
-            if (currentUserId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
             if (currentUserId == followingUserId)
             {
                 throw new NovaanException(ErrorCodes.USER_FOLLOWING_ITSELF, HttpStatusCode.BadRequest);
@@ -63,13 +58,8 @@ namespace NovaanServer.src.Followerships
             }
         }
 
-        public async Task UnfollowUser(string? currentUserId, string followingUserId)
+        public async Task UnfollowUser(string currentUserId, string followingUserId)
         {
-            if (currentUserId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
             if (currentUserId == followingUserId)
             {
                 throw new NovaanException(ErrorCodes.USER_FOLLOWING_ITSELF, HttpStatusCode.BadRequest);
@@ -113,16 +103,11 @@ namespace NovaanServer.src.Followerships
 
 
         public async Task<List<FollowershipDTO>> GetFollowers(
-            string? currentUserId,
+            string currentUserId,
             string targetuserId,
             Pagination pagination
         )
         {
-            if (currentUserId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
             // Get all followers of user that has id is userId
             List<Followership> followers = (await _mongodbService.Followerships
                 .FindAsync(f => f.FollowingId == targetuserId))
@@ -155,16 +140,11 @@ namespace NovaanServer.src.Followerships
         }
 
         public async Task<List<FollowershipDTO>> GetFollowing(
-            string? currentUserId,
+            string currentUserId,
             string targetUserId,
             Pagination pagination
         )
         {
-            if (currentUserId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.NotFound);
-            }
-
             List<Followership> following = (await _mongodbService.Followerships
                 .FindAsync(f => f.FollowerId == targetUserId))
                 .ToList();
