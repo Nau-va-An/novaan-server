@@ -496,7 +496,7 @@ namespace NovaanServer.src.Content
             bool hasSavedPost = (await _mongoService.Users
                 .FindAsync(
                     u => u.Id == userId &&
-                    u.SavedPost.Any(p => p.PostId == postId && p.PostType == postType))
+                    u.SavedPosts.Any(p => p.PostId == postId && p.PostType == postType))
                 )
                 .FirstOrDefault() != null;
 
@@ -504,7 +504,7 @@ namespace NovaanServer.src.Content
             {
                 // Add the post to user saved posts list
                 var updates = Builders<User>.Update.Push(
-                    u => u.SavedPost,
+                    u => u.SavedPosts,
                     new SavedPost
                     {
                         PostId = postId,
@@ -518,7 +518,7 @@ namespace NovaanServer.src.Content
             {
                 // Remove the post from user saved posts list
                 var updates = Builders<User>.Update.PullFilter(
-                    u => u.SavedPost,
+                    u => u.SavedPosts,
                     sp => sp.PostId == postId && sp.PostType == postType
                 );
                 await _mongoService.Users.UpdateOneAsync(u => u.Id == userId, updates);
