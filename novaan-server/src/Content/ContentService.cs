@@ -532,6 +532,37 @@ namespace NovaanServer.src.Content
                 throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
             }
 
+            // Check if user has commented on this post before
+            var hasCommented = (await _mongoService.Comments
+                .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == commentDTO.PostType))
+                .FirstOrDefault() != null;
+
+            if (hasCommented)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_ALREADY_COMMENTED, HttpStatusCode.BadRequest);
+            }
+
+            string imageId = "";
+            if (commentDTO.Image != null)
+            { // Upload image to S3
+                imageId = System.Guid.NewGuid().ToString() +
+                               Path.GetExtension(commentDTO.Image.FileName);
+                await _s3Service.UploadFileAsync(commentDTO.Image.OpenReadStream(), imageId);
+            }
+
+            // Comment on post
+            await _mongoService.Comments
+                .InsertOneAsync(new Comments
+                {
+                    UserId = userId,
+                    PostId = postId,
+                    postType = commentDTO.PostType,
+                    Comment = commentDTO.Comment,
+                    CreatedAt = DateTime.Now,
+                    Image = imageId,
+                    Rating = commentDTO.Rating
+                });
+
             switch (commentDTO.PostType)
             {
                 case SubmissionType.Recipe:
@@ -575,37 +606,6 @@ namespace NovaanServer.src.Content
                 default:
                     throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
             }
-
-            // Check if user has commented on this post before
-            var hasCommented = (await _mongoService.Comments
-                .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == commentDTO.PostType))
-                .FirstOrDefault() != null;
-
-            if (hasCommented)
-            {
-                throw new NovaanException(ErrorCodes.CONTENT_ALREADY_COMMENTED, HttpStatusCode.BadRequest);
-            }
-
-            string imageId = "";
-            if (commentDTO.Image != null)
-            { // Upload image to S3
-                imageId = System.Guid.NewGuid().ToString() +
-                               Path.GetExtension(commentDTO.Image.FileName);
-                await _s3Service.UploadFileAsync(commentDTO.Image.OpenReadStream(), imageId);
-            }
-
-            // Comment on post
-            await _mongoService.Comments
-                .InsertOneAsync(new Comments
-                {
-                    UserId = userId,
-                    PostId = postId,
-                    postType = commentDTO.PostType,
-                    Comment = commentDTO.Comment,
-                    CreatedAt = DateTime.Now,
-                    Image = imageId,
-                    Rating = commentDTO.Rating
-                });
         }
 
         public async Task EditComment(string postId, string? userId, CommentDTO commentDTO)
@@ -621,8 +621,8 @@ namespace NovaanServer.src.Content
                 .FirstOrDefault()
                 ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
-            string imageId = comment.Image??"";
-            
+            string imageId = comment.Image ?? "";
+
             if (!string.IsNullOrEmpty(commentDTO.ExistingImage) && commentDTO.ExistingImage != comment.Image)
             {
                 throw new NovaanException(ErrorCodes.CONTENT_IMAGE_NOT_FOUND, HttpStatusCode.BadRequest);
@@ -637,7 +637,8 @@ namespace NovaanServer.src.Content
             }
 
             // Case 2: User replace image by new image
-            if(commentDTO.Image != null){
+            if (commentDTO.Image != null)
+            {
                 // Delete old image from S3
                 await _s3Service.DeleteFileAsync(comment.Image);
 
