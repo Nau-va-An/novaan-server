@@ -514,6 +514,34 @@ namespace NovaanServer.src.Content
                 .FindAsync(l => l.UserId == currentUserId && l.PostId == id))
                 .FirstOrDefault() != null;
         }
+
+        public async Task<List<GetPostCommentsDTO>> GetComments(string postId, string currentUserId)
+        {
+            // join comments and users collection to get user info of each comment
+            var comments = await _mongoService.Comments
+                .Aggregate()
+                .Match(c => c.PostId == postId)
+                .Lookup<Comments, User, GetCommentWithUserInfoDTO>(
+                    _mongoService.Users,
+                    c => c.UserId,
+                    u => u.Id,
+                    c => c.UserInfo
+                )
+                .Project(c => new GetPostCommentsDTO
+                {
+                    CommentID = c.Id,
+                    UserId = c.UserId,
+                    UserName = c.UserInfo[0].DisplayName,
+                    Avatar = c.UserInfo[0].Avatar,
+                    Comment = c.Comment??"",
+                    Image = c.Image,
+                    Rating = c.Rating,
+                    CreatedAt = c.CreatedAt,
+                })
+                .ToListAsync();
+
+            return comments;
+        }
     }
 }
 

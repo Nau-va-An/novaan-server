@@ -101,6 +101,14 @@ namespace NovaanServer.src.Content
                 Url = await _s3Service.GetDownloadUrlAsync(id)
             };
         }
+
+        // Get all comments of a post
+        [HttpGet("comments/{postId}")]
+        public async Task<List<GetPostCommentsDTO>> GetComments(string postId)
+        {
+            var currentUserId = Request.GetUserId();
+            return await _contentService.GetComments(postId, currentUserId);
+        }
     }
 }
 
