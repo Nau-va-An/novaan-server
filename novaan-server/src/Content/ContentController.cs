@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoConnector.Enums;
 using MongoConnector.Models;
 using NovaanServer.src.Common.Attributes;
 using NovaanServer.src.Common.Utils;
@@ -34,7 +35,7 @@ namespace NovaanServer.src.Content
         }
 
         // View recipe details
-        [HttpGet("/post/recipe/{postId}")]
+        [HttpGet("post/recipe/{postId}")]
         public async Task<GetRecipeDetailDTO> GetRecipeDetail(string postId)
         {
             var currentUserId = Request.GetUserId();
@@ -42,7 +43,7 @@ namespace NovaanServer.src.Content
         }
 
         // View culinary tip details
-        [HttpGet("/post/tip/{postId}")]
+        [HttpGet("post/tip/{postId}")]
         public async Task<GetTipsDetailDTO> GetTipsDetail(string postId)
         {
             var currentUserId = Request.GetUserId();
@@ -101,6 +102,71 @@ namespace NovaanServer.src.Content
                 Url = await _s3Service.GetDownloadUrlAsync(id)
             };
         }
+
+        // User likes a post
+        [HttpPost("interaction/like/{postId}")]
+        public async Task<IActionResult> LikePost(string postId, LikeReqDTO likeDTO)
+        {
+            //Them param submissionType
+            var userId = Request.GetUserId();
+            await _contentService.LikePost(postId, userId, likeDTO);
+            return Ok();
+        }
+
+        // Save a post 
+        [HttpPost("interaction/save/{postId}")]
+        public async Task<IActionResult> SavePost(string postId, SubmissionType submissionType)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.SavePost(postId, userId, submissionType);
+            return Ok();
+        }
+
+        // Comment on a post
+        [HttpPost("interaction/comment/{postId}")]
+        public async Task<IActionResult> CommentOnPost(string postId, [FromForm] CommentDTO commentDTO)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.CommentOnPost(postId, userId, commentDTO);
+            return Ok();
+        }
+
+        // Edit comment on specific post
+        [HttpPut("interaction/comment/{postId}")]
+        public async Task<IActionResult> EditCommentOnPost(string postId, [FromForm] CommentDTO commentDTO)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.EditComment(postId, userId, commentDTO);
+            return Ok();
+        }
+
+        // delete comment on specific post
+        [HttpDelete("interaction/comment/{postId}")]
+        public async Task<IActionResult> DeleteCommentOnPost(string postId, SubmissionType postType)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.DeleteComment(postId, postType, userId);
+            return Ok();
+        }
+
+        // Report a post
+        [HttpPost("interaction/report/{postId}")]
+        public async Task<IActionResult> ReportPost(string postId, [FromBody] ReportDTO reportDTO)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.ReportPost(postId, userId, reportDTO);
+            return Ok();
+        }
+
+        //report a comment
+        [HttpPost("interaction/report/{commentId}")]
+        public async Task<IActionResult> ReportComment(string commentId, [FromBody] ReportDTO reportDTO)
+        {
+            var userId = Request.GetUserId();
+            await _contentService.ReportComment(commentId, userId, reportDTO);
+            return Ok();
+        }
+
     }
 }
 
