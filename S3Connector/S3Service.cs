@@ -122,6 +122,22 @@ namespace S3Connector
                 throw;
             }
         }
+
+        public async Task DeleteFileAsync(string? image)
+        {
+            if (image == null)
+            {
+                return;
+            }
+
+            var deleteReq = new DeleteObjectRequest
+            {
+                BucketName = _bucketName,
+                Key = image
+            };
+
+            await _s3Client.DeleteObjectAsync(deleteReq);
+        }
     }
 }
 

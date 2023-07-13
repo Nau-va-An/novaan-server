@@ -179,27 +179,35 @@ namespace MongoConnector
             // }
         }
 
-        public IMongoCollection<IngredientToRecipes> IngredientToRecipes
-        {
-            get
-            {
-                return MongoDatabase.GetCollection<IngredientToRecipes>(MongoCollections.IngredientToRecipes);
-            }
-        }
-
-        public IMongoCollection<Like> Likes
-        {
-            get
-            {
-                return MongoDatabase.GetCollection<Like>(MongoCollections.Likes);
-            }
-        }
-
         public IMongoCollection<Comments> Comments
         {
             get
             {
                 return MongoDatabase.GetCollection<Comments>(MongoCollections.Comments);
+            }
+        }
+
+        public IMongoCollection<Likes> Likes
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Likes>(MongoCollections.Likes);
+            }
+        }
+
+        public IMongoCollection<Report> Reports
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<Report>(MongoCollections.Reports);
+            }
+        }
+
+        public IMongoCollection<IngredientToRecipes> IngredientToRecipes
+        {
+            get
+            {
+                return MongoDatabase.GetCollection<IngredientToRecipes>(MongoCollections.IngredientToRecipes);
             }
         }
     }

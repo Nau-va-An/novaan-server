@@ -72,6 +72,7 @@ namespace NovaanServer.src.Followerships
                     f.FollowingId == followingUserId
                 ))
                 .FirstOrDefault();
+
             if (followership == null)
             {
                 throw new NovaanException(ErrorCodes.USER_NOT_FOLLOWING, HttpStatusCode.BadRequest);
@@ -99,6 +100,7 @@ namespace NovaanServer.src.Followerships
                 throw new NovaanException(ErrorCodes.FOLLOWERSHIP_NOT_DELETED);
             }
         }
+
 
         public async Task<List<FollowershipDTO>> GetFollowers(
             string currentUserId,

@@ -26,13 +26,10 @@ namespace NovaanServer.src.Common.Utils
             return null;
         }
 
-        public static string? GetUserId(this HttpRequest request)
+        public static string GetUserId(this HttpRequest request)
         {
-            var token = request.GetBearerToken();
-            if (token == null)
-            {
-                return null;
-            }
+            var token = request.GetBearerToken()
+                ?? throw new NovaanException(ErrorCodes.UNAUTHORIZED, HttpStatusCode.Unauthorized);
 
             var userId = token.Claims.FirstOrDefault(cl => cl.Type == JwtRegisteredClaimNames.NameId);
             if (userId == null || userId.Value == null)

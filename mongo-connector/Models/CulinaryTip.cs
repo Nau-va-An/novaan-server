@@ -32,6 +32,12 @@ namespace MongoConnector.Models
 
         public Status Status { get; set; } = Status.Pending;
 
+        public double AverageRating { get; set; } = 0;
+
+        public int RatingsCount { get; set; } = 0;
+
+        public int LikesCount { get; set; } = 0;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
