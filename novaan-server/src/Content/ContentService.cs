@@ -247,7 +247,7 @@ namespace NovaanServer.src.Content
                 throw new NovaanException(
                     ErrorCodes.CONTENT_FIELD_INVALID,
                     HttpStatusCode.BadRequest,
-                    validationResults.FirstOrDefault().ErrorMessage ?? string.Empty
+                    validationResults.FirstOrDefault()?.ErrorMessage ?? string.Empty
                 );
             }
 
@@ -311,84 +311,6 @@ namespace NovaanServer.src.Content
             {
                 throw new NovaanException(ErrorCodes.DATABASE_UNAVAILABLE);
             }
-        }
-
-        private static void HandleListSection<T>(T? obj, string fieldName, string value)
-        {
-            var splitValues = fieldName.Split("_");
-            if (splitValues.Length != 3)
-            {
-                throw new NovaanException(
-                    ErrorCodes.CONTENT_FIELD_INVALID,
-                    HttpStatusCode.BadRequest
-                );
-            }
-
-            // splitValues[0] should always be "Instruction"
-            var properties = typeof(T).GetProperties();
-            var property = properties.FirstOrDefault(p => p.Name == splitValues[0]) ??
-                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
-
-
-            bool canParse = int.TryParse(splitValues[1], out var nestedFieldKey);
-            if (!canParse)
-            {
-                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
-            }
-            var nestedFieldName = splitValues[2];
-
-            CustomMapper.MappingObjectData(obj, property, value, nestedFieldName, nestedFieldKey);
-        }
-
-        private async Task<MemoryStream> ProcessStreamContent(FileMultipartSection section)
-        {
-            var fileStream = section.FileStream ??
-                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
-            var memStream = new MemoryStream();
-            await fileStream.CopyToAsync(memStream);
-
-            // Check if the file is empty
-            if (fileStream == null || memStream == null || memStream.Length == 0)
-            {
-                throw new Exception("File is empty");
-            }
-
-            var extension = Path.GetExtension(section.FileName)
-                ?? throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
-            var isImage = ContentSettings.PermittedImgExtension.Contains(extension);
-            var isVideo = !isImage && ContentSettings.PermittedVidExtension.Contains(extension);
-            if (!isImage && !isVideo)
-            {
-                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
-            }
-
-            if (isImage)
-            {
-                if (fileStream.Length > ContentSettings.ImageSizeLimit)
-                {
-                    throw new NovaanException(ErrorCodes.CONTENT_IMG_SIZE_INVALID, HttpStatusCode.BadRequest);
-                }
-                ValidateFileExtensionAndSignature(
-                    extension,
-                    memStream,
-                    ContentSettings.PermittedImgExtension
-                );
-            }
-
-            if (isVideo)
-            {
-                if (fileStream.Length > ContentSettings.VideoSizeLimit)
-                {
-                    throw new NovaanException(ErrorCodes.CONTENT_VID_SIZE_INVALID, HttpStatusCode.BadRequest);
-                }
-                ValidateFileExtensionAndSignature(
-                    extension,
-                    memStream,
-                    ContentSettings.PermittedVidExtension
-                );
-            }
-
-            return memStream;
         }
 
         public async Task LikePost(string postId, string? userId, LikeReqDTO likeDTO)
@@ -801,7 +723,7 @@ namespace NovaanServer.src.Content
             var comment = (await _mongoService.Comments
                 .FindAsync(c => c.Id == commentId))
                 .FirstOrDefault()
-                ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest); ;
+                ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
             // Update status of comment to Reported
             await _mongoService.Comments
@@ -924,7 +846,8 @@ namespace NovaanServer.src.Content
 
         private static void ValidateFileExtensionAndSignature(
             string extension,
-            MemoryStream data
+            MemoryStream data,
+            string[] permittedExt
         )
         {
             var inspector = new FileFormatInspector();
@@ -939,7 +862,8 @@ namespace NovaanServer.src.Content
 
             if (
                 fileFormat == null ||
-                extension != contentExt
+                extension != contentExt ||
+                !permittedExt.Contains(contentExt)
             )
             {
                 throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
@@ -961,6 +885,84 @@ namespace NovaanServer.src.Content
             }
             // Case 3: User has rated this post before and change rating
             return (ratingAverage * ratingCount - previousRating + newRating) / ratingCount;
+        }
+
+        private static void HandleListSection<T>(T? obj, string fieldName, string value)
+        {
+            var splitValues = fieldName.Split("_");
+            if (splitValues.Length != 3)
+            {
+                throw new NovaanException(
+                    ErrorCodes.CONTENT_FIELD_INVALID,
+                    HttpStatusCode.BadRequest
+                );
+            }
+
+            // splitValues[0] should always be "Instruction"
+            var properties = typeof(T).GetProperties();
+            var property = properties.FirstOrDefault(p => p.Name == splitValues[0]) ??
+                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
+
+
+            bool canParse = int.TryParse(splitValues[1], out var nestedFieldKey);
+            if (!canParse)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
+            }
+            var nestedFieldName = splitValues[2];
+
+            CustomMapper.MappingObjectData(obj, property, value, nestedFieldName, nestedFieldKey);
+        }
+
+        private static async Task<MemoryStream> ProcessStreamContent(FileMultipartSection section)
+        {
+            var fileStream = section.FileStream ??
+                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
+            var memStream = new MemoryStream();
+            await fileStream.CopyToAsync(memStream);
+
+            // Check if the file is empty
+            if (fileStream == null || memStream == null || memStream.Length == 0)
+            {
+                throw new Exception("File is empty");
+            }
+
+            var extension = Path.GetExtension(section.FileName)
+                ?? throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
+            var isImage = ContentSettings.PermittedImgExtension.Contains(extension);
+            var isVideo = !isImage && ContentSettings.PermittedVidExtension.Contains(extension);
+            if (!isImage && !isVideo)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
+            }
+
+            if (isImage)
+            {
+                if (fileStream.Length > ContentSettings.ImageSizeLimit)
+                {
+                    throw new NovaanException(ErrorCodes.CONTENT_IMG_SIZE_INVALID, HttpStatusCode.BadRequest);
+                }
+                ValidateFileExtensionAndSignature(
+                    extension,
+                    memStream,
+                    ContentSettings.PermittedImgExtension
+                );
+            }
+
+            if (isVideo)
+            {
+                if (fileStream.Length > ContentSettings.VideoSizeLimit)
+                {
+                    throw new NovaanException(ErrorCodes.CONTENT_VID_SIZE_INVALID, HttpStatusCode.BadRequest);
+                }
+                ValidateFileExtensionAndSignature(
+                    extension,
+                    memStream,
+                    ContentSettings.PermittedVidExtension
+                );
+            }
+
+            return memStream;
         }
     }
 }
