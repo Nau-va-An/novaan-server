@@ -4,13 +4,14 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
     public static class ErrorCodes
     {
         // TODO: Please update latest error code to avoid duplicate value
-        // Latest error code: 1040
+        // Latest error code: 1041
 
         // Common
         public const int SERVER_UNAVAILABLE = 1000;
         public const int DATABASE_UNAVAILABLE = 1001;
         public const int S3_UNAVAILABLE = 1002;
         public const int GG_UNAVAILABLE = 1003;
+        public const int UNAUTHORIZED = 1041;
 
         public const int FIELD_REQUIRED = 1024;
 
@@ -26,7 +27,6 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int ADMIN_SUBMISSION_NOT_FOUND = 1009;
 
         // Content
-        public const int CONTENT_NOT_FOUND = 1034;
         public const int CONTENT_CONTENT_TYPE_INVALID = 1010;
         public const int CONTENT_DISPOSITION_INVALID = 1011;
         public const int CONTENT_FILENAME_INVALID = 1012;
@@ -41,17 +41,17 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int CONTENT_PREP_TIME_TOO_LONG = 1021;
         public const int CONTENT_COOK_TIME_TOO_LONG = 1022;
         public const int CONTENT_INGR_TOO_MANY = 1023;
-        public const int CONTENT_ALREADY_SAVED = 1035;
+        public const int CONTENT_NOT_FOUND = 1035;
         public const int CONTENT_ALREADY_COMMENTED = 1036;
         public const int COMMENT_NOT_FOUND = 1037;
         public const int SUBMISSION_TYPE_INVALID = 1038;
         public const int CONTENT_IMAGE_NOT_FOUND = 1039;
 
         // Followership
-        public static int USER_ALREADY_FOLLOWING = 1026;
-        public static int FOLLOWERSHIP_NOT_CREATED = 1027;
-        public static int USER_NOT_FOLLOWING = 1028;
-        public static int FOLLOWERSHIP_NOT_DELETED = 1029;
+        public const int USER_ALREADY_FOLLOWING = 1026;
+        public const int FOLLOWERSHIP_NOT_CREATED = 1027;
+        public const int USER_NOT_FOLLOWING = 1028;
+        public const int FOLLOWERSHIP_NOT_DELETED = 1029;
         public const int USER_FOLLOWING_ITSELF = 1030;
 
         // Preference
