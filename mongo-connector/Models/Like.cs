@@ -18,6 +18,6 @@ namespace MongoConnector.Models
         // TODO: Add Liked property to check if user like or unlike this post
         public int Liked { get; set; }
 
-        public SubmissionType postType { get; set; }
+        public SubmissionType PostType { get; set; }
     }
 }
