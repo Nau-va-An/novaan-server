@@ -175,6 +175,11 @@ namespace NovaanServer.src.Content
 
         public async Task UploadRecipe(Recipe recipe, string creatorId)
         {
+            if (creatorId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
             // Validate recipe object against its model annotation
             var context = new ValidationContext(recipe, serviceProvider: null, items: null);
             var validationResults = new List<ValidationResult>();
@@ -261,7 +266,7 @@ namespace NovaanServer.src.Content
                 throw new NovaanException(
                     ErrorCodes.CONTENT_FIELD_INVALID,
                     HttpStatusCode.BadRequest,
-                    validationResults.FirstOrDefault().ErrorMessage ?? string.Empty
+                    validationResults.FirstOrDefault()?.ErrorMessage ?? string.Empty
                 );
             }
 
@@ -327,112 +332,431 @@ namespace NovaanServer.src.Content
             }
         }
 
-        private static void HandleListSection<T>(T? obj, string fieldName, string value)
+        public async Task LikePost(string postId, string? userId, LikeReqDTO likeDTO)
         {
-            var splitValues = fieldName.Split("_");
-
-            if (splitValues.Length > 3)
+            if (userId == null)
             {
-                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
-            }
-            // splitValues[0] should always be "Instruction"
-            var properties = typeof(T).GetProperties();
-            var property = properties.FirstOrDefault(p => p.Name == splitValues[0]) ??
-                throw new NovaanException(ErrorCodes.FIELD_NOT_FOUND);
-
-            bool canParse = int.TryParse(splitValues[1], out var nestedFieldKey);
-            if (!canParse)
-            {
-                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
             }
 
-            // Handle case that have nested property
-            if (splitValues.Count() == 3)
-            {
-                var nestedFieldName = splitValues[2];
+            var updates = Builders<Likes>.Update
+                .Set(l => l.UserId, userId)
+                .Set(l => l.PostId, postId)
+                .BitwiseXor(l => l.Liked, 1)
+                .Set(l => l.PostType, likeDTO.PostType);
 
-                CustomMapper.MappingObjectData(obj, property, value, nestedFieldName, nestedFieldKey);
+            // If there is a document contain userId and postId, it will be updated
+            var response = await _mongoService.Likes
+                .UpdateOneAsync(
+                    l => l.PostId == postId &&
+                    l.UserId == userId &&
+                    l.PostType == SubmissionType.Recipe,
+                updates,
+                // If not, it will be inserted
+                new UpdateOptions { IsUpsert = true });
+
+            // Update likeCount according to upsert result
+            bool isLiked = response.UpsertedId != null;
+            switch (likeDTO.PostType)
+            {
+                case SubmissionType.Recipe:
+                    await _mongoService.Recipes
+                        .UpdateOneAsync(
+                            r => r.Id == postId,
+                            Builders<Recipe>.Update.Inc(r => r.LikesCount, isLiked ? 1 : -1)
+                        );
+                    break;
+
+                case SubmissionType.CulinaryTip:
+                    await _mongoService.CulinaryTips
+                        .UpdateOneAsync(
+                            t => t.Id == postId,
+                            Builders<CulinaryTip>.Update.Inc(t => t.LikesCount, isLiked ? 1 : -1)
+                        );
+                    break;
+
+                default:
+                    throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
+            }
+        }
+
+        public async Task SavePost(string postId, string? userId, SubmissionType postType)
+        {
+            if (userId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Switchcase for handle submissionType
+            switch (postType)
+            {
+                case SubmissionType.Recipe:
+                    var recipe = (await _mongoService.Recipes
+                        .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+                    break;
+
+                case SubmissionType.CulinaryTip:
+                    var tip = (await _mongoService.CulinaryTips
+                        .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+                    break;
+
+                default:
+                    throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
+            }
+
+            // Check if user has saved this post before in savedPost list of user collection
+            bool hasSavedPost = (await _mongoService.Users
+                .FindAsync(
+                    u => u.Id == userId &&
+                    u.SavedPosts.Any(p => p.PostId == postId && p.PostType == postType))
+                )
+                .FirstOrDefault() != null;
+
+            if (!hasSavedPost)
+            {
+                // Add the post to user saved posts list
+                var updates = Builders<User>.Update.Push(
+                    u => u.SavedPosts,
+                    new SavedPost
+                    {
+                        PostId = postId,
+                        PostType = postType
+                    }
+                );
+                await _mongoService.Users
+                    .UpdateOneAsync(u => u.Id == userId, updates);
             }
             else
             {
-                CustomMapper.MappingObjectData(obj, property, value, null, nestedFieldKey);
+                // Remove the post from user saved posts list
+                var updates = Builders<User>.Update.PullFilter(
+                    u => u.SavedPosts,
+                    sp => sp.PostId == postId && sp.PostType == postType
+                );
+                await _mongoService.Users.UpdateOneAsync(u => u.Id == userId, updates);
             }
         }
 
-        private async Task<MemoryStream> ProcessStreamContent(FileMultipartSection section)
+        // TODO: Separate this into several functions
+        public async Task CommentOnPost(string postId, string? userId, CommentDTO commentDTO)
         {
-            var fileStream = section.FileStream ??
-                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
-            var memStream = new MemoryStream();
-            await fileStream.CopyToAsync(memStream);
-
-            // Check if the file is empty
-            if (fileStream == null || memStream == null || memStream.Length == 0)
+            if (userId == null)
             {
-                throw new Exception("File is empty");
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
             }
 
-            var extension = Path.GetExtension(section.FileName)
-                ?? throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
-            var isImage = ContentSettings.PermittedImgExtension.Contains(extension);
-            var isVideo = !isImage && ContentSettings.PermittedVidExtension.Contains(extension);
-            if (!isImage && !isVideo)
+            // Check if user has commented on this post before
+            var hasCommented = (await _mongoService.Comments
+                .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == commentDTO.PostType))
+                .FirstOrDefault() != null;
+
+            if (hasCommented)
             {
-                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
+                throw new NovaanException(ErrorCodes.CONTENT_ALREADY_COMMENTED, HttpStatusCode.BadRequest);
             }
 
-            if (isImage)
-            {
-                if (fileStream.Length > ContentSettings.ImageSizeLimit)
+            string imageId = "";
+            if (commentDTO.Image != null)
+            { // Upload image to S3
+                imageId = System.Guid.NewGuid().ToString() +
+                               Path.GetExtension(commentDTO.Image.FileName);
+                await _s3Service.UploadFileAsync(commentDTO.Image.OpenReadStream(), imageId);
+            }
+
+            // Comment on post
+            await _mongoService.Comments
+                .InsertOneAsync(new Comments
                 {
-                    throw new NovaanException(ErrorCodes.CONTENT_IMG_SIZE_INVALID, HttpStatusCode.BadRequest);
-                }
-                ValidateFileExtensionAndSignature(
-                    extension,
-                    memStream,
-                    ContentSettings.PermittedImgExtension
-                );
-            }
+                    UserId = userId,
+                    PostId = postId,
+                    postType = commentDTO.PostType,
+                    Comment = commentDTO.Comment,
+                    CreatedAt = DateTime.Now,
+                    Image = imageId,
+                    Rating = commentDTO.Rating
+                });
 
-            if (isVideo)
+            switch (commentDTO.PostType)
             {
-                if (fileStream.Length > ContentSettings.VideoSizeLimit)
-                {
-                    throw new NovaanException(ErrorCodes.CONTENT_VID_SIZE_INVALID, HttpStatusCode.BadRequest);
-                }
-                ValidateFileExtensionAndSignature(
-                    extension,
-                    memStream,
-                    ContentSettings.PermittedVidExtension
-                );
-            }
+                case SubmissionType.Recipe:
+                    var recipe = (await _mongoService.Recipes
+                        .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
-            return memStream;
+                    // Update ratingCount and rating average
+                    await _mongoService.Recipes
+                        .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
+                        .Inc(r => r.RatingsCount, 1)
+                        .Set(r => r.AverageRating,
+                            CalculateRatingAverage(
+                                    recipe.RatingsCount,
+                                    recipe.AverageRating,
+                                    null,
+                                    commentDTO.Rating)
+                        ));
+                    break;
+
+                case SubmissionType.CulinaryTip:
+                    var tip = (await _mongoService.CulinaryTips
+                        .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update ratingCount and rating average
+                    await _mongoService.CulinaryTips
+                        .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
+                        .Inc(t => t.RatingsCount, 1)
+                        .Set(t => t.AverageRating,
+                            CalculateRatingAverage(
+                                    tip.RatingsCount,
+                                    tip.AverageRating,
+                                    null,
+                                    commentDTO.Rating)
+                        ));
+                    break;
+
+                default:
+                    throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
+            }
         }
 
-        private static void ValidateFileExtensionAndSignature(
-            string extension,
-            MemoryStream data,
-            string[] permittedExtensions
-        )
+        // TODO: Separate this into several functions
+        public async Task EditComment(string postId, string? userId, CommentDTO commentDTO)
         {
-            var inspector = new FileFormatInspector();
-            var fileFormat = inspector.DetermineFileFormat(data);
-
-            // JPG and JPEG is the same
-            var contentExt = "." + fileFormat?.Extension;
-            if (contentExt == ".jpg" && extension == ".jpeg")
+            if (userId == null)
             {
-                contentExt = ".jpeg";
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
             }
+
+            // get comment of user on this post
+            var comment = (await _mongoService.Comments
+                .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == commentDTO.PostType))
+                .FirstOrDefault()
+                ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
             if (
-                fileFormat == null ||
-                extension != contentExt
+                !string.IsNullOrEmpty(commentDTO.ExistingImage) &&
+                commentDTO.ExistingImage != comment.Image
             )
             {
-                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
+                throw new NovaanException(ErrorCodes.CONTENT_IMAGE_NOT_FOUND, HttpStatusCode.BadRequest);
             }
+
+            // Case 1: User remove image from comment 
+            string imageId = comment.Image ?? "";
+            if (
+                commentDTO.Image == null &&
+                !string.IsNullOrEmpty(comment.Image) &&
+                commentDTO.ExistingImage == null
+            )
+            {
+                // Delete image from S3
+                await _s3Service.DeleteFileAsync(comment.Image);
+                imageId = string.Empty;
+            }
+
+            // Case 2: User replace image by new image
+            if (commentDTO.Image != null)
+            {
+                // TODO: Need to ensure atomicity for case when delete succeed and upload failed
+                // Delete old image from S3
+                await _s3Service.DeleteFileAsync(comment.Image);
+
+                // Upload new image to S3
+                imageId = System.Guid.NewGuid().ToString() +
+                               Path.GetExtension(commentDTO.Image.FileName);
+                await _s3Service.UploadFileAsync(commentDTO.Image.OpenReadStream(), imageId);
+            }
+
+            // Update comment
+            await _mongoService.Comments
+                .UpdateOneAsync(c => c.Id == comment.Id, Builders<Comments>.Update
+                .Set(c => c.Comment, commentDTO.Comment)
+                .Set(c => c.Image, imageId)
+                .Set(c => c.Rating, commentDTO.Rating)
+                .Set(c => c.UpdatedAt, DateTime.Now));
+
+            switch (commentDTO.PostType)
+            {
+                case SubmissionType.Recipe:
+                    var recipe = (await _mongoService.Recipes
+                        .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update rating average of post with new rating from user and ratingaverage of post before edit
+                    if (comment.Rating != commentDTO.Rating)
+                    {
+                        await _mongoService.Recipes
+                       .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
+                       .Set(r => r.AverageRating,
+                           CalculateRatingAverage(
+                               recipe.RatingsCount,
+                               recipe.AverageRating,
+                               comment.Rating,
+                               commentDTO.Rating)
+                       ));
+                    }
+                    break;
+
+                case SubmissionType.CulinaryTip:
+                    var tip = (await _mongoService.CulinaryTips
+                        .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update rating average of post with new rating from user and ratingaverage of post before edit
+                    if (comment.Rating != commentDTO.Rating)
+                    {
+                        await _mongoService.CulinaryTips
+                        .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
+                        .Set(t => t.AverageRating,
+                            CalculateRatingAverage(
+                                tip.RatingsCount,
+                                tip.AverageRating,
+                                comment.Rating,
+                                commentDTO.Rating)
+                        ));
+                    }
+                    break;
+
+                default:
+                    throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
+            }
+        }
+
+        public async Task DeleteComment(string postId, SubmissionType submissionType, string? userId)
+        {
+            if (userId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // get comment of user on this post
+            var comment = (await _mongoService.Comments
+                .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == submissionType))
+                .FirstOrDefault()
+                ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+            switch (submissionType)
+            {
+                case SubmissionType.Recipe:
+                    var recipe = (await _mongoService.Recipes
+                        .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update rating average of post because the rating of this comment will be removed
+                    await _mongoService.Recipes
+                        .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
+                        .Set(r => r.AverageRating,
+                            CalculateRatingAverage(
+                                recipe.RatingsCount,
+                                recipe.AverageRating,
+                                comment.Rating,
+                                null)
+                        )
+                        .Set(r => r.RatingsCount, recipe.RatingsCount - 1));
+                    break;
+
+                case SubmissionType.CulinaryTip:
+                    var tip = (await _mongoService.CulinaryTips
+                        .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    // Update rating average of post because the rating of this comment will be removed
+                    await _mongoService.CulinaryTips
+                        .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
+                        .Set(t => t.AverageRating,
+                            CalculateRatingAverage(
+                                tip.RatingsCount,
+                                tip.AverageRating,
+                                comment.Rating,
+                                null)
+                        )
+                        .Set(t => t.RatingsCount, tip.RatingsCount - 1));
+                    break;
+
+                default:
+                    throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
+            }
+
+            // Delete comment
+            await _mongoService.Comments
+                .DeleteOneAsync(c => c.Id == comment.Id);
+        }
+
+        public async Task ReportPost(string postId, string? userId, ReportDTO reportDTO)
+        {
+            if (userId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            switch (reportDTO.PostType)
+            {
+                case SubmissionType.Recipe:
+                    var recipe = (await _mongoService.Recipes
+                        .FindAsync(r => r.Id == postId && r.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    break;
+
+                case SubmissionType.CulinaryTip:
+                    var tip = (await _mongoService.CulinaryTips
+                        .FindAsync(t => t.Id == postId && t.Status == Status.Approved))
+                        .FirstOrDefault()
+                        ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+                    break;
+
+                default:
+                    throw new NovaanException(ErrorCodes.SUBMISSION_TYPE_INVALID, HttpStatusCode.BadRequest);
+            }
+
+            // Add report to database
+            await _mongoService.Reports
+                .InsertOneAsync(new Report
+                {
+                    UserId = userId,
+                    PostId = postId,
+                    Reason = reportDTO.Reason
+                });
+        }
+
+        public async Task ReportComment(string commentId, string? userId, ReportDTO reportDTO)
+        {
+            if (userId == null)
+            {
+                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
+            }
+
+            // Check if comment exists
+            var comment = (await _mongoService.Comments
+                .FindAsync(c => c.Id == commentId))
+                .FirstOrDefault()
+                ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
+
+            // Update status of comment to Reported
+            await _mongoService.Comments
+                .UpdateOneAsync(c => c.Id == commentId, Builders<Comments>.Update
+                .Set(c => c.Status, Status.Reported));
+
+            // Add report to database
+            await _mongoService.Reports
+                .InsertOneAsync(new Report
+                {
+                    UserId = userId,
+                    CommentId = commentId,
+                    Reason = reportDTO.Reason
+                });
         }
 
         public async Task<bool> ValidatePreferences(HashSet<string>? dietPreference, HashSet<string>? cuisinesPreference, HashSet<string>? allergensPreference, HashSet<string>? mealTypesPreference)
@@ -582,6 +906,127 @@ namespace NovaanServer.src.Content
             return (await _mongoService.Likes
                 .FindAsync(l => l.UserId == currentUserId && l.PostId == id))
                 .FirstOrDefault() != null;
+        }
+
+        private static void ValidateFileExtensionAndSignature(
+            string extension,
+            MemoryStream data,
+            string[] permittedExt
+        )
+        {
+            var inspector = new FileFormatInspector();
+            var fileFormat = inspector.DetermineFileFormat(data);
+
+            // JPG and JPEG is the same
+            var contentExt = "." + fileFormat?.Extension;
+            if (contentExt == ".jpg" && extension == ".jpeg")
+            {
+                contentExt = ".jpeg";
+            }
+
+            if (
+                fileFormat == null ||
+                extension != contentExt ||
+                !permittedExt.Contains(contentExt)
+            )
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
+            }
+        }
+
+        private static double? CalculateRatingAverage(int ratingCount, double ratingAverage, int? previousRating, int? newRating)
+        {
+            // Case 1: User has not rated this post before and add new rating
+            if (previousRating == null)
+            {
+                return (ratingAverage * ratingCount + newRating) / (ratingCount + 1);
+            }
+
+            // Case 2: User has rated this post before and remove rating
+            if (newRating == null)
+            {
+                return (ratingAverage * ratingCount - previousRating) / (ratingCount - 1);
+            }
+            // Case 3: User has rated this post before and change rating
+            return (ratingAverage * ratingCount - previousRating + newRating) / ratingCount;
+        }
+
+        private static void HandleListSection<T>(T? obj, string fieldName, string value)
+        {
+            var splitValues = fieldName.Split("_");
+            if (splitValues.Length != 3)
+            {
+                throw new NovaanException(
+                    ErrorCodes.CONTENT_FIELD_INVALID,
+                    HttpStatusCode.BadRequest
+                );
+            }
+
+            // splitValues[0] should always be "Instruction"
+            var properties = typeof(T).GetProperties();
+            var property = properties.FirstOrDefault(p => p.Name == splitValues[0]) ??
+                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
+
+
+            bool canParse = int.TryParse(splitValues[1], out var nestedFieldKey);
+            if (!canParse)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_FIELD_INVALID, HttpStatusCode.BadRequest);
+            }
+            var nestedFieldName = splitValues[2];
+
+            CustomMapper.MappingObjectData(obj, property, value, nestedFieldName, nestedFieldKey);
+        }
+
+        private static async Task<MemoryStream> ProcessStreamContent(FileMultipartSection section)
+        {
+            var fileStream = section.FileStream ??
+                throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
+            var memStream = new MemoryStream();
+            await fileStream.CopyToAsync(memStream);
+
+            // Check if the file is empty
+            if (fileStream == null || memStream == null || memStream.Length == 0)
+            {
+                throw new Exception("File is empty");
+            }
+
+            var extension = Path.GetExtension(section.FileName)
+                ?? throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
+            var isImage = ContentSettings.PermittedImgExtension.Contains(extension);
+            var isVideo = !isImage && ContentSettings.PermittedVidExtension.Contains(extension);
+            if (!isImage && !isVideo)
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
+            }
+
+            if (isImage)
+            {
+                if (fileStream.Length > ContentSettings.ImageSizeLimit)
+                {
+                    throw new NovaanException(ErrorCodes.CONTENT_IMG_SIZE_INVALID, HttpStatusCode.BadRequest);
+                }
+                ValidateFileExtensionAndSignature(
+                    extension,
+                    memStream,
+                    ContentSettings.PermittedImgExtension
+                );
+            }
+
+            if (isVideo)
+            {
+                if (fileStream.Length > ContentSettings.VideoSizeLimit)
+                {
+                    throw new NovaanException(ErrorCodes.CONTENT_VID_SIZE_INVALID, HttpStatusCode.BadRequest);
+                }
+                ValidateFileExtensionAndSignature(
+                    extension,
+                    memStream,
+                    ContentSettings.PermittedVidExtension
+                );
+            }
+
+            return memStream;
         }
     }
 }

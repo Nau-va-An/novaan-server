@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using MongoConnector.Enums;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
@@ -13,4 +13,3 @@ namespace MongoConnector.Models
         public SubmissionType PostType { get; set; } 
     }
 }
-
