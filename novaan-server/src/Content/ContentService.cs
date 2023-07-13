@@ -391,31 +391,6 @@ namespace NovaanServer.src.Content
             return memStream;
         }
 
-        private static void ValidateFileExtensionAndSignature(
-            string extension,
-            MemoryStream data,
-            string[] permittedExtensions
-        )
-        {
-            var inspector = new FileFormatInspector();
-            var fileFormat = inspector.DetermineFileFormat(data);
-
-            // JPG and JPEG is the same
-            var contentExt = "." + fileFormat?.Extension;
-            if (contentExt == ".jpg" && extension == ".jpeg")
-            {
-                contentExt = ".jpeg";
-            }
-
-            if (
-                fileFormat == null ||
-                extension != contentExt
-            )
-            {
-                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
-            }
-        }
-
         public async Task LikePost(string postId, string? userId, LikeReqDTO likeDTO)
         {
             if (userId == null)
@@ -525,6 +500,7 @@ namespace NovaanServer.src.Content
             }
         }
 
+        // TODO: Separate this into several functions
         public async Task CommentOnPost(string postId, string? userId, CommentDTO commentDTO)
         {
             if (userId == null)
@@ -608,6 +584,7 @@ namespace NovaanServer.src.Content
             }
         }
 
+        // TODO: Separate this into several functions
         public async Task EditComment(string postId, string? userId, CommentDTO commentDTO)
         {
             if (userId == null)
@@ -621,24 +598,31 @@ namespace NovaanServer.src.Content
                 .FirstOrDefault()
                 ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
 
-            string imageId = comment.Image ?? "";
-
-            if (!string.IsNullOrEmpty(commentDTO.ExistingImage) && commentDTO.ExistingImage != comment.Image)
+            if (
+                !string.IsNullOrEmpty(commentDTO.ExistingImage) &&
+                commentDTO.ExistingImage != comment.Image
+            )
             {
                 throw new NovaanException(ErrorCodes.CONTENT_IMAGE_NOT_FOUND, HttpStatusCode.BadRequest);
             }
 
             // Case 1: User remove image from comment 
-            if (commentDTO.Image == null && !string.IsNullOrEmpty(comment.Image) && commentDTO.ExistingImage == null)
+            string imageId = comment.Image ?? "";
+            if (
+                commentDTO.Image == null &&
+                !string.IsNullOrEmpty(comment.Image) &&
+                commentDTO.ExistingImage == null
+            )
             {
                 // Delete image from S3
                 await _s3Service.DeleteFileAsync(comment.Image);
-                imageId = null;
+                imageId = string.Empty;
             }
 
             // Case 2: User replace image by new image
             if (commentDTO.Image != null)
             {
+                // TODO: Need to ensure atomicity for case when delete succeed and upload failed
                 // Delete old image from S3
                 await _s3Service.DeleteFileAsync(comment.Image);
 
@@ -767,23 +751,6 @@ namespace NovaanServer.src.Content
                 .DeleteOneAsync(c => c.Id == comment.Id);
         }
 
-        private double? CalculateRatingAverage(int ratingCount, double ratingAverage, int? previousRating, int? newRating)
-        {
-            // Case 1: User has not rated this post before and add new rating
-            if (previousRating == null)
-            {
-                return (ratingAverage * ratingCount + newRating) / (ratingCount + 1);
-            }
-
-            // Case 2: User has rated this post before and remove rating
-            if (newRating == null)
-            {
-                return (ratingAverage * ratingCount - previousRating) / (ratingCount - 1);
-            }
-            // Case 3: User has rated this post before and change rating
-            return (ratingAverage * ratingCount - previousRating + newRating) / ratingCount;
-        }
-
         public async Task ReportPost(string postId, string? userId, ReportDTO reportDTO)
         {
             if (userId == null)
@@ -833,12 +800,8 @@ namespace NovaanServer.src.Content
             // Check if comment exists
             var comment = (await _mongoService.Comments
                 .FindAsync(c => c.Id == commentId))
-                .FirstOrDefault();
-
-            if (comment == null)
-            {
-                throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest);
-            }
+                .FirstOrDefault()
+                ?? throw new NovaanException(ErrorCodes.COMMENT_NOT_FOUND, HttpStatusCode.BadRequest); ;
 
             // Update status of comment to Reported
             await _mongoService.Comments
@@ -957,6 +920,47 @@ namespace NovaanServer.src.Content
             return (await _mongoService.Likes
                 .FindAsync(l => l.UserId == currentUserId && l.PostId == id))
                 .FirstOrDefault() != null;
+        }
+
+        private static void ValidateFileExtensionAndSignature(
+            string extension,
+            MemoryStream data
+        )
+        {
+            var inspector = new FileFormatInspector();
+            var fileFormat = inspector.DetermineFileFormat(data);
+
+            // JPG and JPEG is the same
+            var contentExt = "." + fileFormat?.Extension;
+            if (contentExt == ".jpg" && extension == ".jpeg")
+            {
+                contentExt = ".jpeg";
+            }
+
+            if (
+                fileFormat == null ||
+                extension != contentExt
+            )
+            {
+                throw new NovaanException(ErrorCodes.CONTENT_EXT_INVALID, HttpStatusCode.BadRequest);
+            }
+        }
+
+        private static double? CalculateRatingAverage(int ratingCount, double ratingAverage, int? previousRating, int? newRating)
+        {
+            // Case 1: User has not rated this post before and add new rating
+            if (previousRating == null)
+            {
+                return (ratingAverage * ratingCount + newRating) / (ratingCount + 1);
+            }
+
+            // Case 2: User has rated this post before and remove rating
+            if (newRating == null)
+            {
+                return (ratingAverage * ratingCount - previousRating) / (ratingCount - 1);
+            }
+            // Case 3: User has rated this post before and change rating
+            return (ratingAverage * ratingCount - previousRating + newRating) / ratingCount;
         }
     }
 }

@@ -123,11 +123,11 @@ namespace S3Connector
             }
         }
 
-        public Task DeleteFileAsync(string? image)
+        public async Task DeleteFileAsync(string? image)
         {
             if (image == null)
             {
-                return Task.CompletedTask;
+                return;
             }
 
             var deleteReq = new DeleteObjectRequest
@@ -136,7 +136,7 @@ namespace S3Connector
                 Key = image
             };
 
-            return _s3Client.DeleteObjectAsync(deleteReq);
+            await _s3Client.DeleteObjectAsync(deleteReq);
         }
     }
 }
