@@ -12,6 +12,8 @@
         public static string Users { get; } = "users";
         public static string Allergens { get; } = "allergens";
         public static string Followerships { get; } = "followerships";
+        public static string IngredientToRecipes { get; } = "ingredientToRecipes";
+        public static string Likes { get; } = "likes";
     }
 }
 
