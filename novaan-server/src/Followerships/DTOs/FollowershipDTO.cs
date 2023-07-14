@@ -7,7 +7,7 @@ namespace NovaanServer.src.Followerships.DTOs
 {
     public class FollowershipDTO
     {
-        public string UserName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
 
         [BsonRepresentation(BsonType.ObjectId)]
         public string UserId { get; set; }
