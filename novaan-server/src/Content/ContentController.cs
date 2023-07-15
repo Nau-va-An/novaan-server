@@ -71,11 +71,6 @@ namespace NovaanServer.src.Content
         public async Task<IActionResult> UploadRecipe()
         {
             var userId = Request.GetUserId();
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
-
             var recipe = await _contentService.ProcessMultipartRequest<Recipe>(Request);
             await _contentService.UploadRecipe(recipe, userId);
             return Ok();

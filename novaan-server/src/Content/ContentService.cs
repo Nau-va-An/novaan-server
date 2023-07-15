@@ -279,7 +279,7 @@ namespace NovaanServer.src.Content
             }
         }
 
-        public async Task<List<GetPostDTO>> GetPersonalReel(string? userId)
+        public async Task<List<GetPostDTO>> GetPersonalReel(string userId)
         {
             try
             {
@@ -313,13 +313,8 @@ namespace NovaanServer.src.Content
             }
         }
 
-        public async Task LikePost(string postId, string? userId, LikeReqDTO likeDTO)
+        public async Task LikePost(string postId, string userId, LikeReqDTO likeDTO)
         {
-            if (userId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
-            }
-
             var updates = Builders<Likes>.Update
                 .Set(l => l.UserId, userId)
                 .Set(l => l.PostId, postId)
@@ -361,13 +356,8 @@ namespace NovaanServer.src.Content
             }
         }
 
-        public async Task SavePost(string postId, string? userId, SubmissionType postType)
+        public async Task SavePost(string postId, string userId, SubmissionType postType)
         {
-            if (userId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
-            }
-
             // Switchcase for handle submissionType
             switch (postType)
             {
@@ -423,13 +413,8 @@ namespace NovaanServer.src.Content
         }
 
         // TODO: Separate this into several functions
-        public async Task CommentOnPost(string postId, string? userId, CommentDTO commentDTO)
+        public async Task CommentOnPost(string postId, string userId, CommentDTO commentDTO)
         {
-            if (userId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
-            }
-
             // Check if user has commented on this post before
             var hasCommented = (await _mongoService.Comments
                 .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == commentDTO.PostType))
@@ -507,13 +492,8 @@ namespace NovaanServer.src.Content
         }
 
         // TODO: Separate this into several functions
-        public async Task EditComment(string postId, string? userId, CommentDTO commentDTO)
+        public async Task EditComment(string postId, string userId, CommentDTO commentDTO)
         {
-            if (userId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
-            }
-
             // get comment of user on this post
             var comment = (await _mongoService.Comments
                 .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == commentDTO.PostType))
@@ -611,13 +591,8 @@ namespace NovaanServer.src.Content
             }
         }
 
-        public async Task DeleteComment(string postId, SubmissionType submissionType, string? userId)
+        public async Task DeleteComment(string postId, SubmissionType submissionType, string userId)
         {
-            if (userId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
-            }
-
             // get comment of user on this post
             var comment = (await _mongoService.Comments
                 .FindAsync(c => c.PostId == postId && c.UserId == userId && c.postType == submissionType))
@@ -673,13 +648,8 @@ namespace NovaanServer.src.Content
                 .DeleteOneAsync(c => c.Id == comment.Id);
         }
 
-        public async Task ReportPost(string postId, string? userId, ReportDTO reportDTO)
+        public async Task ReportPost(string postId, string userId, ReportDTO reportDTO)
         {
-            if (userId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
-            }
-
             switch (reportDTO.PostType)
             {
                 case SubmissionType.Recipe:
@@ -712,13 +682,8 @@ namespace NovaanServer.src.Content
                 });
         }
 
-        public async Task ReportComment(string commentId, string? userId, ReportDTO reportDTO)
+        public async Task ReportComment(string commentId, string userId, ReportDTO reportDTO)
         {
-            if (userId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
-            }
-
             // Check if comment exists
             var comment = (await _mongoService.Comments
                 .FindAsync(c => c.Id == commentId))
@@ -828,7 +793,7 @@ namespace NovaanServer.src.Content
             return getRecipeDetailDTO;
         }
 
-        private async Task<bool> IsSaved(string postId, string? currentUserId)
+        private async Task<bool> IsSaved(string postId, string currentUserId)
         {
             // Check if user had saved this post
             return (await _mongoService.Users
@@ -836,7 +801,7 @@ namespace NovaanServer.src.Content
                 .FirstOrDefault() != null;
         }
 
-        private async Task<bool> IsLiked(string id, string? currentUserId)
+        private async Task<bool> IsLiked(string id, string currentUserId)
         {
             // Check if user had liked this post
             return (await _mongoService.Likes
