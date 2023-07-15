@@ -8,17 +8,19 @@ namespace NovaanServer.src.Content.DTOs
 
         public string CreatorId { get; set; }
 
+        public string CreatorName { get; set; } = string.Empty;
+
         public string Title { get; set; } = string.Empty;
 
         public string Description { get; set; } = string.Empty;
 
         public string Video { get; set; } = string.Empty;
 
-        public string Difficulty { get; set; } = string.Empty;
+        public int Difficulty { get; set; } 
 
         public int PortionQuantity { get; set; }
 
-        public string PortionType { get; set; } = string.Empty;
+        public int PortionType { get; set; }
 
         public TimeSpan PrepTime { get; set; }
 
