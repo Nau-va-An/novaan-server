@@ -474,7 +474,7 @@ namespace NovaanServer.src.Content
                         .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
                         .Inc(r => r.RatingsCount, 1)
                         .Set(r => r.AverageRating,
-                            CalculateRatingAverage(
+                            CalculateAverageRating(
                                     recipe.RatingsCount,
                                     recipe.AverageRating,
                                     null,
@@ -493,7 +493,7 @@ namespace NovaanServer.src.Content
                         .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
                         .Inc(t => t.RatingsCount, 1)
                         .Set(t => t.AverageRating,
-                            CalculateRatingAverage(
+                            CalculateAverageRating(
                                     tip.RatingsCount,
                                     tip.AverageRating,
                                     null,
@@ -576,7 +576,7 @@ namespace NovaanServer.src.Content
                         await _mongoService.Recipes
                        .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
                        .Set(r => r.AverageRating,
-                           CalculateRatingAverage(
+                           CalculateAverageRating(
                                recipe.RatingsCount,
                                recipe.AverageRating,
                                comment.Rating,
@@ -597,7 +597,7 @@ namespace NovaanServer.src.Content
                         await _mongoService.CulinaryTips
                         .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
                         .Set(t => t.AverageRating,
-                            CalculateRatingAverage(
+                            CalculateAverageRating(
                                 tip.RatingsCount,
                                 tip.AverageRating,
                                 comment.Rating,
@@ -636,7 +636,7 @@ namespace NovaanServer.src.Content
                     await _mongoService.Recipes
                         .UpdateOneAsync(r => r.Id == postId, Builders<Recipe>.Update
                         .Set(r => r.AverageRating,
-                            CalculateRatingAverage(
+                            CalculateAverageRating(
                                 recipe.RatingsCount,
                                 recipe.AverageRating,
                                 comment.Rating,
@@ -655,7 +655,7 @@ namespace NovaanServer.src.Content
                     await _mongoService.CulinaryTips
                         .UpdateOneAsync(t => t.Id == postId, Builders<CulinaryTip>.Update
                         .Set(t => t.AverageRating,
-                            CalculateRatingAverage(
+                            CalculateAverageRating(
                                 tip.RatingsCount,
                                 tip.AverageRating,
                                 comment.Rating,
@@ -740,26 +740,8 @@ namespace NovaanServer.src.Content
                 });
         }
 
-        private double? CalculateRatingAverage(int ratingCount, double ratingAverage, int? previousRating, int? newRating)
-        {
-            // Case 1: User has not rated this post before and add new rating
-            if (previousRating == null)
-            {
-                return (ratingAverage * ratingCount + newRating) / (ratingCount + 1);
-            }
-
-            // Case 2: User has rated this post before and remove rating
-            if (newRating == null)
-            {
-                return (ratingAverage * ratingCount - previousRating) / (ratingCount - 1);
-            }
-            // Case 3: User has rated this post before and change rating
-            return (ratingAverage * ratingCount - previousRating + newRating) / ratingCount;
-        }
-
         public async Task<GetTipsDetailDTO> GetCulinaryTip(string postId, string currentUserId)
         {
-            // Get tips
             var tip = await _mongoService.CulinaryTips
                 .Aggregate()
                 .Match(t => t.Id == postId)
@@ -769,33 +751,39 @@ namespace NovaanServer.src.Content
                     foreignField: u => u.Id,
                     @as: (TipsDTO t) => t.UsersInfo
                 )
-                // join with like collection to get isLiked
+                // Lookup in Like to check isLiked
                 .Lookup(
                     foreignCollection: _mongoService.Likes,
                     localField: t => t.Id,
                     foreignField: l => l.PostId,
                     @as: (TipsDTO t) => t.LikeInfo
                 )
+                .Match(
+                    // Ensure there is only one user as the creator
+                    t => t.UsersInfo.Count == 1
+                )
                 .Project(t => new GetTipsDetailDTO
                 {
-                   Id = t.Id,
-                   CreatorId = t.CreatorId,
-                   CreatorName = t.UsersInfo[0].DisplayName ?? string.Empty,
-                   Title = t.Title,
-                   Thumbnail = t.Video,
-                   Description = t.Description,
-                   Status = t.Status,
-                   AdminComment = t.AdminComments.Count > 0 &&
+                    Id = t.Id,
+                    CreatorId = t.CreatorId,
+                    CreatorName = t.UsersInfo[0].DisplayName ?? string.Empty,
+                    Title = t.Title,
+                    Thumbnail = t.Video,
+                    Description = t.Description,
+                    Status = t.Status,
+                    // Only get admin comment if status is Rejected or Reported
+                    AdminComment = t.AdminComments.Count > 0 &&
                       (t.Status == Status.Rejected || t.Status == Status.Reported) ?
                       t.AdminComments.Last() : null,
-                   CreatedAt = t.CreatedAt,
-                   IsLiked = t.LikeInfo.Any(l => l.UserId == currentUserId),
-                   IsSaved = t.UsersInfo[0].SavedPosts.Any(p => p.PostId == postId) 
+                    CreatedAt = t.CreatedAt,
+                    IsLiked = t.LikeInfo.Any(l => l.UserId == currentUserId),
+                    IsSaved = t.UsersInfo[0].SavedPosts.Any(p => p.PostId == postId)
                 })
                 .FirstOrDefaultAsync()
                 ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
 
-            if (tip.CreatorId != currentUserId && tip.Status != Status.Approved)
+            // Only allow creator to get post details when it's Pending|Rejected|Reported
+            if (tip.Status != Status.Approved && tip.CreatorId != currentUserId)
             {
                 throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
             }
@@ -823,6 +811,10 @@ namespace NovaanServer.src.Content
                     foreignField: l => l.PostId,
                     @as: (RecipeDTO r) => r.LikeInfo
                 )
+                .Match(
+                    // Ensure there is only one user as the creator
+                    t => t.UsersInfo.Count == 1
+                )
                 .Project(r => new GetRecipeDetailDTO
                 {
                     Id = r.Id,
@@ -839,7 +831,7 @@ namespace NovaanServer.src.Content
                     PrepTime = r.PrepTime,
                     Ingredients = r.Ingredients,
                     Instructions = r.Instructions,
-                    // only get admin comment if status is Rejected or Reported
+                    // Only get admin comment if status is Rejected or Reported
                     AdminComment = r.AdminComments.Count > 0 &&
                        (r.Status == Status.Rejected || r.Status == Status.Reported) ?
                        r.AdminComments.Last() : null,
@@ -849,7 +841,8 @@ namespace NovaanServer.src.Content
                 .FirstOrDefaultAsync()
                 ?? throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
 
-            if (currentUserId != recipe.CreatorId && recipe.Status != Status.Approved)
+            // Only allow creator to get post details when it's Pending|Rejected|Reported
+            if (recipe.Status != Status.Approved && recipe.CreatorId != currentUserId)
             {
                 throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
             }
@@ -959,6 +952,37 @@ namespace NovaanServer.src.Content
             }
 
             return memStream;
+        }
+
+        private static double? CalculateAverageRating(
+            int ratingCount,
+            double ratingAverage,
+            int? previousRating,
+            int? newRating
+        )
+        {
+            if (previousRating == null && newRating == null)
+            {
+                throw new NovaanException(
+                    ErrorCodes.SERVER_UNAVAILABLE,
+                    HttpStatusCode.InternalServerError,
+                    "Cannot calculate new rating. previousRating: null, newRating: null");
+            }
+
+            // Case 1: User has not rated this post before and add new rating
+            if (previousRating == null)
+            {
+                return (ratingAverage * ratingCount + newRating) / (ratingCount + 1);
+            }
+
+            // Case 2: User has rated this post before and remove rating
+            if (newRating == null)
+            {
+                return (ratingAverage * ratingCount - previousRating) / (ratingCount - 1);
+            }
+
+            // Case 3: User has rated this post before and change rating
+            return (ratingAverage * ratingCount - previousRating + newRating) / ratingCount;
         }
     }
 }
