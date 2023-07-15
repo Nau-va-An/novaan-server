@@ -47,8 +47,8 @@ namespace NovaanServer.src.Followerships
         [HttpGet("api/following/{userId}")]
         public async Task<List<FollowershipDTO>> GetFollowing(string userId, [FromQuery] Pagination pagination)
         {
-            var currentUserID = Request.GetUserId();
-            return await _followershipService.GetFollowing(currentUserID, userId, pagination);
+            var currentUserId = Request.GetUserId();
+            return await _followershipService.GetFollowing(currentUserId, userId, pagination);
         }
 
     }

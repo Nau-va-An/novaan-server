@@ -71,11 +71,6 @@ namespace NovaanServer.src.Content
         public async Task<IActionResult> UploadRecipe()
         {
             var userId = Request.GetUserId();
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
-
             var recipe = await _contentService.ProcessMultipartRequest<Recipe>(Request);
             await _contentService.UploadRecipe(recipe, userId);
             return Ok();
@@ -101,6 +96,14 @@ namespace NovaanServer.src.Content
             {
                 Url = await _s3Service.GetDownloadUrlAsync(id)
             };
+        }
+
+        // Get all comments in a post
+        [HttpGet("comments/{postId}")]
+        public async Task<List<GetPostCommentsDTO>> GetComments(string postId)
+        {
+            var currentUserId = Request.GetUserId();
+            return await _contentService.GetComments(postId, currentUserId);
         }
 
         // User likes a post
@@ -140,7 +143,7 @@ namespace NovaanServer.src.Content
             return Ok();
         }
 
-        // delete comment on specific post
+        // Delete comment on specific post
         [HttpDelete("interaction/comment/{postId}")]
         public async Task<IActionResult> DeleteCommentOnPost(string postId, SubmissionType postType)
         {
@@ -158,7 +161,7 @@ namespace NovaanServer.src.Content
             return Ok();
         }
 
-        //report a comment
+        // Report a comment
         [HttpPost("interaction/report/{commentId}")]
         public async Task<IActionResult> ReportComment(string commentId, [FromBody] ReportDTO reportDTO)
         {
@@ -166,7 +169,6 @@ namespace NovaanServer.src.Content
             await _contentService.ReportComment(commentId, userId, reportDTO);
             return Ok();
         }
-
     }
 }
 
