@@ -9,11 +9,10 @@ namespace NovaanServer.src.Content
     {
         Task UploadTips(CulinaryTip culinaryTips, string userId);
         Task UploadRecipe(Recipe recipe, string userId);
-      
+
         Task<T> ProcessMultipartRequest<T>(HttpRequest request);
-      
         bool ValidateFileMetadata(FileInformationDTO fileMetadata);
-      
+        Task LikePost(string postId, string? userId, LikeReqDTO likeDTO);
         Task SavePost(string postId, string userId, SubmissionType postType);
       
         Task CommentOnPost(string postId, string userId, CommentDTO commentDTO);
@@ -26,7 +25,6 @@ namespace NovaanServer.src.Content
         Task LikePost(string postId, string userId, LikeReqDTO likeDTO);
       
         Task<List<GetPostDTO>> GetPersonalReel(string userId);
-      
         Task<GetTipsDetailDTO> GetCulinaryTip(string postId, string currentUserId);
         Task<GetRecipeDetailDTO> GetRecipe(string postId, string currentUserId);
         Task<List<GetPostCommentsDTO>> GetComments(string postId, string currentUserId);

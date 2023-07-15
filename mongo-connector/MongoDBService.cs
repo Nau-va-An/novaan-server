@@ -187,11 +187,11 @@ namespace MongoConnector
             }
         }
 
-        public IMongoCollection<Likes> Likes
+        public IMongoCollection<Like> Likes
         {
             get
             {
-                return MongoDatabase.GetCollection<Likes>(MongoCollections.Likes);
+                return MongoDatabase.GetCollection<Like>(MongoCollections.Likes);
             }
         }
 
