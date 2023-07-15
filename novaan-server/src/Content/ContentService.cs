@@ -815,20 +815,22 @@ namespace NovaanServer.src.Content
             var comments = await _mongoService.Comments
                 .Aggregate()
                 .Match(c => c.PostId == postId)
-                .Lookup<Comments, User, GetCommentWithUserInfoDTO>(
+                .Lookup(
                     _mongoService.Users,
-                    c => c.UserId,
-                    u => u.Id,
-                    c => c.UserInfo
+                    comment => comment.UserId,
+                    user => user.Id,
+                    (GetCommentWithUserInfoDTO comment) => comment.UserInfo
                 )
+                // Ensure that there is only one creator
+                .Match(c => c.UserInfo.Count == 1)
                 .Project(c => new GetPostCommentsDTO
                 {
-                    CommentID = c.Id,
+                    CommentId = c.Id,
                     UserId = c.UserId,
-                    UserName = c.UserInfo[0].DisplayName,
+                    Username = c.UserInfo[0].DisplayName,
                     Avatar = c.UserInfo[0].Avatar,
                     Comment = c.Comment ?? "",
-                    Image = c.Image,
+                    Image = c.Image ?? "",
                     Rating = c.Rating,
                     CreatedAt = c.CreatedAt,
                 })

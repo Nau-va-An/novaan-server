@@ -26,7 +26,7 @@ namespace MongoConnector.Models
 
         public bool EmailSent { get; set; } = false;
 
-        // Google ID
+        // Google Id
         public string? GoogleId { get; set; }
 
     }

@@ -2,11 +2,11 @@ namespace NovaanServer.src.Content.DTOs
 {
     public class GetPostCommentsDTO
     {
-        public string CommentID { get; set; }
+        public string CommentId { get; set; }
 
         public string UserId { get; set; }
 
-        public string UserName { get; set; }
+        public string Username { get; set; }
         
         public string Avatar { get; set; }
 
