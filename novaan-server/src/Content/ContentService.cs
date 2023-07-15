@@ -174,11 +174,6 @@ namespace NovaanServer.src.Content
 
         public async Task UploadRecipe(Recipe recipe, string creatorId)
         {
-            if (creatorId == null)
-            {
-                throw new NovaanException(ErrorCodes.USER_NOT_FOUND, HttpStatusCode.BadRequest);
-            }
-
             // Validate recipe object against its model annotation
             var context = new ValidationContext(recipe, serviceProvider: null, items: null);
             var validationResults = new List<ValidationResult>();
@@ -768,7 +763,7 @@ namespace NovaanServer.src.Content
                     CreatorId = t.CreatorId,
                     CreatorName = t.UsersInfo[0].DisplayName ?? string.Empty,
                     Title = t.Title,
-                    Thumbnail = t.Video,
+                    Video = t.Video,
                     Description = t.Description,
                     Status = t.Status,
                     // Only get admin comment if status is Rejected or Reported
