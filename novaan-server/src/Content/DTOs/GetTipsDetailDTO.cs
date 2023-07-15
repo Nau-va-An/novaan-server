@@ -5,10 +5,10 @@ using MongoConnector.Models;
 namespace NovaanServer.src.Content.DTOs
 {
     public class GetTipsDetailDTO
-    { 
-        public string Id { get; set; }
+    {
+        public string Id { get; set; } = string.Empty;
 
-        public string CreatorId { get; set; }
+        public string CreatorId { get; set; } = string.Empty;
 
         public string CreatorName { get; set; } = string.Empty;
 
@@ -16,7 +16,7 @@ namespace NovaanServer.src.Content.DTOs
 
         public string Description { get; set; } = string.Empty;
 
-        public string Thumbnail { get; set; } = string.Empty;
+        public string Video { get; set; } = string.Empty;
 
         public Status Status { get; set; } = Status.Pending;
 
