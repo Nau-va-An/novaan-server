@@ -310,7 +310,7 @@ namespace NovaanServer.src.Content
 
         public async Task LikePost(string postId, string userId, LikeReqDTO likeDTO)
         {
-            var updates = Builders<Likes>.Update
+            var updates = Builders<Like>.Update
                 .Set(l => l.UserId, userId)
                 .Set(l => l.PostId, postId)
                 .BitwiseXor(l => l.Liked, 1)
@@ -807,38 +807,7 @@ namespace NovaanServer.src.Content
                 throw new NovaanException(ErrorCodes.CONTENT_NOT_FOUND, HttpStatusCode.NotFound);
             }
 
-            // Check if user has liked this post
-            bool isLiked = await IsLiked(postId, currentUserId);
-
-            // Check if user has saved this post
-            bool isSaved = await IsSaved(postId, currentUserId);
-
-            AdminComment? latestComment = null;
-            if (recipe.AdminComments.Count > 0 &&
-                (recipe.Status == Status.Rejected || recipe.Status == Status.Reported)
-            )
-            {
-                latestComment = recipe.AdminComments.Last();
-            }
-            GetRecipeDetailDTO getRecipeDetailDTO = new()
-            {
-                Id = recipe.Id,
-                CreatorId = recipe.CreatorId,
-                Title = recipe.Title,
-                Description = recipe.Description,
-                Video = recipe.Video,
-                Status = recipe.Status,
-                CreatedAt = recipe.CreatedAt,
-                CookTime = recipe.CookTime,
-                PrepTime = recipe.PrepTime,
-                Ingredients = recipe.Ingredients,
-                Instructions = recipe.Instructions,
-                AdminComment = latestComment,
-                IsLiked = isLiked,
-                IsSaved = isSaved
-            };
-
-            return getRecipeDetailDTO;
+            return recipe;
         }
 
         private async Task<bool> IsSaved(string postId, string currentUserId)
