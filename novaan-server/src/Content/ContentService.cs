@@ -822,8 +822,13 @@ namespace NovaanServer.src.Content
                     user => user.Id,
                     (GetCommentWithUserInfoDTO comment) => comment.UserInfo
                 )
-                // Ensure that there is only one creator
-                .Match(c => c.UserInfo.Count == 1)
+                
+                .Match(c =>
+                    // Ensure that there is only one creator
+                    c.UserInfo.Count == 1 &&
+                    // Prevent user from viewing reported comment
+                    c.Status == Status.Approved
+                )
                 .Project(c => new GetPostCommentsDTO
                 {
                     CommentId = c.Id,
