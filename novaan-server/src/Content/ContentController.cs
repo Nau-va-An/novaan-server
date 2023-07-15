@@ -98,13 +98,14 @@ namespace NovaanServer.src.Content
             };
         }
 
-        // Get all comments of a post
+        // Get all comments in a post
         [HttpGet("comments/{postId}")]
         public async Task<List<GetPostCommentsDTO>> GetComments(string postId)
         {
             var currentUserId = Request.GetUserId();
             return await _contentService.GetComments(postId, currentUserId);
         }
+
         // User likes a post
         [HttpPost("interaction/like/{postId}")]
         public async Task<IActionResult> LikePost(string postId, LikeReqDTO likeDTO)
@@ -142,7 +143,7 @@ namespace NovaanServer.src.Content
             return Ok();
         }
 
-        // delete comment on specific post
+        // Delete comment on specific post
         [HttpDelete("interaction/comment/{postId}")]
         public async Task<IActionResult> DeleteCommentOnPost(string postId, SubmissionType postType)
         {
@@ -160,7 +161,7 @@ namespace NovaanServer.src.Content
             return Ok();
         }
 
-        //report a comment
+        // Report a comment
         [HttpPost("interaction/report/{commentId}")]
         public async Task<IActionResult> ReportComment(string commentId, [FromBody] ReportDTO reportDTO)
         {
@@ -168,7 +169,6 @@ namespace NovaanServer.src.Content
             await _contentService.ReportComment(commentId, userId, reportDTO);
             return Ok();
         }
-
     }
 }
 
