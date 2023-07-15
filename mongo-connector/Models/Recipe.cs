@@ -44,10 +44,10 @@ namespace MongoConnector.Models
         public TimeSpan CookTime { get; set; }
 
         [Required]
-        public List<Instruction> Instructions { get; set; } = new();
+        public List<Instruction> Instructions { get; set; } = new List<Instruction>();
 
         [Required]
-        public List<Ingredient> Ingredients { get; set; } = new();
+        public List<Ingredient> Ingredients { get; set; } = new List<Ingredient>();
 
         public double AverageRating { get; set;} = 0;
 
@@ -61,6 +61,14 @@ namespace MongoConnector.Models
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        public List<AdminComment> AdminComments { get; set; } = new();
+        public List<AdminComment> AdminComments { get; set; } = new List<AdminComment>();
+
+        public HashSet<string> DietPreference { get; set; } = new HashSet<string>();
+
+        public HashSet<string> CuisinePreference { get; set; } = new HashSet<string>();
+
+        public HashSet<string> MealTypePreference { get; set; } = new HashSet<string>();
+        
+        public HashSet<string> AllergenPreference { get; set; } = new HashSet<string>();
     }
 }

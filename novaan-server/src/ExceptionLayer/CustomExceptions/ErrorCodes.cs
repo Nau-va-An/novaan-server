@@ -4,7 +4,7 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
     public static class ErrorCodes
     {
         // TODO: Please update latest error code to avoid duplicate value
-        // Latest error code: 1041
+        // Latest error code: 1046
 
         // Common
         public const int SERVER_UNAVAILABLE = 1000;
@@ -41,12 +41,16 @@ namespace NovaanServer.src.ExceptionLayer.CustomExceptions
         public const int CONTENT_PREP_TIME_TOO_LONG = 1021;
         public const int CONTENT_COOK_TIME_TOO_LONG = 1022;
         public const int CONTENT_INGR_TOO_MANY = 1023;
+        public const int FIELD_NOT_FOUND = 1035;
+        public const int CONTENT_DIFFICULTY_INVALID = 1036;
+        public const int CONTENT_PORTION_TYPE_INVALID = 1037;
+        public const int CONTENT_PREFERENCE_NOT_EXIST = 1038;
         public const int CONTENT_ALREADY_SAVED = 1034;
-        public const int CONTENT_NOT_FOUND = 1035;
-        public const int CONTENT_ALREADY_COMMENTED = 1036;
-        public const int COMMENT_NOT_FOUND = 1037;
-        public const int SUBMISSION_TYPE_INVALID = 1038;
-        public const int CONTENT_IMAGE_NOT_FOUND = 1039;
+        public const int CONTENT_NOT_FOUND = 1042;
+        public const int CONTENT_ALREADY_COMMENTED = 1043;
+        public const int COMMENT_NOT_FOUND = 1044;
+        public const int SUBMISSION_TYPE_INVALID = 1045;
+        public const int CONTENT_IMAGE_NOT_FOUND = 1046;
 
         // Followership
         public const int USER_ALREADY_FOLLOWING = 1026;

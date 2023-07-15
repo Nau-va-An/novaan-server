@@ -67,58 +67,87 @@ namespace NovaanServer.src.Content.FormHandler
             T? obj,
             PropertyInfo property,
             string value,
-            string nestedField,
+            string? nestedField,
             int key
         )
         {
             Type propertyType = property.PropertyType;
 
-            // Handle special cases for list of objects
-            if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
+            // Make sure propertyType can be anything that can iterate
+            if (propertyType.GetInterface(nameof(IEnumerable)) != null)
             {
                 var listItemType = propertyType.GetGenericArguments()[0];
-                var list = property.GetValue(obj) as IList ??
+                var list = property.GetValue(obj) as IEnumerable ??
                     throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
+
                 var listItemProperties = listItemType.GetProperties();
 
-                if (key < list.Count)
+                // get number of items in list
+                var listCount = list.GetType().GetProperty("Count")?.GetValue(list, null) as int? ??
+                    throw new NovaanException(ErrorCodes.SERVER_UNAVAILABLE);
+                if (key < listCount)
                 {
-                    var listItem = list[key];
-                    var subProperty = listItemProperties
-                        .FirstOrDefault(p => p.Name == nestedField);
+                    var itemAtIndex = list.GetType().GetMethod("get_Item")?.Invoke(list, new object[] { key });
 
-                    if (subProperty == null)
+                    // case 1: nestedField is null, value is a primitive type
+                    if (nestedField == null)
                     {
-                        throw new NovaanException(
-                            ErrorCodes.CONTENT_FIELD_INVALID,
-                            HttpStatusCode.BadRequest
-                        );
+                        var convertedValue = Convert.ChangeType(value, itemAtIndex?.GetType());
+                        list.GetType().GetMethod("set_Item")?.Invoke(list, new object[] { key, convertedValue });
+                        return;
                     }
+                    else
+                    {
+                        // case 2: nestedField is not null, value is not a primitive type
+                        var nestedProp = listItemProperties
+                            .FirstOrDefault(p => p.Name == nestedField);
 
-                    var convertedValue = Convert.ChangeType(value, subProperty.PropertyType);
-                    subProperty.SetValue(listItem, convertedValue);
-                    return;
+                        if (nestedProp == null)
+                        {
+                            throw new NovaanException(
+                                ErrorCodes.CONTENT_FIELD_INVALID,
+                                HttpStatusCode.BadRequest
+                            );
+                        }
+
+                        var convertedValue = Convert.ChangeType(value, nestedProp.PropertyType);
+                        nestedProp.SetValue(itemAtIndex, convertedValue);
+                        return;
+                    }
                 }
 
                 // When encounter new list item
-                if (key == list.Count)
+                if (key == listCount)
                 {
-                    var listItem = Activator.CreateInstance(listItemType);
-                    var nestedProp = listItemProperties
-                        .FirstOrDefault(p => p.Name == nestedField);
 
-                    if (nestedProp == null)
+                    object convertedValue;
+                    // case 1: nestedField is null, value is a primitive type
+                    if (nestedField == null)
                     {
-                        throw new NovaanException(
-                            ErrorCodes.CONTENT_FIELD_INVALID,
-                            HttpStatusCode.BadRequest
-                        );
+                        convertedValue = Convert.ChangeType(value, listItemType);
+                        list.GetType().GetMethod("Add")?.Invoke(list, new object[] { convertedValue });
+                        return;
                     }
+                    else
+                    {
+                        var listItem = Activator.CreateInstance(listItemType);
+                        // case 2: nestedField is not null, value is not a primitive type
+                        var nestedProp = listItemProperties
+                            .FirstOrDefault(p => p.Name == nestedField);
 
-                    var convertedValue = Convert.ChangeType(value, nestedProp.PropertyType);
-                    nestedProp.SetValue(listItem, convertedValue);
-                    list.Add(listItem);
-                    return;
+                        if (nestedProp == null)
+                        {
+                            throw new NovaanException(
+                                ErrorCodes.CONTENT_FIELD_INVALID,
+                                HttpStatusCode.BadRequest
+                            );
+                        }
+
+                        convertedValue = Convert.ChangeType(value, nestedProp.PropertyType);
+                        nestedProp.SetValue(listItem, convertedValue);
+                        list.GetType().GetMethod("Add")?.Invoke(list, new object[] { listItem });
+                        return;
+                    }
                 }
             }
 
