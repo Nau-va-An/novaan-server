@@ -810,22 +810,6 @@ namespace NovaanServer.src.Content
             return recipe;
         }
 
-        private async Task<bool> IsSaved(string postId, string currentUserId)
-        {
-            // Check if user had saved this post
-            return (await _mongoService.Users
-                .FindAsync(u => u.Id == currentUserId && u.SavedPosts.Any(p => p.PostId == postId)))
-                .FirstOrDefault() != null;
-        }
-
-        private async Task<bool> IsLiked(string id, string currentUserId)
-        {
-            // Check if user had liked this post
-            return (await _mongoService.Likes
-                .FindAsync(l => l.UserId == currentUserId && l.PostId == id))
-                .FirstOrDefault() != null;
-        }
-
         public async Task<List<GetPostCommentsDTO>> GetComments(string postId, string currentUserId)
         {
             // join comments and users collection to get user info of each comment
@@ -855,7 +839,23 @@ namespace NovaanServer.src.Content
 
             return comments;
         }
-        
+
+        private async Task<bool> IsSaved(string postId, string currentUserId)
+        {
+            // Check if user had saved this post
+            return (await _mongoService.Users
+                .FindAsync(u => u.Id == currentUserId && u.SavedPosts.Any(p => p.PostId == postId)))
+                .FirstOrDefault() != null;
+        }
+
+        private async Task<bool> IsLiked(string id, string currentUserId)
+        {
+            // Check if user had liked this post
+            return (await _mongoService.Likes
+                .FindAsync(l => l.UserId == currentUserId && l.PostId == id))
+                .FirstOrDefault() != null;
+        }
+
         private static void ValidateFileExtensionAndSignature(
             string extension,
             MemoryStream data,
